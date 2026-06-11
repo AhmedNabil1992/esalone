@@ -2,10 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+foreach (config('tenancy.central_domains', []) as $centralDomain) {
+    Route::domain($centralDomain)->group(function () use ($centralDomain) {
+        $landingRoute = Route::view('/', 'landing');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-});
+        if ($centralDomain === config('tenancy.central_domains.0')) {
+            $landingRoute->name('home');
+        }
 
-require __DIR__.'/settings.php';
+        Route::fallback(function () {
+            abort(404);
+        });
+    });
+}

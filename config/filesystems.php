@@ -60,6 +60,12 @@ return [
             'report' => false,
         ],
 
+        'tenant' => [
+            'driver' => 'local',
+            'root' => storage_path('app'), // سيبه يشاور على app الأساسي، والحزمة لوحدها هتعمل الـ Scope في الـ Runtime
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'public',
+        ],
     ],
 
     /*

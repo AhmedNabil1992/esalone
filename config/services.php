@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'tenant_provisioning' => [
+        'token' => env('TENANT_PROVISIONING_API_TOKEN'),
+    ],
+
 ];
