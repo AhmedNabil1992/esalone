@@ -2,29 +2,45 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\PurchaseOverviewWidget;
+use App\Http\Middleware\EnsureTenantHasOpenShift;
+use App\Models\Tenant\SystemConfig as Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationGroup;
-use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Schemas\Schema as FilamentSchema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Tables\Table;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Throwable;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        FilamentSchema::configureUsing(function (FilamentSchema $schema): void {
+            $schema->defaultCurrency(fn (): string => $this->resolveTenantCurrency());
+        });
+
+        Table::configureUsing(function (Table $table): void {
+            $table->defaultCurrency(fn (): string => $this->resolveTenantCurrency());
+        });
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -37,8 +53,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->unsavedChangesAlerts()
             // ->topNavigation()
-            ->maxContentWidth(Width::Full)
             ->sidebarFullyCollapsibleOnDesktop(true)
+            ->maxContentWidth(Width::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -46,7 +62,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-
+                PurchaseOverviewWidget::class,
             ])
             // ->navigationGroups([
             //     NavigationGroup::make('System')
@@ -109,6 +125,22 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureTenantHasOpenShift::class,
             ]);
+    }
+
+    protected function resolveTenantCurrency(): string
+    {
+        try {
+            if (! Schema::connection('tenant')->hasTable('system_configs')) {
+                return 'EGP';
+            }
+
+            $currencyCode = strtoupper((string) Setting::get('sys_locale_currency', 'EGP'));
+
+            return blank($currencyCode) ? 'EGP' : $currencyCode;
+        } catch (Throwable) {
+            return 'EGP';
+        }
     }
 }

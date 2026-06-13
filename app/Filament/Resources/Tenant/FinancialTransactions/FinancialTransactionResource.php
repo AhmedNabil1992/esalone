@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Tenant\FinancialTransactions;
 
 use App\Filament\Resources\Tenant\FinancialTransactions\Pages\CreateFinancialTransaction;
-use App\Filament\Resources\Tenant\FinancialTransactions\Pages\EditFinancialTransaction;
 use App\Filament\Resources\Tenant\FinancialTransactions\Pages\ListFinancialTransactions;
 use App\Filament\Resources\Tenant\FinancialTransactions\Pages\ViewFinancialTransaction;
 use App\Filament\Resources\Tenant\FinancialTransactions\Schemas\FinancialTransactionForm;
@@ -14,6 +13,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class FinancialTransactionResource extends Resource
@@ -24,13 +24,20 @@ class FinancialTransactionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
 
-    protected static ?string $navigationLabel = 'الحركات المالية';
+    protected static ?string $navigationLabel = 'المصروفات';
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'حركة مالية';
+    protected static ?string $modelLabel = 'مصروف';
 
-    protected static ?string $pluralModelLabel = 'الحركات المالية';
+    protected static ?string $pluralModelLabel = 'المصروفات';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('category', 'expense')
+            ->where('direction', 'out');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -60,7 +67,6 @@ class FinancialTransactionResource extends Resource
             'index' => ListFinancialTransactions::route('/'),
             'create' => CreateFinancialTransaction::route('/create'),
             'view' => ViewFinancialTransaction::route('/{record}'),
-            'edit' => EditFinancialTransaction::route('/{record}/edit'),
         ];
     }
 }

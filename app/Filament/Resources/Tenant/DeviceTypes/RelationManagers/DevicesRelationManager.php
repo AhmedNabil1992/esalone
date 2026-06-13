@@ -11,11 +11,16 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class DevicesRelationManager extends RelationManager
 {
     protected static string $relationship = 'devices';
+
+    protected static ?string $title = 'الأجهزة';
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public function form(Schema $schema): Schema
     {
@@ -34,6 +39,14 @@ class DevicesRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
+                ToggleColumn::make('is_time')
+                    ->label('يعتمد على الوقت؟')
+                    ->onColor('success')
+                    ->offColor('danger'),
+                ToggleColumn::make('is_active')
+                    ->label('نشط؟')
+                    ->onColor('success')
+                    ->offColor('danger'),
             ])
             ->filters([
                 //

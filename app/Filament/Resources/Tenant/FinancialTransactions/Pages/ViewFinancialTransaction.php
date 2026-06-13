@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Tenant\FinancialTransactions\Pages;
 
 use App\Filament\Resources\Tenant\FinancialTransactions\FinancialTransactionResource;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewFinancialTransaction extends ViewRecord
@@ -12,8 +11,6 @@ class ViewFinancialTransaction extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            EditAction::make(),
-        ];
+        return [];
     }
 }

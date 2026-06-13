@@ -6,6 +6,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 
 class WarehousesTable
@@ -14,7 +16,33 @@ class WarehousesTable
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name')
+                    ->label('إسم المخزن')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('code')
+                    ->label('كود المخزن')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('address')
+                    ->label('عنوان المخزن')
+                    ->searchable()
+                    ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('نشط')
+                    ->onColor('success')
+                    ->offColor('danger')
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->label('تاريخ التحديث')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
@@ -25,7 +53,7 @@ class WarehousesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    // DeleteBulkAction::make(),
                 ]),
             ]);
     }

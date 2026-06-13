@@ -9,6 +9,7 @@ use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\FinancialTransaction;
 use App\Models\Tenant\Purchase;
 use App\Models\Tenant\PurchaseItem;
+use App\Models\Tenant\Shift;
 use App\Models\Tenant\StockMovement;
 use App\Models\Tenant\User;
 use App\Models\Tenant\WarehouseStock;
@@ -20,8 +21,9 @@ class PostPurchaseAction
     /**
      * @param  array{
      *   warehouse_id:int,
-     *   cash_box_id?:int|null,
+     *   cash_box_id:int,
      *   supplier_id?:int|null,
+     *   shift_id?:int|null,
      *   reference?:string|null,
      *   notes?:string|null,
      *   status?:string|null,
@@ -35,11 +37,35 @@ class PostPurchaseAction
             throw new InvalidArgumentException('Purchase must include at least one item.');
         }
 
+        $cashBox = CashBox::query()
+            ->whereKey($payload['cash_box_id'] ?? null)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $cashBox) {
+            throw new InvalidArgumentException('An active cash box is required for purchases.');
+        }
+
+        $shift = isset($payload['shift_id'])
+            ? Shift::query()
+                ->whereKey($payload['shift_id'])
+                ->active()
+                ->open()
+                ->first()
+            : Shift::currentOpenShift();
+
+        if (! $shift) {
+            throw new InvalidArgumentException('An active open shift is required for purchases.');
+        }
+
+        $payload['shift_id'] = $shift->id;
+
         return DB::transaction(function () use ($payload, $actor): Purchase {
             $purchase = Purchase::query()->create([
                 'warehouse_id' => $payload['warehouse_id'],
-                'cash_box_id' => $payload['cash_box_id'] ?? null,
+                'cash_box_id' => $payload['cash_box_id'],
                 'supplier_id' => $payload['supplier_id'] ?? null,
+                'shift_id' => $payload['shift_id'],
                 'reference' => $payload['reference'] ?? null,
                 'status' => $payload['status'] ?? 'posted',
                 'notes' => $payload['notes'] ?? null,
@@ -62,6 +88,10 @@ class PostPurchaseAction
                 }
 
                 $catalogItem = CatalogItem::query()->findOrFail($line['catalog_item_id']);
+
+                if (! $catalogItem->is_active) {
+                    throw new InvalidArgumentException('Catalog item must be active to be purchased.');
+                }
 
                 if ($catalogItem->is_product) {
                     throw new InvalidArgumentException('Products cannot be purchased directly. Use component items only.');
@@ -117,7 +147,7 @@ class PostPurchaseAction
                 'total_amount' => self::roundCurrency($totalAmount),
             ]);
 
-            if ($purchase->cash_box_id && (float) $purchase->total_amount > 0) {
+            if ((float) $purchase->total_amount > 0) {
                 $cashBox = CashBox::query()
                     ->whereKey($purchase->cash_box_id)
                     ->lockForUpdate()
@@ -140,9 +170,21 @@ class PostPurchaseAction
                     'description' => $purchase->notes,
                     'occurred_at' => $purchase->purchased_at,
                 ]);
+
+                if ($purchase->shift_id) {
+                    $shift = Shift::query()
+                        ->whereKey($purchase->shift_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($shift) {
+                        $shift->purchase_amount = self::roundCurrency((float) $shift->purchase_amount + (float) $purchase->total_amount);
+                        $shift->save();
+                    }
+                }
             }
 
-            return $purchase->load(['items.item', 'warehouse', 'cashBox', 'supplier']);
+            return $purchase->load(['items.item', 'warehouse', 'cashBox', 'supplier', 'shift']);
         });
     }
 

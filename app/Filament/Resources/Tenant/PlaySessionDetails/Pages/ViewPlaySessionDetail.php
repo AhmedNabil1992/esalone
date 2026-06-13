@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Tenant\PlaySessionDetails\Pages;
 
 use App\Filament\Resources\Tenant\PlaySessionDetails\PlaySessionDetailResource;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewPlaySessionDetail extends ViewRecord
@@ -12,8 +11,6 @@ class ViewPlaySessionDetail extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            EditAction::make(),
-        ];
+        return [];
     }
 }

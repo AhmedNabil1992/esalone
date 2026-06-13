@@ -24,10 +24,12 @@ class DeviceForm
                     ->required(),
                 TextInput::make('ip_address')
                     ->label('عنوان IP')
+                    ->default('127.0.0.1')
                     ->helperText('مثال: 192.168.1.201'),
                 TextInput::make('mac_address')
                     ->label('عنوان MAC')
-                    ->helperText('مثال: 00:1A:2B:3C:4D:5E'),
+                    ->helperText('مثال: 00:1A:2B:3C:4D:5E')
+                    ->default('00:00:00:00:00:00'),
                 TextInput::make('limit_time')
                     ->label('أقل وقت للتشغيل (بالدقائق)')
                     ->default(0)

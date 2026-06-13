@@ -10,6 +10,12 @@ class CreatePlayPrice extends CreateRecord
 {
     protected static string $resource = PlayPriceResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        // السطر ده بيقول لفيلامنت: بعد ما تخلص، رجعه لصفحة الجدول (index) الخاصة بنفس الـ Resource
+        return $this->getResource()::getUrl('index');
+    }
+
     /**
      * التحكم المخصص في عملية إنشاء الأسطر في قاعدة البيانات
      */
@@ -22,7 +28,7 @@ class CreatePlayPrice extends CreateRecord
 
         // 2. نلف على جهاز جهاز ونعمل له سيف في الداتا بيز
         foreach ($deviceIds as $deviceId) {
-            
+
             // بنجهز البيانات للسطر الحالي وبنربطه بالـ device_id المفرد
             $recordData = $data;
             unset($recordData['device_ids']); // بنشيل المصفوفة عشان الميجريشن ميزعلش
@@ -36,5 +42,4 @@ class CreatePlayPrice extends CreateRecord
         // هنرجع له آخر سطر تم إنشاؤه وهو هيقوم بالواجب
         return $insertedRecord;
     }
-
 }

@@ -12,6 +12,7 @@ class Purchase extends Model
         'warehouse_id',
         'cash_box_id',
         'supplier_id',
+        'shift_id',
         'reference',
         'status',
         'notes',
@@ -37,6 +38,11 @@ class Purchase extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
     }
 
     public function items(): HasMany

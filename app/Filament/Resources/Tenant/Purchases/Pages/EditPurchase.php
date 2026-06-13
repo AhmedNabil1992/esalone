@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Tenant\Purchases\Pages;
 
 use App\Filament\Resources\Tenant\Purchases\PurchaseResource;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -15,7 +14,6 @@ class EditPurchase extends EditRecord
     {
         return [
             ViewAction::make(),
-            DeleteAction::make(),
         ];
     }
 }

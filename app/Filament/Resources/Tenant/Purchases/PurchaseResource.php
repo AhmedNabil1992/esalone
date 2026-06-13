@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Tenant\Purchases;
 
 use App\Filament\Resources\Tenant\Purchases\Pages\CreatePurchase;
-use App\Filament\Resources\Tenant\Purchases\Pages\EditPurchase;
 use App\Filament\Resources\Tenant\Purchases\Pages\ListPurchases;
 use App\Filament\Resources\Tenant\Purchases\Pages\ViewPurchase;
 use App\Filament\Resources\Tenant\Purchases\Schemas\PurchaseForm;
@@ -60,7 +59,6 @@ class PurchaseResource extends Resource
             'index' => ListPurchases::route('/'),
             'create' => CreatePurchase::route('/create'),
             'view' => ViewPurchase::route('/{record}'),
-            'edit' => EditPurchase::route('/{record}/edit'),
         ];
     }
 }

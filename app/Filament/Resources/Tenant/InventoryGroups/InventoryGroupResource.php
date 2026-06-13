@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenant\InventoryGroups\Pages\CreateInventoryGroup;
 use App\Filament\Resources\Tenant\InventoryGroups\Pages\EditInventoryGroup;
 use App\Filament\Resources\Tenant\InventoryGroups\Pages\ListInventoryGroups;
 use App\Filament\Resources\Tenant\InventoryGroups\Pages\ViewInventoryGroup;
+use App\Filament\Resources\Tenant\InventoryGroups\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Tenant\InventoryGroups\Schemas\InventoryGroupForm;
 use App\Filament\Resources\Tenant\InventoryGroups\Schemas\InventoryGroupInfolist;
 use App\Filament\Resources\Tenant\InventoryGroups\Tables\InventoryGroupsTable;
@@ -50,7 +51,7 @@ class InventoryGroupResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ItemsRelationManager::class,
         ];
     }
 

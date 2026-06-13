@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Tenant\Shift;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -23,5 +26,29 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    // Tenant routes are registered by modules and panel providers.
+    Route::middleware('auth')->get('/tenant/shifts/quick-open', function () {
+        if (! Shift::currentOpenShift()) {
+            DB::transaction(function (): void {
+                Shift::query()->create([
+                    'shift_no' => Shift::nextShiftNumber(),
+                    'opened_by_user_id' => Auth::id(),
+                    'shift_date' => today()->toDateString(),
+                    'shift_from' => now()->toDateTimeString(),
+                    'start_amount' => 0,
+                    'actual_amount' => 0,
+                    'status' => 'open',
+                    'is_active' => true,
+                    'notify' => false,
+                ]);
+            });
+        }
+
+        $redirectTo = request()->query('redirect');
+
+        if (is_string($redirectTo) && filled($redirectTo)) {
+            return redirect()->to($redirectTo);
+        }
+
+        return redirect()->route('filament.admin.resources.tenant.purchases.create');
+    })->name('tenant.shifts.quick-open');
 });

@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Tenant\PlaySessionDetails;
 
-use App\Filament\Resources\Tenant\PlaySessionDetails\Pages\CreatePlaySessionDetail;
-use App\Filament\Resources\Tenant\PlaySessionDetails\Pages\EditPlaySessionDetail;
 use App\Filament\Resources\Tenant\PlaySessionDetails\Pages\ListPlaySessionDetails;
 use App\Filament\Resources\Tenant\PlaySessionDetails\Pages\ViewPlaySessionDetail;
 use App\Filament\Resources\Tenant\PlaySessionDetails\Schemas\PlaySessionDetailForm;
@@ -14,6 +12,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class PlaySessionDetailResource extends Resource
@@ -22,15 +21,23 @@ class PlaySessionDetailResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-list-bullet';
 
-    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
+    protected static string|UnitEnum|null $navigationGroup = 'المبيعات';
 
-    protected static ?string $navigationLabel = 'تفاصيل جلسات اللعب';
+    protected static ?string $navigationLabel = 'مبيعات وقت الأجهزة';
 
     protected static ?int $navigationSort = 6;
 
-    protected static ?string $modelLabel = 'تفصيل جلسة لعب';
+    protected static ?string $modelLabel = 'بيع وقت';
 
-    protected static ?string $pluralModelLabel = 'تفاصيل جلسات اللعب';
+    protected static ?string $pluralModelLabel = 'مبيعات وقت الأجهزة';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('kind', 'Time')
+            ->whereNotNull('cost')
+            ->where('cost', '>', 0);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -58,9 +65,7 @@ class PlaySessionDetailResource extends Resource
     {
         return [
             'index' => ListPlaySessionDetails::route('/'),
-            'create' => CreatePlaySessionDetail::route('/create'),
             'view' => ViewPlaySessionDetail::route('/{record}'),
-            'edit' => EditPlaySessionDetail::route('/{record}/edit'),
         ];
     }
 }

@@ -13,8 +13,8 @@ return new class extends Migration
         Schema::create('catalog_items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('inventory_group_id')->nullable()->constrained('inventory_groups')->nullOnDelete();
-            $table->string('name');
-            $table->string('description')->nullable();
+            $table->string('name', 20);
+            $table->string('description', 50)->nullable();
             $table->string('picture')->nullable();
             $table->decimal('purchase_price', 12, 2)->nullable();
             $table->decimal('sale_price', 12, 2)->nullable();
