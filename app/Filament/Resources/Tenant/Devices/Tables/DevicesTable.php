@@ -54,6 +54,7 @@ class DevicesTable
             ->filters([
                 //
             ])
+            ->defaultGroup('type.name')
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),

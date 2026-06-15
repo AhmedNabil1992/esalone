@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Actions\Tenant\StartSessionAction;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\DevicesType;
+use App\Models\Tenant\User;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 class DeviceControl extends Page
 {
@@ -59,8 +64,36 @@ class DeviceControl extends Page
         return Devices::query()
             ->where('devices_type_id', $this->selectedTypeId)
             ->where('is_active', true)
+            ->with(['type', 'playPrices.playType'])
             ->orderBy('name', 'asc')
             ->get();
+    }
+
+    public function startSession(int $deviceId, int $playPriceId): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(StartSessionAction::class)->execute($deviceId, $playPriceId, $user);
+
+            Notification::make()
+                ->title('تم فتح الجلسة بنجاح')
+                ->success()
+                ->send();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل فتح الجلسة')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public static function getNavigationBadge(): ?string

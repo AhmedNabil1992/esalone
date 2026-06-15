@@ -56,4 +56,8 @@ class PlaySessions extends Model
         // لاراڤيل لوحده هيتوقع إن الفوريّن كي اسمه play_session_id جوه جدول play_session_details
         return $this->hasMany(PlaySessionDetail::class);
     }
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
 }

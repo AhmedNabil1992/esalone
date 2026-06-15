@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ColumnGroup;
 
 
 class PlayPricesTable
@@ -16,11 +17,11 @@ class PlayPricesTable
     {
         return $table
             ->columns([
+                TextColumn::make('device.name')
+                    ->label('الجهاز')
+                    ->searchable(),
                 TextColumn::make('playType.name')
                     ->label('نوع اللعب')
-                    ->searchable(),
-                TextColumn::make('devices.name')
-                    ->label('الأجهزة')
                     ->searchable(),
                 TextColumn::make('description')
                     ->label('الوصف')
@@ -36,6 +37,7 @@ class PlayPricesTable
             ->filters([
                 //
             ])
+            ->defaultGroup('device.name')
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
