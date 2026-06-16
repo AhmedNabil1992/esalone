@@ -21,6 +21,12 @@ class FinancialTransactionForm
                     ->searchable()
                     ->preload()
                     ->required(),
+                Select::make('expense_type_id')
+                    ->label('نوع المصروف')
+                    ->relationship('expenseType', 'name', fn ($query) => $query->where('is_active', true))
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 TextInput::make('amount')
                     ->label('قيمة المصروف')
                     ->numeric()
@@ -30,12 +36,13 @@ class FinancialTransactionForm
                     ->label('تاريخ العملية')
                     ->default(now())
                     ->required(),
-                Toggle::make('affects_profit')
-                    ->label('يؤثر على الربحية')
-                    ->default(true),
+                // Toggle::make('affects_profit')
+                //     ->label('يؤثر على الربحية')
+                //     ->default(true),
                 Textarea::make('description')
                     ->label('الوصف')
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->required(),
             ]);
     }
 }

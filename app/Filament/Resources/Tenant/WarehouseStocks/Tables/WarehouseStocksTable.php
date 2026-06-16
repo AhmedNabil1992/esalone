@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 
 class WarehouseStocksTable
 {
@@ -14,18 +15,39 @@ class WarehouseStocksTable
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('warehouse.name')
+                    ->label('المخزن')
+                    ->searchable(),
+                TextColumn::make('item.inventoryGroup.name')
+                    ->label('مجموعة المخزون')
+                    ->searchable(),
+                TextColumn::make('item.name')
+                    ->label('المنتج')
+                    ->searchable(),
+                TextColumn::make('quantity')
+                    ->label('الكمية')
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->label('تاريخ التحديث')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                // EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    // DeleteBulkAction::make(),
                 ]),
             ]);
     }

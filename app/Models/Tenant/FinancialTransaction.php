@@ -41,4 +41,8 @@ class FinancialTransaction extends Model
     {
         return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
     }
+    public function expenseType(): BelongsTo
+    {
+        return $this->belongsTo(ExpensesType::class, 'expenses_id');
+    }
 }

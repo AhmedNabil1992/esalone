@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -144,7 +145,7 @@ class SystemConfig extends Page
                                     Toggle::make('sys_tax_on_play_invoices')->label('تطبيق الضريبة على : فواتير اللعب'),
                                     Toggle::make('sys_service_on_play_invoices')->label('تطبيق نسبة الخدمة على قيمة : فواتير اللعب'),
                                 ]),
-                                Grid::make(1)->schema([
+                                Grid::make(3)->schema([
                                     // TextInput::make('sys_font_size_inventory')->label('حجم الخط ( مجموعات الصنف , الأصناف ) :')->numeric(),
                                     TextInput::make('sys_lock_device_time')->label('وقت سماح لتقفيل الجهاز :')->numeric(),
                                     Select::make('sys_locale_currency')->label('العملة المحلية :')->options([
@@ -155,6 +156,9 @@ class SystemConfig extends Page
                                         'AED' => 'درهم إماراتي',
                                         // أضف المزيد من العملات حسب الحاجة
                                     ]),
+                                    Select::make('sys-default-cashbox')->label('الخزنة الإفتراضية :')->options(function () {
+                                        return CashBox::pluck('name', 'id');
+                                    })->searchable()->preload(),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')

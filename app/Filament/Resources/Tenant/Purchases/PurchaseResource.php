@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Tenant\Purchases;
 use App\Filament\Resources\Tenant\Purchases\Pages\CreatePurchase;
 use App\Filament\Resources\Tenant\Purchases\Pages\ListPurchases;
 use App\Filament\Resources\Tenant\Purchases\Pages\ViewPurchase;
+use App\Filament\Resources\Tenant\Purchases\RelationManagers\PurchaseItemsRelationManager;
 use App\Filament\Resources\Tenant\Purchases\Schemas\PurchaseForm;
 use App\Filament\Resources\Tenant\Purchases\Schemas\PurchaseInfolist;
 use App\Filament\Resources\Tenant\Purchases\Tables\PurchasesTable;
@@ -49,7 +50,7 @@ class PurchaseResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PurchaseItemsRelationManager::class,
         ];
     }
 

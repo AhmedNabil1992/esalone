@@ -65,7 +65,7 @@ class PurchaseForm
                             ->label('الصنف')
                             ->options(fn (): array => CatalogItem::query()
                                 ->where('is_active', true)
-                                ->where('is_component', true)
+                                ->where('is_product', false)
                                 ->orderBy('name', 'asc')
                                 ->pluck('name', 'id')
                                 ->all())

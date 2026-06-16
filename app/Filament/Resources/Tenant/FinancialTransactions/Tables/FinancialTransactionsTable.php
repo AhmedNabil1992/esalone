@@ -18,14 +18,17 @@ class FinancialTransactionsTable
                 TextColumn::make('cashBox.name')
                     ->label('الخزنة')
                     ->searchable(),
-                TextColumn::make('amount')
-                    ->label('القيمة')
-                    ->money()
-                    ->sortable(),
+                TextColumn::make('expenseType.name')
+                    ->label('نوع المصروف')
+                    ->searchable(),
                 TextColumn::make('description')
                     ->label('الوصف')
                     ->placeholder('-')
                     ->limit(40),
+                TextColumn::make('amount')
+                    ->label('القيمة')
+                    ->money()
+                    ->sortable(),
                 TextColumn::make('createdBy.name')
                     ->label('بواسطة')
                     ->placeholder('-'),
