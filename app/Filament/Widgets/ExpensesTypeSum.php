@@ -2,13 +2,14 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Tenant\ExpensesType;
+use App\Models\Tenant\FinancialTransaction;
+use App\Models\Tenant\SystemConfig as Setting;
+use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Carbon\Carbon;
-use App\Models\Tenant\ExpensesType;
-use App\Models\Tenant\SystemConfig As Setting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
-use App\Models\Tenant\FinancialTransaction;
 
 class ExpensesTypeSum extends StatsOverviewWidget
 {
@@ -16,34 +17,42 @@ class ExpensesTypeSum extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        // تحديد بداية ونهاية الشهر الحالي بناءً على حقل التاريخ في جدولك
+        // تحديد بداية الشهر وحتى الوقت الحالي (من أول يوم في الشهر لحد اليوم)
         $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
+        $now = Carbon::now();
 
         // سحب رمز العملة الحالي للصالة (مثلاً EGP) لتنسيق المظهر المالي
         $currencyCode = Setting::get('sys_locale_currency', 'EGP');
 
-        // جلب أنواع المصروفات مع حساب مجموع حقل amount من جدول الحركات المالي
-        // اسم العلاقة هنا 'financialTransactions' وهي المعرفة في موديل ExpensesType بالأسفل
-        $expensesTypes = ExpensesType::withSum(['financialTransactions' => function ($query) use ($startOfMonth, $endOfMonth) {
-            $query->whereBetween('occurred_at', [$startOfMonth, $endOfMonth])
-                  ->where('direction', 'out'); // فلترة إضافية لضمان أنها حركة خروج (مصروف)
-        }], 'amount')->get();
+        $financialTransactionsTable = (new FinancialTransaction)->getTable();
 
-        return $expensesTypes->map(function ($type) use ($currencyCode) {
+        // التجميع الفعلي يتم من جدول FinancialTransaction لأنه مصدر بيانات المصروفات
+        $totalsByExpenseType = DB::table($financialTransactionsTable)
+            ->where('occurred_at', '>=', $startOfMonth)
+            ->where('occurred_at', '<=', $now)
+            ->where('direction', 'out')
+            ->whereNotNull('expenses_id')
+            ->selectRaw('expenses_id, SUM(amount) as total_amount')
+            ->groupBy('expenses_id')
+            ->pluck('total_amount', 'expenses_id');
+
+        // جدول ExpensesType فقط لجلب اسم كل بند وربطه بقيمته المجمعة
+        $expensesTypes = ExpensesType::query()->get();
+
+        return $expensesTypes->map(function ($type) use ($currencyCode, $totalsByExpenseType) {
             // لو النوع ملوش مصروفات الشهر ده، بنخلي القيمة الافتراضية صفر
-            $sumAmount = $type->expenses_sum_amount ?? 0;
+            $sumAmount = $totalsByExpenseType->get($type->id, 0);
 
             // تنسيق الرقم ماليًا ليظهر بشكل احترافي (مثل: 1,250.00 ج.م) بناءً على عملة العميل
             $formattedAmount = Number::currency($sumAmount, $currencyCode, 'ar');
 
             return Stat::make(
-                label: $type->name, 
+                label: $type->name,
                 value: $formattedAmount
-            )
-            ->description('إجمالي مصروفات هذا الشهر')
-            ->descriptionIcon('heroicon-m-arrow-trending-down')
-            ->color('danger'); // اللون الأحمر ليدل على الخصم والمصروفات
+            );
+            // ->description('إجمالي مصروفات هذا الشهر')
+            // ->descriptionIcon('heroicon-m-arrow-trending-down')
+            // ->color('danger') // اللون الأحمر ليدل على الخصم والمصروفات
         })->toArray();
     }
 }

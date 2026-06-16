@@ -19,7 +19,8 @@ class PostExpenseAction
      *   amount:numeric-string|int|float,
      *   description?:string|null,
      *   occurred_at?:string|null,
-     *   affects_profit?:bool|null
+     *   affects_profit?:bool|null,
+     *   shift_id?:int|null
      * }  $payload
      */
     public function execute(array $payload, ?User $actor = null): FinancialTransaction
@@ -39,7 +40,9 @@ class PostExpenseAction
             throw new InvalidArgumentException('An active cash box is required for expenses.');
         }
 
-        $shift = Shift::currentOpenShift();
+        $shift = isset($payload['shift_id'])
+            ? Shift::query()->whereKey($payload['shift_id'])->whereNull('shift_to')->first()
+            : Shift::currentOpenShift();
 
         if (! $shift) {
             throw new InvalidArgumentException('An active open shift is required for expenses.');
@@ -56,6 +59,7 @@ class PostExpenseAction
             }
 
             $transaction = FinancialTransaction::query()->create([
+                'shift_id' => $shift->id,
                 'cash_box_id' => $cashBox->id,
                 'created_by_user_id' => $actor?->id,
                 'reference_type' => null,

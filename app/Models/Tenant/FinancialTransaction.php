@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class FinancialTransaction extends Model
 {
     protected $fillable = [
+        'shift_id',
         'cash_box_id',
         'created_by_user_id',
         'reference_type',
@@ -41,6 +42,12 @@ class FinancialTransaction extends Model
     {
         return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
     }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
+
     public function expenseType(): BelongsTo
     {
         return $this->belongsTo(ExpensesType::class, 'expenses_id');

@@ -32,6 +32,9 @@ class FinancialTransactionsTable
                 TextColumn::make('createdBy.name')
                     ->label('بواسطة')
                     ->placeholder('-'),
+                TextColumn::make('shift_id')
+                    ->label('رقم الشفت')
+                    ->sortable(),
                 TextColumn::make('occurred_at')
                     ->label('تاريخ العملية')
                     ->dateTime()
