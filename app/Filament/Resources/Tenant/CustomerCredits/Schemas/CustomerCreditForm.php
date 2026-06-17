@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Tenant\CustomerCredits\Schemas;
 
+use App\Models\Tenant\CashBox;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -35,6 +37,28 @@ class CustomerCreditForm
                 ->label('المبلغ')
                 ->numeric()
                 ->minValue(0.01)
+                ->required(),
+
+            Select::make('cash_box_id')
+                ->label('الخزنة')
+                ->options(fn () => CashBox::query()
+                    ->where('is_active', true)
+                    ->orderBy('name', 'asc')
+                    ->pluck('name', 'id')
+                    ->toArray())
+                ->default(function (): ?int {
+                    $defaultCashBoxId = (int) Setting::get('sys-default-cashbox', 0);
+
+                    if ($defaultCashBoxId > 0) {
+                        return $defaultCashBoxId;
+                    }
+
+                    return CashBox::query()
+                        ->where('is_active', true)
+                        ->value('id');
+                })
+                ->searchable()
+                ->preload()
                 ->required(),
 
             Textarea::make('description')

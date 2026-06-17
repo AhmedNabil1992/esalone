@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\ExpensesType;
-use App\Models\Tenant\FinancialTransaction;
 use App\Models\Tenant\SystemConfig as Setting;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -24,10 +24,10 @@ class ExpensesTypeSum extends StatsOverviewWidget
         // سحب رمز العملة الحالي للصالة (مثلاً EGP) لتنسيق المظهر المالي
         $currencyCode = Setting::get('sys_locale_currency', 'EGP');
 
-        $financialTransactionsTable = (new FinancialTransaction)->getTable();
+        $expenseHistoriesTable = (new ExpenseHistory)->getTable();
 
-        // التجميع الفعلي يتم من جدول FinancialTransaction لأنه مصدر بيانات المصروفات
-        $totalsByExpenseType = DB::table($financialTransactionsTable)
+        // التجميع الفعلي يتم من جدول ExpenseHistory لأنه مصدر بيانات المصروفات
+        $totalsByExpenseType = DB::table($expenseHistoriesTable)
             ->where('occurred_at', '>=', $startOfMonth)
             ->where('occurred_at', '<=', $now)
             ->where('direction', 'out')

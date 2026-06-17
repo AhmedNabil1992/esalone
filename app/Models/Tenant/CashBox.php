@@ -32,8 +32,13 @@ class CashBox extends Model
         return $this->hasMany(StockMovement::class, 'cash_box_id');
     }
 
-    public function financialTransactions(): HasMany
+    public function expenseHistories(): HasMany
     {
-        return $this->hasMany(FinancialTransaction::class, 'cash_box_id');
+        return $this->hasMany(ExpenseHistory::class, 'cash_box_id');
+    }
+
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(CashBoxLedgerEntry::class, 'cash_box_id');
     }
 }

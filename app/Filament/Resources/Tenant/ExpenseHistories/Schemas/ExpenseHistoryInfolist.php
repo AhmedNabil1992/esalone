@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Filament\Resources\Tenant\FinancialTransactions\Schemas;
+namespace App\Filament\Resources\Tenant\ExpenseHistories\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
-class FinancialTransactionInfolist
+class ExpenseHistoryInfolist
 {
     public static function configure(Schema $schema): Schema
     {

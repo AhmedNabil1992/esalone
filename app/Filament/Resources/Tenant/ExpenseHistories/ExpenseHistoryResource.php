@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Tenant\FinancialTransactions;
+namespace App\Filament\Resources\Tenant\ExpenseHistories;
 
-use App\Filament\Resources\Tenant\FinancialTransactions\Pages\CreateFinancialTransaction;
-use App\Filament\Resources\Tenant\FinancialTransactions\Pages\ListFinancialTransactions;
-use App\Filament\Resources\Tenant\FinancialTransactions\Pages\ViewFinancialTransaction;
-use App\Filament\Resources\Tenant\FinancialTransactions\Schemas\FinancialTransactionForm;
-use App\Filament\Resources\Tenant\FinancialTransactions\Schemas\FinancialTransactionInfolist;
-use App\Filament\Resources\Tenant\FinancialTransactions\Tables\FinancialTransactionsTable;
-use App\Models\Tenant\FinancialTransaction;
+use App\Filament\Resources\Tenant\ExpenseHistories\Pages\CreateExpenseHistory;
+use App\Filament\Resources\Tenant\ExpenseHistories\Pages\ListExpenseHistories;
+use App\Filament\Resources\Tenant\ExpenseHistories\Pages\ViewExpenseHistory;
+use App\Filament\Resources\Tenant\ExpenseHistories\Schemas\ExpenseHistoryForm;
+use App\Filament\Resources\Tenant\ExpenseHistories\Schemas\ExpenseHistoryInfolist;
+use App\Filament\Resources\Tenant\ExpenseHistories\Tables\ExpenseHistoriesTable;
+use App\Models\Tenant\ExpenseHistory;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -16,9 +16,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class FinancialTransactionResource extends Resource
+class ExpenseHistoryResource extends Resource
 {
-    protected static ?string $model = FinancialTransaction::class;
+    protected static ?string $model = ExpenseHistory::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
 
@@ -41,17 +41,17 @@ class FinancialTransactionResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return FinancialTransactionForm::configure($schema);
+        return ExpenseHistoryForm::configure($schema);
     }
 
     public static function infolist(Schema $schema): Schema
     {
-        return FinancialTransactionInfolist::configure($schema);
+        return ExpenseHistoryInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return FinancialTransactionsTable::configure($table);
+        return ExpenseHistoriesTable::configure($table);
     }
 
     public static function getRelations(): array
@@ -64,9 +64,9 @@ class FinancialTransactionResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListFinancialTransactions::route('/'),
-            'create' => CreateFinancialTransaction::route('/create'),
-            'view' => ViewFinancialTransaction::route('/{record}'),
+            'index' => ListExpenseHistories::route('/'),
+            'create' => CreateExpenseHistory::route('/create'),
+            'view' => ViewExpenseHistory::route('/{record}'),
         ];
     }
 }

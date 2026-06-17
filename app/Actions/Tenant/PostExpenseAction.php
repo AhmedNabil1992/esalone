@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Actions\Tenant;
 
 use App\Models\Tenant\CashBox;
-use App\Models\Tenant\FinancialTransaction;
+use App\Models\Tenant\CashBoxLedgerEntry;
+use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ class PostExpenseAction
     /**
      * @param  array{
      *   cash_box_id:int,
+     *   expenses_id?:int|null,
      *   amount:numeric-string|int|float,
      *   description?:string|null,
      *   occurred_at?:string|null,
@@ -23,7 +25,7 @@ class PostExpenseAction
      *   shift_id?:int|null
      * }  $payload
      */
-    public function execute(array $payload, ?User $actor = null): FinancialTransaction
+    public function execute(array $payload, ?User $actor = null): ExpenseHistory
     {
         $amount = (float) ($payload['amount'] ?? 0);
 
@@ -48,7 +50,7 @@ class PostExpenseAction
             throw new InvalidArgumentException('An active open shift is required for expenses.');
         }
 
-        return DB::transaction(function () use ($payload, $actor, $amount, $shift): FinancialTransaction {
+        return DB::transaction(function () use ($payload, $actor, $amount, $shift): ExpenseHistory {
             $cashBox = CashBox::query()
                 ->whereKey($payload['cash_box_id'])
                 ->lockForUpdate()
@@ -58,10 +60,11 @@ class PostExpenseAction
                 throw new InvalidArgumentException('Cash box not found.');
             }
 
-            $transaction = FinancialTransaction::query()->create([
+            $transaction = ExpenseHistory::query()->create([
                 'shift_id' => $shift->id,
                 'cash_box_id' => $cashBox->id,
                 'created_by_user_id' => $actor?->id,
+                'expenses_id' => $payload['expenses_id'] ?? null,
                 'reference_type' => null,
                 'reference_id' => null,
                 'direction' => 'out',
@@ -74,6 +77,19 @@ class PostExpenseAction
 
             $cashBox->current_balance = PostPurchaseAction::roundCurrency((float) $cashBox->current_balance - $amount);
             $cashBox->save();
+
+            CashBoxLedgerEntry::query()->create([
+                'shift_id' => $shift->id,
+                'cash_box_id' => $cashBox->id,
+                'created_by_user_id' => $actor?->id,
+                'reference_type' => ExpenseHistory::class,
+                'reference_id' => $transaction->id,
+                'direction' => 'out',
+                'operation' => 'expense',
+                'amount' => $amount,
+                'description' => $payload['description'] ?? null,
+                'occurred_at' => $payload['occurred_at'] ?? now(),
+            ]);
 
             $lockedShift = Shift::query()->whereKey($shift->id)->lockForUpdate()->first();
 

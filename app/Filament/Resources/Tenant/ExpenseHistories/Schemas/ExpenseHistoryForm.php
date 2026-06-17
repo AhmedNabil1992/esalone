@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Tenant\FinancialTransactions\Schemas;
+namespace App\Filament\Resources\Tenant\ExpenseHistories\Schemas;
 
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
-class FinancialTransactionForm
+class ExpenseHistoryForm
 {
     public static function configure(Schema $schema): Schema
     {
@@ -21,7 +20,7 @@ class FinancialTransactionForm
                     ->searchable()
                     ->preload()
                     ->required(),
-                Select::make('expense_type_id')
+                Select::make('expenses_id')
                     ->label('نوع المصروف')
                     ->relationship('expenseType', 'name', fn ($query) => $query->where('is_active', true))
                     ->searchable()
@@ -36,9 +35,6 @@ class FinancialTransactionForm
                     ->label('تاريخ العملية')
                     ->default(now())
                     ->required(),
-                // Toggle::make('affects_profit')
-                //     ->label('يؤثر على الربحية')
-                //     ->default(true),
                 Textarea::make('description')
                     ->label('الوصف')
                     ->columnSpanFull()

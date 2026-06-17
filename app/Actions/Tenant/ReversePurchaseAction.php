@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Tenant;
 
 use App\Models\Tenant\CashBox;
-use App\Models\Tenant\FinancialTransaction;
+use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\Purchase;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\StockMovement;
@@ -73,15 +73,15 @@ class ReversePurchaseAction
                     $cashBox->save();
                 }
 
-                FinancialTransaction::query()->create([
+                CashBoxLedgerEntry::query()->create([
+                    'shift_id' => $purchase->shift_id,
                     'cash_box_id' => $purchase->cash_box_id,
                     'created_by_user_id' => $actor?->id,
                     'reference_type' => Purchase::class,
                     'reference_id' => $purchase->id,
                     'direction' => 'in',
-                    'category' => 'purchase_reverse',
+                    'operation' => 'purchase_reverse',
                     'amount' => $totalAmount,
-                    'affects_profit' => false,
                     'description' => $purchase->notes,
                     'occurred_at' => now(),
                 ]);

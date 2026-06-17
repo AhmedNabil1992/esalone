@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class FinancialTransaction extends Model
+class CashBoxLedgerEntry extends Model
 {
     protected $fillable = [
         'shift_id',
@@ -15,16 +17,14 @@ class FinancialTransaction extends Model
         'reference_type',
         'reference_id',
         'direction',
-        'category',
+        'operation',
         'amount',
-        'affects_profit',
         'description',
         'occurred_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'affects_profit' => 'boolean',
         'occurred_at' => 'datetime',
     ];
 
@@ -46,10 +46,5 @@ class FinancialTransaction extends Model
     public function shift(): BelongsTo
     {
         return $this->belongsTo(Shift::class, 'shift_id');
-    }
-
-    public function expenseType(): BelongsTo
-    {
-        return $this->belongsTo(ExpensesType::class, 'expenses_id');
     }
 }
