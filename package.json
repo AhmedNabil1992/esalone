@@ -4,7 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "bridge:install": "npm --prefix tools/print-tcp-bridge install",
+        "bridge:setup": "npm --prefix tools/print-tcp-bridge install && npm --prefix tools/print-tcp-bridge exec playwright install chromium",
+        "bridge:start": "npm --prefix tools/print-tcp-bridge start"
     },
     "dependencies": {
         "@laravel/passkeys": "^0.2.0",

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenant;
 
+use App\Models\Tenant\Customer;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\PlaySessionDetail;
@@ -20,9 +21,13 @@ class StartSessionAction
      *
      * @throws RuntimeException
      */
-    public function execute(int $deviceId, int $playPriceId, User $actor): PlaySessions
+    public function execute(int $deviceId, int $playPriceId, User $actor, ?int $durationMinutes = null, ?int $customerId = null): PlaySessions
     {
-        return DB::transaction(function () use ($deviceId, $playPriceId, $actor): PlaySessions {
+        return DB::transaction(function () use ($deviceId, $playPriceId, $actor, $durationMinutes, $customerId): PlaySessions {
+
+            if ($durationMinutes !== null && $durationMinutes <= 0) {
+                throw new RuntimeException('مدة اللعب يجب أن تكون أكبر من صفر دقيقة.');
+            }
 
             /** @var Devices $device */
             $device = Devices::query()
@@ -49,10 +54,26 @@ class StartSessionAction
                 throw new RuntimeException('لا توجد وردية مفتوحة. يرجى فتح وردية أولاً.');
             }
 
+            $customer = null;
+            if ($customerId !== null) {
+                $customer = Customer::query()
+                    ->where('is_active', true)
+                    ->find($customerId);
+
+                if (! $customer) {
+                    throw new RuntimeException('العميل المختار غير متاح أو غير موجود.');
+                }
+            }
+
+            $startTime = now();
+            $isTimedSession = $durationMinutes !== null;
+            $endTime = $isTimedSession ? $startTime->copy()->addMinutes($durationMinutes) : null;
+
             // إنشاء الجلسة الأم
             /** @var PlaySessions $session */
             $session = PlaySessions::create([
                 'device_id' => $deviceId,
+                'customer_id' => $customer?->id,
                 'status' => 'active',
             ]);
 
@@ -61,11 +82,11 @@ class StartSessionAction
                 'play_session_id' => $session->id,
                 'device_id' => $deviceId,
                 'play_type' => $playPrice->playType?->name ?? '',
-                'play_category' => 'مفتوح',
+                'play_category' => $isTimedSession ? 'محدد' : 'مفتوح',
                 'play_price' => $playPrice->price,
-                'start_time' => now(),
-                'end_time' => null,
-                'period' => null,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'period' => $durationMinutes,
                 'cost' => null,
                 'status' => 'مشغول',
                 'kind' => 'Time',

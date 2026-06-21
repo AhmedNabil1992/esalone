@@ -6,6 +6,8 @@ use App\Filament\Resources\Tenant\PlaySessions\Pages\CreatePlaySession;
 use App\Filament\Resources\Tenant\PlaySessions\Pages\EditPlaySession;
 use App\Filament\Resources\Tenant\PlaySessions\Pages\ListPlaySessions;
 use App\Filament\Resources\Tenant\PlaySessions\Pages\ViewPlaySession;
+use App\Filament\Resources\Tenant\PlaySessions\RelationManagers\OrderSessionDetailsRelationManager;
+use App\Filament\Resources\Tenant\PlaySessions\RelationManagers\PlaySessionDetailsRelationManager;
 use App\Filament\Resources\Tenant\PlaySessions\Schemas\PlaySessionForm;
 use App\Filament\Resources\Tenant\PlaySessions\Schemas\PlaySessionInfolist;
 use App\Filament\Resources\Tenant\PlaySessions\Tables\PlaySessionsTable;
@@ -50,7 +52,8 @@ class PlaySessionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PlaySessionDetailsRelationManager::class,
+            OrderSessionDetailsRelationManager::class,
         ];
     }
 
@@ -58,9 +61,9 @@ class PlaySessionResource extends Resource
     {
         return [
             'index' => ListPlaySessions::route('/'),
-            'create' => CreatePlaySession::route('/create'),
+            // 'create' => CreatePlaySession::route('/create'),
             'view' => ViewPlaySession::route('/{record}'),
-            'edit' => EditPlaySession::route('/{record}/edit'),
+            // 'edit' => EditPlaySession::route('/{record}/edit'),
         ];
     }
 }

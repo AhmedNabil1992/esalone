@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
+use App\Models\Tenant\Warehouse;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -17,6 +18,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
+use Illuminate\Filesystem\FilesystemAdapter;
 
 class SystemConfig extends Page
 {
@@ -79,7 +81,26 @@ class SystemConfig extends Page
                                             FileUpload::make('print_logo_path')
                                                 ->label('لوجو ( يظهر في فاتورة المبيعات و تقرير تقفيل الشيفت ) .')
                                                 ->image()
-                                                ->disk('tenant'),
+                                                ->disk('public')
+                                                ->directory('system-config')
+                                                ->visibility('public')
+                                                ->getUploadedFileUsing(static function (FileUpload $component, string $file, string|array|null $storedFileNames): ?array {
+                                                    /** @var FilesystemAdapter $storage */
+                                                    $storage = $component->getDisk();
+
+                                                    if (! $storage->exists($file)) {
+                                                        return null;
+                                                    }
+
+                                                    return [
+                                                        'name' => (is_array($storedFileNames) ? ($storedFileNames[$file] ?? null) : $storedFileNames) ?? basename($file),
+                                                        'size' => $storage->size($file),
+                                                        'type' => $storage->mimeType($file),
+                                                        'url' => tenant_asset($file),
+                                                    ];
+                                                })
+                                                ->imageEditor()
+                                                ->columnSpanFull(),
                                         ]),
                                 ]),
                             ]),
@@ -156,8 +177,12 @@ class SystemConfig extends Page
                                         'AED' => 'درهم إماراتي',
                                         // أضف المزيد من العملات حسب الحاجة
                                     ]),
-                                    Select::make('sys-default-cashbox')->label('الخزنة الإفتراضية :')->options(function () {
+                                    Select::make('sys_default_cashbox')->label('الخزنة الإفتراضية :')->options(function () {
                                         return CashBox::pluck('name', 'id');
+                                    })->searchable()->preload(),
+                                    Select::make('sys_default_inventory')->label('المخزن الإفتراضي :')->options(function () {
+                                        // جلب المخازن من قاعدة البيانات
+                                        return Warehouse::pluck('name', 'id');
                                     })->searchable()->preload(),
                                 ]),
 
@@ -188,6 +213,20 @@ class SystemConfig extends Page
                                             Toggle::make('sys_close_send_freq')->label('تفعيل معدل الإرسال'),
                                             TextInput::make('sys_close_duration')->label('المدة :')->numeric(),
                                             TextInput::make('sys_close_order_count')->label('عدد الطلبات :')->numeric(),
+                                        ]),
+                                        Grid::make(3)->schema([
+                                            TextInput::make('sys_iot_bridge_url')
+                                                ->label('Bridge URL')
+                                                ->placeholder('http://127.0.0.1:17325')
+                                                ->url(),
+                                            TextInput::make('sys_iot_bridge_token')
+                                                ->label('Bridge Token')
+                                                ->password()
+                                                ->revealable(),
+                                            TextInput::make('sys_iot_udp_port')
+                                                ->label('UDP Port')
+                                                ->numeric()
+                                                ->default(4210),
                                         ]),
                                     ]),
                             ]),

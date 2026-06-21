@@ -21,22 +21,19 @@ class PlaySessionDetailResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-list-bullet';
 
-    protected static string|UnitEnum|null $navigationGroup = 'المبيعات';
+    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
 
-    protected static ?string $navigationLabel = 'مبيعات وقت الأجهزة';
+    protected static ?string $navigationLabel = 'تقرير اللعب الحالي';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'بيع وقت';
+    protected static ?string $modelLabel = 'تقرير اللعب الحالي';
 
-    protected static ?string $pluralModelLabel = 'مبيعات وقت الأجهزة';
+    protected static ?string $pluralModelLabel = 'تقرير اللعب الحالي';
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->where('kind', 'Time')
-            ->whereNotNull('cost')
-            ->where('cost', '>', 0);
+        return parent::getEloquentQuery()->orderByDesc('play_session_id');
     }
 
     public static function form(Schema $schema): Schema

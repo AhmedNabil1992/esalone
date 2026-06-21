@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>PS Bridge</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                width: 340px;
+                margin: 12px;
+            }
+            h3 {
+                margin: 0 0 10px;
+            }
+            label {
+                display: block;
+                font-size: 12px;
+                margin-top: 8px;
+            }
+            input,
+            textarea {
+                width: 100%;
+                box-sizing: border-box;
+                margin-top: 4px;
+            }
+            .row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .actions {
+                margin-top: 12px;
+                display: flex;
+                gap: 8px;
+            }
+            button {
+                cursor: pointer;
+            }
+            .small {
+                font-size: 11px;
+                color: #444;
+                margin-top: 8px;
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <h3>PS Print + TCP Bridge</h3>
+
+        <label
+            >Bridge URL
+            <input id="bridgeUrl" placeholder="http://127.0.0.1:17325" />
+        </label>
+
+        <label
+            >Token
+            <input id="token" placeholder="shared secret" />
+        </label>
+
+        <label
+            ><input type="checkbox" id="printEnabled" /> Enable silent
+            print</label
+        >
+        <label><input type="checkbox" id="tcpEnabled" /> Enable TCP send</label>
+
+        <hr />
+        <div><strong>Send TCP Test</strong></div>
+
+        <div class="row">
+            <label
+                >Host
+                <input id="tcpHost" placeholder="192.168.1.50" />
+            </label>
+            <label
+                >Port
+                <input id="tcpPort" type="number" placeholder="9100" />
+            </label>
+        </div>
+
+        <label
+            >Payload
+            <textarea
+                id="tcpPayload"
+                rows="4"
+                placeholder="Test line"
+            ></textarea>
+        </label>
+
+        <div class="actions">
+            <button id="saveBtn">Save</button>
+            <button id="sendTcpBtn">Send TCP</button>
+        </div>
+
+        <div id="status" class="small"></div>
+
+        <script src="popup.js"></script>
+    </body>
+</html>

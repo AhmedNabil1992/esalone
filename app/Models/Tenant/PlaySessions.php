@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class PlaySessions extends Model
@@ -16,6 +17,8 @@ class PlaySessions extends Model
 
     protected $fillable = [
         'device_id',
+        'customer_id',
+        'prepaid_amount',
         'session_key',
         'status',
     ];
@@ -53,9 +56,19 @@ class PlaySessions extends Model
      */
     public function details(): HasMany
     {
-        // لاراڤيل لوحده هيتوقع إن الفوريّن كي اسمه play_session_id جوه جدول play_session_details
-        return $this->hasMany(PlaySessionDetail::class);
+        return $this->hasMany(PlaySessionDetail::class, 'play_session_id');
     }
+
+    public function latestDetail(): HasOne
+    {
+        return $this->hasOne(PlaySessionDetail::class, 'play_session_id')->latestOfMany();
+    }
+
+    public function orderSessionDetails(): HasMany
+    {
+        return $this->hasMany(OrderSessionDetail::class, 'play_session_id');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');

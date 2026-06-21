@@ -54,6 +54,8 @@ class SettingSeeder extends Seeder
             ['key' => 'sys_service_on_play_invoices', 'value' => '0', 'group' => 'system'],
             // ['key' => 'sys_font_size_inventory', 'value' => '15', 'group' => 'system'],
             ['key' => 'sys_lock_device_time', 'value' => '15', 'group' => 'system'],
+            ['key' => 'sys_default_cashbox', 'value' => '1', 'group' => 'system'],
+            ['key' => 'sys_default_inventory', 'value' => '1', 'group' => 'system'],
 
             // حسابات تقفيل الشفت - الإيرادات
             ['key' => 'shift_inc_play', 'value' => '1', 'group' => 'system'],

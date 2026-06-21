@@ -5,6 +5,8 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Devices extends Model
 {
@@ -42,13 +44,20 @@ class Devices extends Model
         return $this->belongsTo(DevicesType::class, 'devices_type_id');
     }
 
-    public function playTypes()
+    public function playTypes(): HasMany
     {
-        return $this->hasMany(PlayType::class, 'device_id');
+        return $this->hasMany(PlayType::class, 'device_type_id', 'devices_type_id');
     }
 
-    public function playPrices()
+    public function playPrices(): HasMany
     {
         return $this->hasMany(PlayPrice::class, 'device_id');
+    }
+
+    public function activeSession(): HasOne
+    {
+        return $this->hasOne(PlaySessions::class, 'device_id')
+            ->where('status', 'active')
+            ->latestOfMany();
     }
 }

@@ -12,12 +12,16 @@ class PlaySessionDetailsTable
     {
         return $table
             ->columns([
-                TextColumn::make('playSession.session_key')
-                    ->label('رقم الجلسة')
+                // TextColumn::make('playSession.session_key')
+                //     ->label('رقم الجلسة')
+                //     ->placeholder('-')
+                //     ->searchable(),
+                TextColumn::make('device.type.name')
+                    ->label('نوع الجهاز')
                     ->placeholder('-')
                     ->searchable(),
                 TextColumn::make('device.name')
-                    ->label('الجهاز')
+                    ->label('اسم الجهاز')
                     ->placeholder('-')
                     ->searchable(),
                 TextColumn::make('play_type')
@@ -25,6 +29,10 @@ class PlaySessionDetailsTable
                     ->placeholder('-'),
                 TextColumn::make('play_category')
                     ->label('الفئة')
+                    ->placeholder('-'),
+                TextColumn::make('play_price')
+                    ->label('سعر اللعب')
+                    ->money()
                     ->placeholder('-'),
                 TextColumn::make('period')
                     ->label('المدة (دقيقة)')
@@ -44,6 +52,9 @@ class PlaySessionDetailsTable
                     ->placeholder('-'),
                 TextColumn::make('shift_id')
                     ->label('رقم الشيفت')
+                    ->placeholder('-'),
+                TextColumn::make('user.name')
+                    ->label('المستخدم')
                     ->placeholder('-'),
             ])
             ->filters([

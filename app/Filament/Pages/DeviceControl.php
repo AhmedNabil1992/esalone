@@ -4,10 +4,25 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Actions\Tenant\AddSessionTimeAction;
+use App\Actions\Tenant\CloseSessionInvoiceAction;
+use App\Actions\Tenant\LimitSessionTimeAction;
 use App\Actions\Tenant\StartSessionAction;
+use App\Actions\Tenant\SwitchDeviceAction;
+use App\Actions\Tenant\SwitchPlayAction;
+use App\Models\Tenant\CashBox;
+use App\Models\Tenant\CatalogItem;
+use App\Models\Tenant\Customer;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\DevicesType;
+use App\Models\Tenant\InventoryGroup;
+use App\Models\Tenant\OrderSessionDetail;
+use App\Models\Tenant\PlayPrice;
+use App\Models\Tenant\PlaySessionDetail;
+use App\Models\Tenant\PlaySessions;
+use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
@@ -29,6 +44,57 @@ class DeviceControl extends Page
     protected string $view = 'filament.pages.device-control';
 
     public ?int $selectedTypeId = null;
+
+    public bool $showStartSessionModal = false;
+
+    public bool $showBusyActionsModal = false;
+
+    public bool $showBusyActionDetailsModal = false;
+
+    public ?int $selectedDeviceId = null;
+
+    public ?int $selectedBusyDeviceId = null;
+
+    public ?string $selectedBusyActionLabel = null;
+
+    public $busyActionAmount = null;
+
+    public $busyActionMinutes = null;
+
+    public $busyActionLimitMinutes = null;
+
+    public $busyActionPaidAmount = null;
+
+    /**
+     * @var array<int,array{cash_box_id:int|null,amount:float|int|string|null}>
+     */
+    public array $busyActionPayments = [];
+
+    public $busyActionDiscountAmount = null;
+
+    public ?string $busyActionDiscountReason = null;
+
+    public $busyActionCustomerId = null;
+
+    public string $busyActionCustomerSearch = '';
+
+    public $selectedSwitchPlayPriceId = null;
+
+    public $selectedSwitchDeviceId = null;
+
+    public ?int $selectedOrderGroupId = null;
+
+    public ?int $selectedCatalogItemId = null;
+
+    public $orderItemQuantity = 1;
+
+    public $selectedCustomerId = null;
+
+    public string $customerSearch = '';
+
+    public $selectedDurationMinutes = null;
+
+    public $customDurationMinutes = null;
 
     public function mount(): void
     {
@@ -64,9 +130,989 @@ class DeviceControl extends Page
         return Devices::query()
             ->where('devices_type_id', $this->selectedTypeId)
             ->where('is_active', true)
+            ->with(['type', 'playPrices.playType', 'playTypes', 'activeSession.latestDetail'])
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    /** @return Collection<int, Customer> */
+    public function getCustomersProperty(): Collection
+    {
+        return Customer::query()
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    /** @return Collection<int, Customer> */
+    public function getFilteredCustomersProperty(): Collection
+    {
+        $query = Customer::query()->where('is_active', true);
+
+        $term = trim($this->customerSearch);
+        if ($term !== '') {
+            $query->where(function ($subQuery) use ($term): void {
+                $subQuery->where('name', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+
+        return $query
+            ->orderBy('name', 'asc')
+            ->limit(50)
+            ->get();
+    }
+
+    public function openStartSessionModal(int $deviceId): void
+    {
+        $device = Devices::query()
+            ->where('id', $deviceId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $device) {
+            Notification::make()->title('الجهاز غير متاح')->danger()->send();
+
+            return;
+        }
+
+        if ($device->status === 'busy') {
+            Notification::make()->title('الجهاز مشغول حالياً')->warning()->send();
+
+            return;
+        }
+
+        $this->selectedDeviceId = $device->id;
+        $this->selectedCustomerId = null;
+        $this->customerSearch = '';
+        $this->selectedDurationMinutes = null;
+        $this->customDurationMinutes = null;
+        $this->showStartSessionModal = true;
+    }
+
+    public function closeStartSessionModal(): void
+    {
+        $this->showStartSessionModal = false;
+        $this->selectedDeviceId = null;
+        $this->selectedCustomerId = null;
+        $this->customerSearch = '';
+        $this->selectedDurationMinutes = null;
+        $this->customDurationMinutes = null;
+    }
+
+    public function openBusyActionsModal(int $deviceId): void
+    {
+        $device = Devices::query()
+            ->where('id', $deviceId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $device || $device->status !== 'busy') {
+            Notification::make()->title('الجهاز غير مشغول حالياً')->warning()->send();
+
+            return;
+        }
+
+        $this->selectedBusyDeviceId = $device->id;
+        $this->selectedBusyActionLabel = null;
+        $this->showBusyActionDetailsModal = false;
+        $this->showBusyActionsModal = true;
+    }
+
+    public function openCloseInvoiceModal(int $deviceId): void
+    {
+        $this->openBusyActionsModal($deviceId);
+
+        if ($this->selectedBusyDeviceId) {
+            $this->openBusyActionDetails('تقفيل الحساب');
+        }
+    }
+
+    public function closeBusyActionsModal(): void
+    {
+        $this->showBusyActionsModal = false;
+        $this->selectedBusyDeviceId = null;
+    }
+
+    public function openBusyActionDetails(string $actionLabel): void
+    {
+        $this->selectedBusyActionLabel = $actionLabel;
+        $this->busyActionAmount = null;
+        $this->busyActionMinutes = null;
+        $this->busyActionLimitMinutes = null;
+        $this->busyActionPaidAmount = null;
+        $this->busyActionPayments = [];
+        $this->busyActionDiscountAmount = null;
+        $this->busyActionDiscountReason = null;
+        $this->busyActionCustomerId = null;
+        $this->busyActionCustomerSearch = '';
+        $this->selectedSwitchPlayPriceId = null;
+        $this->selectedSwitchDeviceId = null;
+        $this->selectedCatalogItemId = null;
+        $this->orderItemQuantity = 1;
+
+        if ($actionLabel === 'إضافة طلبات') {
+            $firstGroup = InventoryGroup::query()
+                ->where('is_active', true)
+                ->orderBy('name', 'asc')
+                ->first();
+
+            $this->selectedOrderGroupId = $firstGroup?->id;
+        }
+
+        if ($actionLabel === 'تبديل اللعب') {
+            $this->selectedSwitchPlayPriceId = $this->availableSwitchPlayPrices->first()?->id;
+        }
+
+        if ($actionLabel === 'تبديل أجهزة') {
+            $this->selectedSwitchDeviceId = $this->availableSwitchDevices->first()?->id;
+        }
+
+        if ($actionLabel === 'تقفيل الحساب') {
+            $busySessionCustomer = $this->selectedBusyDevice?->activeSession?->customer;
+            $this->busyActionDiscountAmount = 0;
+            $this->busyActionPaidAmount = (float) ($this->busyClosePreview['final_amount'] ?? 0);
+            $this->busyActionDiscountReason = null;
+            $this->busyActionCustomerId = $busySessionCustomer?->id;
+            $this->busyActionCustomerSearch = $busySessionCustomer?->name ?? '';
+            $defaultCashBoxId = data_get($this->busyClosePreview, 'cash_box.id');
+            $this->busyActionPayments = [
+                [
+                    'cash_box_id' => is_numeric($defaultCashBoxId) ? (int) $defaultCashBoxId : null,
+                    'amount' => (float) ($this->busyActionPaidAmount ?? 0),
+                ],
+            ];
+        }
+
+        $this->showBusyActionsModal = false;
+        $this->showBusyActionDetailsModal = true;
+    }
+
+    public function closeBusyActionDetailsModal(): void
+    {
+        $this->showBusyActionDetailsModal = false;
+        $this->selectedBusyActionLabel = null;
+        $this->busyActionAmount = null;
+        $this->busyActionMinutes = null;
+        $this->busyActionLimitMinutes = null;
+        $this->busyActionPaidAmount = null;
+        $this->busyActionPayments = [];
+        $this->busyActionDiscountAmount = null;
+        $this->busyActionDiscountReason = null;
+        $this->busyActionCustomerId = null;
+        $this->busyActionCustomerSearch = '';
+        $this->selectedSwitchPlayPriceId = null;
+        $this->selectedSwitchDeviceId = null;
+        $this->selectedOrderGroupId = null;
+        $this->selectedCatalogItemId = null;
+        $this->orderItemQuantity = 1;
+    }
+
+    public function selectSwitchPlayPrice(int $playPriceId): void
+    {
+        $exists = $this->availableSwitchPlayPrices
+            ->contains(fn ($price): bool => (int) $price->id === $playPriceId);
+
+        if (! $exists) {
+            return;
+        }
+
+        $this->selectedSwitchPlayPriceId = $playPriceId;
+    }
+
+    public function selectSwitchDevice(int $deviceId): void
+    {
+        $exists = $this->availableSwitchDevices
+            ->contains(fn (Devices $device): bool => (int) $device->id === $deviceId);
+
+        if (! $exists) {
+            return;
+        }
+
+        $this->selectedSwitchDeviceId = $deviceId;
+    }
+
+    public function setQuickDuration(int $minutes): void
+    {
+        $this->selectedDurationMinutes = $minutes;
+        $this->customDurationMinutes = $minutes;
+    }
+
+    public function clearDuration(): void
+    {
+        $this->selectedDurationMinutes = null;
+        $this->customDurationMinutes = null;
+    }
+
+    public function getSelectedDeviceProperty(): ?Devices
+    {
+        if (! $this->selectedDeviceId) {
+            return null;
+        }
+
+        return Devices::query()
+            ->with(['playPrices.playType'])
+            ->find($this->selectedDeviceId);
+    }
+
+    public function getSelectedBusyDeviceProperty(): ?Devices
+    {
+        if (! $this->selectedBusyDeviceId) {
+            return null;
+        }
+
+        return Devices::query()
+            ->with([
+                'playPrices.playType',
+                'activeSession.latestDetail',
+                'activeSession.customer',
+                'activeSession.details.user',
+                'activeSession.orderSessionDetails.catalogItem',
+                'activeSession.orderSessionDetails.user',
+            ])
+            ->find($this->selectedBusyDeviceId);
+    }
+
+    /** @return Collection<int, PlayPrice> */
+    public function getAvailableSwitchPlayPricesProperty(): Collection
+    {
+        $device = $this->selectedBusyDevice;
+        if (! $device) {
+            return collect();
+        }
+
+        $currentPlayTypeName = trim((string) ($device->activeSession?->latestDetail?->play_type ?? ''));
+
+        return $device->playPrices
+            ->filter(function ($price) use ($currentPlayTypeName): bool {
+                $candidatePlayTypeName = trim((string) ($price->playType?->name ?? ''));
+
+                return $candidatePlayTypeName !== '' && $candidatePlayTypeName !== $currentPlayTypeName;
+            })
+            ->values();
+    }
+
+    /** @return Collection<int, Devices> */
+    public function getAvailableSwitchDevicesProperty(): Collection
+    {
+        $currentDevice = $this->selectedBusyDevice;
+        if (! $currentDevice) {
+            return collect();
+        }
+
+        return Devices::query()
+            ->where('is_active', true)
+            ->where('status', 'active')
+            ->whereKeyNot($currentDevice->id)
             ->with(['type', 'playPrices.playType'])
             ->orderBy('name', 'asc')
             ->get();
+    }
+
+    /** @return array<string,mixed>|null */
+    public function getBusyClosePreviewProperty(): ?array
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب' || ! $this->selectedBusyDeviceId) {
+            return null;
+        }
+
+        try {
+            return app(CloseSessionInvoiceAction::class)->preview(
+                (int) $this->selectedBusyDeviceId,
+                (float) ($this->busyActionDiscountAmount ?? 0),
+                (float) $this->busyActionPaidTotal,
+            );
+        } catch (RuntimeException) {
+            return null;
+        }
+    }
+
+    /** @return Collection<int, CashBox> */
+    public function getBusyPaymentCashBoxesProperty(): Collection
+    {
+        return CashBox::query()
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    /** @return Collection<int, Customer> */
+    public function getBusyFilteredCustomersProperty(): Collection
+    {
+        $query = Customer::query()->where('is_active', true);
+
+        $term = trim($this->busyActionCustomerSearch);
+        if ($term !== '') {
+            $query->where(function ($subQuery) use ($term): void {
+                $subQuery->where('name', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+
+        return $query
+            ->orderBy('name', 'asc')
+            ->limit(50)
+            ->get();
+    }
+
+    public function getBusySelectedCustomerProperty(): ?Customer
+    {
+        if (! is_numeric($this->busyActionCustomerId)) {
+            return null;
+        }
+
+        return Customer::query()->find((int) $this->busyActionCustomerId);
+    }
+
+    public function getBusyActionPaidTotalProperty(): float
+    {
+        return round((float) collect($this->busyActionPayments)
+            ->sum(static fn (array $row): float => max(0, (float) ($row['amount'] ?? 0))), 2);
+    }
+
+    public function addBusyActionPaymentRow(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        $this->busyActionPayments[] = [
+            'cash_box_id' => null,
+            'amount' => null,
+        ];
+    }
+
+    public function removeBusyActionPaymentRow(int $index): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        if (! array_key_exists($index, $this->busyActionPayments)) {
+            return;
+        }
+
+        unset($this->busyActionPayments[$index]);
+        $this->busyActionPayments = array_values($this->busyActionPayments);
+
+        if ($this->busyActionPayments === []) {
+            $this->addBusyActionPaymentRow();
+        }
+
+        $this->syncSingleClosePaymentAmount();
+    }
+
+    public function updatedBusyActionDiscountAmount(): void
+    {
+        $this->syncSingleClosePaymentAmount();
+    }
+
+    public function selectBusyActionCustomer(int $customerId): void
+    {
+        $customer = Customer::query()
+            ->where('is_active', true)
+            ->find($customerId);
+
+        if (! $customer) {
+            return;
+        }
+
+        $this->busyActionCustomerId = $customer->id;
+        $this->busyActionCustomerSearch = $customer->name;
+    }
+
+    public function clearBusyActionCustomer(): void
+    {
+        $this->busyActionCustomerId = null;
+        $this->busyActionCustomerSearch = '';
+    }
+
+    /** @return Collection<int, InventoryGroup> */
+    public function getOrderGroupsProperty(): Collection
+    {
+        return InventoryGroup::query()
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    /** @return Collection<int, CatalogItem> */
+    public function getOrderItemsProperty(): Collection
+    {
+        if (! $this->selectedOrderGroupId) {
+            return collect();
+        }
+
+        return CatalogItem::query()
+            ->where('is_active', true)
+            ->where('inventory_group_id', $this->selectedOrderGroupId)
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    public function getSelectedOrderItemProperty(): ?CatalogItem
+    {
+        if (! $this->selectedCatalogItemId) {
+            return null;
+        }
+
+        return CatalogItem::query()->find($this->selectedCatalogItemId);
+    }
+
+    public function selectOrderGroup(int $groupId): void
+    {
+        $groupExists = InventoryGroup::query()
+            ->where('is_active', true)
+            ->whereKey($groupId)
+            ->exists();
+
+        if (! $groupExists) {
+            return;
+        }
+
+        $this->selectedOrderGroupId = $groupId;
+        $this->selectedCatalogItemId = null;
+        $this->orderItemQuantity = 1;
+    }
+
+    public function openOrderItemQuantityModal(int $catalogItemId): void
+    {
+        if ($this->selectedBusyActionLabel !== 'إضافة طلبات') {
+            return;
+        }
+
+        $itemExists = CatalogItem::query()
+            ->where('is_active', true)
+            ->whereKey($catalogItemId)
+            ->when($this->selectedOrderGroupId, function ($query): void {
+                $query->where('inventory_group_id', $this->selectedOrderGroupId);
+            })
+            ->exists();
+
+        if (! $itemExists) {
+            Notification::make()->title('الصنف غير متاح')->warning()->send();
+
+            return;
+        }
+
+        $this->selectedCatalogItemId = $catalogItemId;
+        $this->orderItemQuantity = 1;
+    }
+
+    public function closeOrderItemQuantityModal(): void
+    {
+        $this->selectedCatalogItemId = null;
+        $this->orderItemQuantity = 1;
+    }
+
+    public function addOrderItemToBusySession(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'إضافة طلبات') {
+            return;
+        }
+
+        if (! $this->selectedBusyDeviceId || ! $this->selectedCatalogItemId) {
+            Notification::make()->title('بيانات الطلب غير مكتملة')->warning()->send();
+
+            return;
+        }
+
+        if (! is_numeric($this->orderItemQuantity) || (int) $this->orderItemQuantity <= 0) {
+            Notification::make()->title('يرجى إدخال كمية صحيحة')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        /** @var PlaySessions|null $session */
+        $session = PlaySessions::query()
+            ->where('device_id', $this->selectedBusyDeviceId)
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        if (! $session) {
+            Notification::make()->title('لا توجد جلسة نشطة لهذا الجهاز')->danger()->send();
+
+            return;
+        }
+
+        /** @var CatalogItem|null $item */
+        $item = CatalogItem::query()
+            ->where('is_active', true)
+            ->whereKey($this->selectedCatalogItemId)
+            ->first();
+
+        if (! $item) {
+            Notification::make()->title('الصنف غير متاح')->danger()->send();
+
+            return;
+        }
+
+        $unitPrice = round((float) ($item->sale_price ?? 0), 2);
+        $quantity = (int) $this->orderItemQuantity;
+        $total = round($unitPrice * $quantity, 2);
+
+        OrderSessionDetail::create([
+            'play_session_id' => $session->id,
+            'device_id' => (int) $session->device_id,
+            'catalog_item_id' => (int) $item->id,
+            'price' => $unitPrice,
+            'quantity' => $quantity,
+            'total' => $total,
+            'status' => 'pending',
+            'order_by' => $user->name,
+            'user_id' => $user->id,
+            'notes' => null,
+        ]);
+
+        Notification::make()
+            ->title('تمت إضافة الصنف إلى الطلبات')
+            ->body($item->name.' x '.$quantity)
+            ->success()
+            ->send();
+
+        $this->closeOrderItemQuantityModal();
+    }
+
+    public function addBusySessionAmount(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'إضافة فلوس') {
+            return;
+        }
+
+        if (! is_numeric($this->busyActionAmount) || (float) $this->busyActionAmount <= 0) {
+            Notification::make()->title('يرجى إدخال مبلغ صحيح أكبر من صفر')->warning()->send();
+
+            return;
+        }
+
+        if ((float) $this->busyActionAmount > 999) {
+            Notification::make()->title('المبلغ يجب ألا يتجاوز 3 أرقام (999)')->warning()->send();
+
+            return;
+        }
+
+        /** @var PlaySessions|null $session */
+        $session = PlaySessions::query()
+            ->where('device_id', $this->selectedBusyDeviceId)
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        if (! $session) {
+            Notification::make()->title('لا توجد جلسة نشطة لهذا الجهاز')->danger()->send();
+
+            return;
+        }
+
+        $amount = round((float) $this->busyActionAmount, 2);
+        $currentPrepaid = (float) ($session->prepaid_amount ?? 0);
+
+        $session->update([
+            'prepaid_amount' => $currentPrepaid + $amount,
+        ]);
+
+        Notification::make()
+            ->title('تمت إضافة المبلغ بنجاح')
+            ->body('الرصيد المقدم الحالي: '.number_format((float) $session->fresh()->prepaid_amount, 2))
+            ->success()
+            ->send();
+
+        $this->closeBusyActionDetailsModal();
+    }
+
+    public function addBusySessionTime(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'إضافة وقت') {
+            return;
+        }
+
+        if (! is_numeric($this->busyActionMinutes) || (int) $this->busyActionMinutes <= 0) {
+            Notification::make()->title('يرجى إدخال عدد دقائق صحيح أكبر من صفر')->warning()->send();
+
+            return;
+        }
+
+        if ((int) $this->busyActionMinutes > 999) {
+            Notification::make()->title('عدد الدقائق يجب ألا يتجاوز 3 أرقام (999)')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(AddSessionTimeAction::class)->execute(
+                (int) $this->selectedBusyDeviceId,
+                (int) $this->busyActionMinutes,
+                $user,
+            );
+
+            Notification::make()
+                ->title('تم إضافة الوقت بنجاح')
+                ->success()
+                ->send();
+
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل إضافة الوقت')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function switchBusySessionPlay(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تبديل اللعب') {
+            return;
+        }
+
+        if (! $this->selectedBusyDeviceId || ! is_numeric($this->selectedSwitchPlayPriceId)) {
+            Notification::make()->title('اختر نوع اللعب الجديد أولاً')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(SwitchPlayAction::class)->execute(
+                (int) $this->selectedBusyDeviceId,
+                (int) $this->selectedSwitchPlayPriceId,
+                $user,
+            );
+
+            Notification::make()
+                ->title('تم تبديل نوع اللعب بنجاح')
+                ->success()
+                ->send();
+
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل تبديل اللعب')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function switchBusySessionDevice(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تبديل أجهزة') {
+            return;
+        }
+
+        if (! $this->selectedBusyDeviceId || ! is_numeric($this->selectedSwitchDeviceId)) {
+            Notification::make()->title('اختر الجهاز الجديد أولاً')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(SwitchDeviceAction::class)->execute(
+                (int) $this->selectedBusyDeviceId,
+                (int) $this->selectedSwitchDeviceId,
+                $user,
+            );
+
+            Notification::make()
+                ->title('تم تبديل الجهاز بنجاح')
+                ->success()
+                ->send();
+
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل تبديل الجهاز')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function closeBusySessionInvoice(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        if (! is_numeric($this->busyActionDiscountAmount) || (float) $this->busyActionDiscountAmount < 0) {
+            Notification::make()->title('يرجى إدخال قيمة خصم صحيحة')->warning()->send();
+
+            return;
+        }
+
+        if ((float) $this->busyActionDiscountAmount > 999) {
+            Notification::make()->title('قيمة الخصم يجب ألا تتجاوز 3 أرقام (999)')->warning()->send();
+
+            return;
+        }
+
+        if ((float) $this->busyActionDiscountAmount > 0 && trim((string) $this->busyActionDiscountReason) === '') {
+            Notification::make()->title('سبب الخصم إجباري عند إدخال خصم')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        $paymentAllocations = [];
+        foreach ($this->busyActionPayments as $index => $paymentRow) {
+            $amount = round((float) ($paymentRow['amount'] ?? 0), 2);
+            $cashBoxId = (int) ($paymentRow['cash_box_id'] ?? 0);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            if ($cashBoxId <= 0) {
+                Notification::make()->title('اختر خزينة صحيحة لكل دفعة')->body('سطر رقم '.($index + 1))->warning()->send();
+
+                return;
+            }
+
+            $paymentAllocations[] = [
+                'cash_box_id' => $cashBoxId,
+                'amount' => $amount,
+            ];
+        }
+
+        $paidAmount = round((float) collect($paymentAllocations)->sum('amount'), 2);
+
+        try {
+            $invoice = app(CloseSessionInvoiceAction::class)->execute(
+                (int) $this->selectedBusyDeviceId,
+                $user,
+                $paidAmount,
+                (float) $this->busyActionDiscountAmount,
+                $this->busyActionDiscountReason,
+                $paymentAllocations,
+                is_numeric($this->busyActionCustomerId) ? (int) $this->busyActionCustomerId : null,
+            );
+
+            $cashBoxName = trim((string) ($invoice->cashBox?->name ?? ''));
+            if ($cashBoxName === '') {
+                $cashBoxName = 'غير محددة';
+            }
+
+            Notification::make()
+                ->title('تم تقفيل الحساب بنجاح')
+                ->body('رقم الفاتورة: '.$invoice->invoice_no.' | الخزينة: '.$cashBoxName)
+                ->success()
+                ->send();
+
+            if ($this->isPlayInvoicePrintingEnabled()) {
+                $this->dispatch('open-print-window', url: route('tenant.invoices.print', ['invoice' => $invoice->id, 'silent' => 1]));
+            }
+
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل تقفيل الحساب')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function limitBusySessionTime(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تحديد الوقت') {
+            return;
+        }
+
+        if (! is_numeric($this->busyActionLimitMinutes) || (int) $this->busyActionLimitMinutes <= 0) {
+            Notification::make()->title('يرجى إدخال عدد دقائق صحيح أكبر من صفر')->warning()->send();
+
+            return;
+        }
+
+        if ((int) $this->busyActionLimitMinutes > 999) {
+            Notification::make()->title('عدد الدقائق يجب ألا يتجاوز 3 أرقام (999)')->warning()->send();
+
+            return;
+        }
+
+        try {
+            app(LimitSessionTimeAction::class)->execute(
+                (int) $this->selectedBusyDeviceId,
+                (int) $this->busyActionLimitMinutes,
+            );
+
+            Notification::make()
+                ->title('تم تحديد الوقت بنجاح')
+                ->success()
+                ->send();
+
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل تحديد الوقت')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function getSelectedCustomerProperty(): ?Customer
+    {
+        if (! is_numeric($this->selectedCustomerId)) {
+            return null;
+        }
+
+        return Customer::query()->find((int) $this->selectedCustomerId);
+    }
+
+    public function selectCustomer(int $customerId): void
+    {
+        $customer = Customer::query()
+            ->where('is_active', true)
+            ->find($customerId);
+
+        if (! $customer) {
+            return;
+        }
+
+        $this->selectedCustomerId = $customer->id;
+        $this->customerSearch = $customer->name;
+    }
+
+    public function clearCustomerSelection(): void
+    {
+        $this->selectedCustomerId = null;
+        $this->customerSearch = '';
+    }
+
+    private function syncSingleClosePaymentAmount(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        if (count($this->busyActionPayments) !== 1) {
+            return;
+        }
+
+        $finalAmount = (float) ($this->busyClosePreview['final_amount'] ?? 0);
+        $normalizedFinalAmount = round(max(0, $finalAmount), 2);
+
+        $this->busyActionPayments[0]['amount'] = $normalizedFinalAmount;
+        $this->busyActionPaidAmount = $normalizedFinalAmount;
+    }
+
+    private function isPlayInvoicePrintingEnabled(): bool
+    {
+        return in_array((string) SystemConfig::get('print_active', '0'), ['1', 'true', 'on', 'yes'], true);
+    }
+
+    public function hasReservationToday(): bool
+    {
+        if (! $this->selectedDeviceId) {
+            return false;
+        }
+
+        return PlaySessionDetail::query()
+            ->where('device_id', $this->selectedDeviceId)
+            ->where('start_time', '>=', Carbon::today())
+            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->where(function ($query): void {
+                $query->where('status', 'محجوز')
+                    ->orWhere('play_category', 'حجز');
+            })
+            ->exists();
+    }
+
+    public function startSessionFromModal(int $playPriceId): void
+    {
+        if (! $this->selectedDeviceId) {
+            Notification::make()->title('يرجى اختيار جهاز أولاً')->warning()->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        $durationMinutes = is_numeric($this->selectedDurationMinutes)
+            ? (int) $this->selectedDurationMinutes
+            : null;
+
+        if (is_numeric($this->customDurationMinutes) && (int) $this->customDurationMinutes > 0) {
+            $durationMinutes = (int) $this->customDurationMinutes;
+        }
+
+        $customerId = is_numeric($this->selectedCustomerId)
+            ? (int) $this->selectedCustomerId
+            : null;
+
+        try {
+            app(StartSessionAction::class)->execute(
+                $this->selectedDeviceId,
+                $playPriceId,
+                $user,
+                $durationMinutes,
+                $customerId,
+            );
+
+            $this->closeStartSessionModal();
+
+            Notification::make()
+                ->title('تم فتح الجلسة بنجاح')
+                ->success()
+                ->send();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل فتح الجلسة')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public function startSession(int $deviceId, int $playPriceId): void
@@ -81,7 +1127,7 @@ class DeviceControl extends Page
         }
 
         try {
-            app(StartSessionAction::class)->execute($deviceId, $playPriceId, $user);
+            app(StartSessionAction::class)->execute($deviceId, $playPriceId, $user, null, null);
 
             Notification::make()
                 ->title('تم فتح الجلسة بنجاح')

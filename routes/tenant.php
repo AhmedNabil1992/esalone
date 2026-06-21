@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Models\Tenant\Shift;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,9 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
+    Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
+        ->name('tenant.invoices.print');
+
     Route::middleware('auth')->get('/tenant/shifts/quick-open', function () {
         if (! Shift::currentOpenShift()) {
             DB::transaction(function (): void {

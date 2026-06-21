@@ -19,6 +19,7 @@ class Customer extends Authenticatable implements FilamentUser
         'email',
         'address',
         'balance',
+        'points',
         'is_active',
         'password',
     ];
@@ -30,6 +31,7 @@ class Customer extends Authenticatable implements FilamentUser
 
     protected $casts = [
         'balance' => 'decimal:2',
+        'points' => 'decimal:2',
         'is_active' => 'boolean',
         'password' => 'hashed',
     ];

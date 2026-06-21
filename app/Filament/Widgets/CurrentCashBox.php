@@ -2,9 +2,11 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Tenant\CashBox;
+use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use App\Models\Tenant\CashBox;
+use Illuminate\Support\Number;
 
 class CurrentCashBox extends StatsOverviewWidget
 {
@@ -15,10 +17,13 @@ class CurrentCashBox extends StatsOverviewWidget
     protected function getStats(): array
     {
         $stats = [];
+        $currencyCode = Setting::get('sys_locale_currency', 'EGP');
         $cashBoxes = CashBox::where('is_active', true)->get();
 
         foreach ($cashBoxes as $cashBox) {
-            $stats[] = Stat::make($cashBox->name, (string) $cashBox->current_balance)
+            $formattedBalance = Number::currency($cashBox->current_balance, $currencyCode, 'ar');
+
+            $stats[] = Stat::make($cashBox->name, $formattedBalance)
                 ->description('الرصيد الحالي للصندوق')
                 ->icon('heroicon-o-currency-dollar')
                 ->color('success');
