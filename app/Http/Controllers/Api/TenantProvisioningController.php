@@ -23,6 +23,7 @@ class TenantProvisioningController extends Controller
 {
     public function __invoke(StoreTenantRequest $request): JsonResponse
     {
+        set_time_limit(0);
         $data = $request->validated();
 
         $tenant = null;
