@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 foreach (config('tenancy.central_domains', []) as $centralDomain) {
     Route::domain($centralDomain)->group(function () use ($centralDomain) {
@@ -15,3 +16,21 @@ foreach (config('tenancy.central_domains', []) as $centralDomain) {
         });
     });
 }
+
+// Health check يصلح للمراقبة الخارجية
+Route::get('/health', function () {
+    $dbStatus = 'ok';
+
+    try {
+        DB::connection()->getPdo();
+    } catch (\Throwable $e) {
+        $dbStatus = 'error';
+    }
+
+    $status = [
+        'app' => 'ok',
+        'db' => $dbStatus,
+    ];
+
+    return response()->json($status, $dbStatus === 'ok' ? 200 : 500);
+})->name('health');
