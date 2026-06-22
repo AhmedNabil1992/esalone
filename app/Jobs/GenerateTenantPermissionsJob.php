@@ -38,6 +38,9 @@ class GenerateTenantPermissionsJob implements ShouldQueue
             return;
         }
 
+        // رفع مهلة التنفيذ لتوليد الصلاحيات (بعض الحالات قد تحتاج لأكثر من 30 ثانية)
+        set_time_limit($this->timeout);
+
         try {
             Tenancy::initialize($tenant);
 
