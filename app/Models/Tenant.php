@@ -36,6 +36,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public static function getCustomColumns(): array
     {
         return [
+            'id',
             'user_id',
             'plan_id',
             'started_at',
