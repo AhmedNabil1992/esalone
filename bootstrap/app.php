@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantProvisioningTokenIsValid;
 use App\Http\Middleware\InitializeTenancyByDomainIfExists;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [
             InitializeTenancyByDomainIfExists::class,
+        ]);
+
+        $middleware->web(append: [
+            CheckTenantSubscriptionExpiry::class,
         ]);
 
         $middleware->alias([

@@ -7,9 +7,9 @@
                         <div style="font-size:.78rem;color:var(--muted);font-weight:700;">المبيعات المباشرة</div>
                         <div style="font-size:1rem;color:var(--ink);font-weight:900;">اختيار الأصناف</div>
                     </div>
-                    <div style="font-size:.72rem;background:var(--brand-soft);color:#15803d;padding:6px 10px;border-radius:999px;font-weight:800;">
+                    {{-- <div style="font-size:.72rem;background:var(--brand-soft);color:#15803d;padding:6px 10px;border-radius:999px;font-weight:800;">
                         نفس نمط شاشة إضافة الطلبات
-                    </div>
+                    </div> --}}
                 </div>
 
                 <div style="margin-bottom:10px;">
@@ -127,7 +127,7 @@
                         <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">خزنة الدفع</div>
                         <select wire:model="selected_cash_box_id" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;background:#fff;margin-bottom:10px;">
                             @foreach ($this->cashBoxes as $cashBox)
-                                <option value="{{ $cashBox->id }}">{{ $cashBox->name }} - {{ number_format((float) $cashBox->current_balance, 2) }}</option>
+                                <option value="{{ $cashBox->id }}">{{ $cashBox->name }}</option>
                             @endforeach
                         </select>
 

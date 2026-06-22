@@ -27,6 +27,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Throwable;
+use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -124,6 +125,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // CheckTenantSubscriptionExpiry::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

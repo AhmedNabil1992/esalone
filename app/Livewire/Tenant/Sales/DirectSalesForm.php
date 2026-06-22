@@ -77,7 +77,7 @@ class DirectSalesForm extends Component
         return CashBox::query()
             ->where('is_active', true)
             ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'current_balance']);
+            ->get(['id', 'name']);
     }
 
     private function defaultCashBoxId(): ?int
