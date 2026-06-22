@@ -10,7 +10,7 @@ class Invoice extends Model
 {
     protected $fillable = [
         'invoice_no',
-        'play_session_id',
+        'invoice_type',
         'device_id',
         'customer_id',
         'shift_id',
@@ -46,11 +46,6 @@ class Invoice extends Model
         'issued_at' => 'datetime',
     ];
 
-    public function playSession(): BelongsTo
-    {
-        return $this->belongsTo(PlaySessions::class, 'play_session_id');
-    }
-
     public function device(): BelongsTo
     {
         return $this->belongsTo(Devices::class, 'device_id');
@@ -74,6 +69,11 @@ class Invoice extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function marketHistories(): HasMany
+    {
+        return $this->hasMany(MarketHistory::class, 'invoice_no', 'invoice_no');
     }
 
     public function taxHistories(): HasMany

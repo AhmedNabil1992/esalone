@@ -27,11 +27,23 @@ class InvoiceInfolist
                             ->label('الحالة')
                             ->badge()
                             ->color(fn (string $state): string => $state === 'posted' ? 'success' : 'gray'),
+                        TextEntry::make('invoice_type')
+                            ->label('نوع الفاتورة')
+                            ->badge()
+                            ->color(fn (string $state): string => $state === 'direct_sale' ? 'success' : 'primary')
+                            ->formatStateUsing(fn (?string $state): string => match ($state) {
+                                'direct_sale' => 'بيع مباشر',
+                                'device_sale' => 'جهاز',
+                                default => '-',
+                            }),
                         TextEntry::make('device.name')
                             ->label('الجهاز')
                             ->placeholder('-'),
                         TextEntry::make('customer.name')
                             ->label('العميل')
+                            ->placeholder('-'),
+                        TextEntry::make('customer.phone')
+                            ->label('هاتف العميل')
                             ->placeholder('-'),
                         TextEntry::make('cashBox.name')
                             ->label('الخزينة')

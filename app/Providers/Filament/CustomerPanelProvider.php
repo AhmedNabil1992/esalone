@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -9,19 +10,18 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Schemas\Schema as FilamentSchema;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
+use Filament\Tables\Table;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
-use Filament\Support\Enums\Width;
-use Filament\Schemas\Schema as FilamentSchema;
-use Filament\Tables\Table;
-use Illuminate\Support\Facades\Schema;
-use App\Models\Tenant\SystemConfig as Setting;
 use Throwable;
 
 class CustomerPanelProvider extends PanelProvider
@@ -36,12 +36,14 @@ class CustomerPanelProvider extends PanelProvider
             $table->defaultCurrency(fn (): string => $this->resolveTenantCurrency());
         });
     }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->id('customer')
             ->path('customer')
             ->login()
+            ->brandName(fn (): string => $this->resolveTenantBrandName())
             ->registration()
             ->colors([
                 'primary' => Color::Emerald,
@@ -71,6 +73,7 @@ class CustomerPanelProvider extends PanelProvider
                 Authenticate::class,
             ]);
     }
+
     protected function resolveTenantCurrency(): string
     {
         try {
@@ -83,6 +86,21 @@ class CustomerPanelProvider extends PanelProvider
             return blank($currencyCode) ? 'EGP' : $currencyCode;
         } catch (Throwable) {
             return 'EGP';
+        }
+    }
+
+    protected function resolveTenantBrandName(): string
+    {
+        try {
+            if (! Schema::connection('tenant')->hasTable('system_configs')) {
+                return 'PS Web';
+            }
+
+            $brandName = trim((string) Setting::get('sys_shop_name', 'PS Web'));
+
+            return blank($brandName) ? 'PS Web' : $brandName;
+        } catch (Throwable) {
+            return 'PS Web';
         }
     }
 }

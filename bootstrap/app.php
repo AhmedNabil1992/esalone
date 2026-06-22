@@ -6,6 +6,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedOnDomainException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,4 +28,41 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->render(function (TenantCouldNotBeIdentifiedOnDomainException $exception, Request $request) {
+            $host = (string) $request->getHost();
+            $centralDomains = array_values((array) config('tenancy.central_domains', []));
+
+            $requestedName = null;
+
+            foreach ($centralDomains as $centralDomain) {
+                if (! is_string($centralDomain) || $centralDomain === '') {
+                    continue;
+                }
+
+                $suffix = '.'.$centralDomain;
+                if (str_ends_with($host, $suffix)) {
+                    $requestedName = substr($host, 0, -strlen($suffix));
+                    break;
+                }
+            }
+
+            if (! is_string($requestedName) || $requestedName === '' || str_contains($requestedName, '.')) {
+                $requestedName = null;
+            }
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Tenant domain is not registered.',
+                    'requested_name' => $requestedName,
+                    'requested_host' => $host,
+                ], 404);
+            }
+
+            return response()->view('errors.tenant-not-found', [
+                'requestedName' => $requestedName,
+                'requestedHost' => $host,
+                'centralDomain' => $centralDomains[0] ?? null,
+            ], 404);
+        });
     })->create();

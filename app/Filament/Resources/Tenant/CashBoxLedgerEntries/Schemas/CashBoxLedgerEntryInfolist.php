@@ -69,11 +69,19 @@ class CashBoxLedgerEntryInfolist
             return '-';
         }
 
-        $referenceLabel = match (class_basename($referenceType)) {
-            'Purchase' => 'شراء',
-            'ExpenseHistory' => 'مصروف',
-            'CustomerCredit' => 'رصيد عميل',
-            default => class_basename($referenceType),
+        $normalizedReferenceType = str_replace('/', '\\', ltrim($referenceType, '\\'));
+        $referenceBaseName = strtolower(class_basename($normalizedReferenceType));
+
+        $referenceLabel = match ($referenceBaseName) {
+            'purchase' => 'شراء',
+            'expensehistory' => 'مصروف',
+            'customercredit' => 'رصيد عميل',
+            'invoice' => 'فاتورة',
+            'invoicepayment' => 'دفعة فاتورة',
+            'cashbox' => 'خزنة',
+            'cashboxledgerentry' => 'قيد خزنة',
+            'stockmovement' => 'حركة مخزون',
+            default => 'مرجع',
         };
 
         return sprintf('%s #%d', $referenceLabel, $referenceId);

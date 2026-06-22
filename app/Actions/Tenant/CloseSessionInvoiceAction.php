@@ -193,7 +193,7 @@ class CloseSessionInvoiceAction
             /** @var Invoice $invoice */
             $invoice = Invoice::query()->create([
                 'invoice_no' => $invoiceNo,
-                'play_session_id' => $session->id,
+                'invoice_type' => 'device_sale',
                 'device_id' => $device->id,
                 'customer_id' => $resolvedCustomerId,
                 'shift_id' => $shiftId,
@@ -289,13 +289,11 @@ class CloseSessionInvoiceAction
                 ->where('status', 'pending')
                 ->update(['status' => 'completed']);
 
-            $session->update([
-                'status' => 'completed',
-                'customer_id' => $resolvedCustomerId,
-            ]);
             $device->update(['status' => 'active']);
 
             app(QueueDeviceControlCommandAction::class)->execute($device, $actor, 'OFF', 'Finish Time');
+
+            $session->delete();
 
             return $invoice;
         });

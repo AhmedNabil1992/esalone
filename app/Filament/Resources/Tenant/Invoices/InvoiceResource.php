@@ -6,8 +6,8 @@ namespace App\Filament\Resources\Tenant\Invoices;
 
 use App\Filament\Resources\Tenant\Invoices\Pages\ListInvoices;
 use App\Filament\Resources\Tenant\Invoices\Pages\ViewInvoice;
+use App\Filament\Resources\Tenant\Invoices\RelationManagers\InvoiceItemsRelationManager;
 use App\Filament\Resources\Tenant\Invoices\RelationManagers\InvoicePaymentsRelationManager;
-use App\Filament\Resources\Tenant\Invoices\RelationManagers\OrderSessionDetailsRelationManager;
 use App\Filament\Resources\Tenant\Invoices\RelationManagers\PlaySessionDetailsRelationManager;
 use App\Filament\Resources\Tenant\Invoices\Schemas\InvoiceInfolist;
 use App\Filament\Resources\Tenant\Invoices\Tables\InvoicesTable;
@@ -43,6 +43,7 @@ class InvoiceResource extends Resource
             'cashBox',
             'shift',
             'createdBy',
+            'marketHistories',
         ]);
     }
 
@@ -61,7 +62,7 @@ class InvoiceResource extends Resource
         return [
             InvoicePaymentsRelationManager::class,
             PlaySessionDetailsRelationManager::class,
-            OrderSessionDetailsRelationManager::class,
+            InvoiceItemsRelationManager::class,
         ];
     }
 

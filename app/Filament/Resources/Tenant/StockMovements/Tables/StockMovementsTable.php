@@ -6,8 +6,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class StockMovementsTable
 {
@@ -16,25 +16,34 @@ class StockMovementsTable
         return $table
             ->columns([
                 TextColumn::make('warehouse.name')
-                    ->label('Warehouse')
+                    ->label('المخزن')
                     ->searchable(),
                 TextColumn::make('item.inventoryGroup.name')
-                    ->label('Inventory Group')
+                    ->label('مجموعة الصنف')
                     ->searchable(),
                 TextColumn::make('item.name')
-                    ->label('Product')
+                    ->label('المنتج')
                     ->searchable(),
                 TextColumn::make('quantity')
+                    ->label('الكمية')
                     ->sortable(),
                 TextColumn::make('movement_type')
-                    ->label('Movement Type')
+                    ->label('نوع الحركة')
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'purchase' => 'شراء',
+                        'purchase_reverse' => 'عكس شراء',
+                        'transfer' => 'تحويل مخزني',
+                        default => $state,
+                    })
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
+                    ->label('تاريخ الإنشاء')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
+                    ->label('تاريخ التحديث')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

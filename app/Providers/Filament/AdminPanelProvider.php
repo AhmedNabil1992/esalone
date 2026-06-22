@@ -48,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName(fn (): string => $this->resolveTenantBrandName())
             ->colors([
                 'primary' => Color::Blue,
             ])
@@ -142,6 +143,21 @@ class AdminPanelProvider extends PanelProvider
             return blank($currencyCode) ? 'EGP' : $currencyCode;
         } catch (Throwable) {
             return 'EGP';
+        }
+    }
+
+    protected function resolveTenantBrandName(): string
+    {
+        try {
+            if (! Schema::connection('tenant')->hasTable('system_configs')) {
+                return 'PS Web';
+            }
+
+            $brandName = trim((string) Setting::get('sys_shop_name', 'PS Web'));
+
+            return blank($brandName) ? 'PS Web' : $brandName;
+        } catch (Throwable) {
+            return 'PS Web';
         }
     }
 }

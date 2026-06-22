@@ -18,6 +18,15 @@ class InvoicesTable
                     ->label('رقم الفاتورة')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('invoice_type')
+                    ->label('نوع الفاتورة')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'direct_sale' => 'بيع مباشر',
+                        'device_sale' => 'جهاز',
+                        default => '-',
+                    })
+                    ->color(fn (?string $state): string => $state === 'direct_sale' ? 'success' : 'primary'),
                 TextColumn::make('issued_at')
                     ->label('التاريخ')
                     ->dateTime()
@@ -28,6 +37,10 @@ class InvoicesTable
                     ->searchable(),
                 TextColumn::make('customer.name')
                     ->label('العميل')
+                    ->placeholder('-')
+                    ->searchable(),
+                TextColumn::make('customer.phone')
+                    ->label('الهاتف')
                     ->placeholder('-')
                     ->searchable(),
                 TextColumn::make('cashBox.name')

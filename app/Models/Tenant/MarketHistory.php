@@ -51,4 +51,9 @@ class MarketHistory extends Model
     {
         return $this->belongsTo(Devices::class, 'device_id');
     }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
