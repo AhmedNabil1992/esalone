@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\StoreTenantRequest;
+use App\Jobs\GenerateTenantPermissionsJob;
 use App\Models\Tenant;
 use App\Models\Tenant\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -48,23 +48,15 @@ class TenantProvisioningController extends Controller
             $superAdminRoleName = (string) config('filament-shield.super_admin.name', 'super_admin');
             $superAdminRole = Role::findOrCreate($superAdminRoleName, 'web');
 
-            Artisan::call('shield:generate', [
-                '--all' => true,
-                '--option' => 'permissions',
-                '--panel' => 'admin',
-                '--no-interaction' => true,
-                '--silent' => true,
-            ]);
-
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             $permissionNames = Permission::query()->pluck('name')->all();
 
-            if ($permissionNames === []) {
-                throw new RuntimeException('No permissions were generated for the tenant.');
+            // Avoid running CLI generators from HTTP requests (IIS/FPM may not provide STDIN).
+            // If permissions already exist in tenant DB, sync them; otherwise continue with super_admin role only.
+            if ($permissionNames !== []) {
+                $superAdminRole->syncPermissions($permissionNames);
             }
-
-            $superAdminRole->syncPermissions($permissionNames);
 
             $tenantUser = User::query()->create([
                 'name' => $data['name'],
@@ -81,6 +73,10 @@ class TenantProvisioningController extends Controller
             }
 
             Tenancy::end();
+
+            GenerateTenantPermissionsJob::dispatch($tenant->getTenantKey())
+                ->onConnection('database')
+                ->onQueue('tenant-provisioning');
 
             return response()->json([
                 'message' => 'Tenant created successfully.',
