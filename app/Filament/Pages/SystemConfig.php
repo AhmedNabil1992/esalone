@@ -184,6 +184,7 @@ class SystemConfig extends Page
                                         // جلب المخازن من قاعدة البيانات
                                         return Warehouse::pluck('name', 'id');
                                     })->searchable()->preload(),
+                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط :')->numeric(),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')

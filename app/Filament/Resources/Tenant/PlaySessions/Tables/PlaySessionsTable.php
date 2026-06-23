@@ -26,20 +26,25 @@ class PlaySessionsTable
                 TextColumn::make('customer.name')
                     ->label('العميل')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('-'),
                 TextColumn::make('prepaid_amount')
                     ->label('المبلغ المدفوع')
                     ->money(),
-                // TextColumn::make('session_key')
-                //     ->label('كود الجلسة')
-                //     ->searchable()
-                //     ->sortable(),
                 TextColumn::make('status')
                     ->label('الحالة')
-                    // ->enum([
-                    //     'active' => 'نشطة',
-                    //     'completed' => 'مكتملة',
-                    //     'cancelled' => 'ملغاة',])
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'pending' => 'قيد الانتظار',
+                        'completed' => 'مكتمل',
+                        'canceled' => 'ملغي',
+                        default => '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'completed' => 'success',
+                        'canceled' => 'danger',
+                        default => 'secondary',
+                    })
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')

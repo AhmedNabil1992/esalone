@@ -35,6 +35,10 @@ class CustomersTable
                     ->money()
                     ->sortable()
                     ->color(fn ($state) => $state < 0 ? 'danger' : ($state > 0 ? 'success' : 'gray')),
+                TextColumn::make('points')
+                    ->label('النقاط')
+                    ->sortable()
+                    ->color(fn ($state) => $state < 0 ? 'danger' : ($state > 0 ? 'success' : 'gray')),
 
                 ToggleColumn::make('is_active')
                     ->label('مفعّل')

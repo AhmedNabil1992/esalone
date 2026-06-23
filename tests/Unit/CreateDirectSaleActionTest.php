@@ -38,6 +38,7 @@ class CreateDirectSaleActionTest extends TestCase
             $table->id();
             $table->string('name');
             $table->decimal('balance', 12, 2)->default(0);
+            $table->decimal('points', 12, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -56,6 +57,33 @@ class CreateDirectSaleActionTest extends TestCase
             $table->string('code')->nullable();
             $table->decimal('current_balance', 12, 2)->default(0);
             $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        $this->ensureTable('cash_box_ledger_entries', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('shift_id')->nullable();
+            $table->unsignedBigInteger('cash_box_id');
+            $table->unsignedBigInteger('created_by_user_id')->nullable();
+            $table->string('reference_type')->nullable();
+            $table->unsignedBigInteger('reference_id')->nullable();
+            $table->string('direction');
+            $table->string('operation');
+            $table->decimal('amount', 12, 2);
+            $table->string('description')->nullable();
+            $table->timestamp('occurred_at')->nullable();
+            $table->timestamps();
+        });
+
+        $this->ensureTable('customer_credits', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('customer_id');
+            $table->unsignedBigInteger('user_id');
+            $table->string('type');
+            $table->decimal('amount', 12, 2);
+            $table->decimal('balance_before', 12, 2);
+            $table->decimal('balance_after', 12, 2);
+            $table->string('description')->nullable();
             $table->timestamps();
         });
 
@@ -102,6 +130,17 @@ class CreateDirectSaleActionTest extends TestCase
             $table->decimal('remain_amount', 12, 2)->default(0);
             $table->string('status')->default('posted');
             $table->timestamp('issued_at')->nullable();
+            $table->timestamps();
+        });
+
+        $this->ensureTable('invoice_payments', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id');
+            $table->unsignedBigInteger('cash_box_id')->nullable();
+            $table->unsignedBigInteger('created_by_user_id')->nullable();
+            $table->string('payment_method')->default('cash');
+            $table->decimal('amount', 12, 2)->default(0);
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
 
@@ -171,6 +210,7 @@ class CreateDirectSaleActionTest extends TestCase
                 ['key' => 'sys_tax_percent', 'value' => '0', 'group' => 'system'],
                 ['key' => 'sys_service_on_market_invoices', 'value' => '0', 'group' => 'system'],
                 ['key' => 'sys_tax_on_market_invoices', 'value' => '0', 'group' => 'system'],
+                ['key' => 'sys_customer_points_ratio', 'value' => '10', 'group' => 'system'],
             ]);
         }
     }
@@ -180,7 +220,7 @@ class CreateDirectSaleActionTest extends TestCase
         // Explicitly truncate all tables in reverse order to respect foreign keys
         Schema::disableForeignKeyConstraints();
 
-        foreach (['stock_movements', 'warehouse_stocks', 'warehouses', 'market_history', 'invoices', 'catalog_items', 'inventory_groups', 'customers', 'shifts', 'cash_boxes', 'users', 'system_configs'] as $table) {
+        foreach (['stock_movements', 'warehouse_stocks', 'warehouses', 'market_history', 'invoice_payments', 'customer_credits', 'cash_box_ledger_entries', 'invoices', 'catalog_items', 'inventory_groups', 'customers', 'shifts', 'cash_boxes', 'users', 'system_configs'] as $table) {
             if (Schema::hasTable($table)) {
                 DB::table($table)->truncate();
             }
@@ -305,6 +345,8 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals(250.00, $invoice->subtotal);
         $this->assertEquals(10.00, $invoice->discount_amount);
         $this->assertEquals(240.00, $invoice->final_amount);
+        $this->assertEquals(240.00, $invoice->paid_amount);
+        $this->assertEquals(0.00, $invoice->remain_amount);
 
         // Verify market history entries
         $marketHistories = MarketHistory::where('invoice_no', $result['invoice_no'])->get();
@@ -337,6 +379,87 @@ class CreateDirectSaleActionTest extends TestCase
             ->where('catalog_item_id', $item2->id)
             ->first();
         $this->assertEquals(49, $stock2->quantity); // 50 - 1
+
+        $this->assertSame('240.00', $cashBox->fresh()->current_balance);
+        $this->assertSame('24.00', $customer->fresh()->points);
+        $this->assertSame('0.00', $customer->fresh()->balance);
+        $this->assertDatabaseCount('customer_credits', 0);
+
+        $payment = DB::table('invoice_payments')->where('invoice_id', $invoice->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals($cashBox->id, $payment->cash_box_id);
+        $this->assertEquals(240.00, (float) $payment->amount);
+        $this->assertSame('cash', $payment->payment_method);
+    }
+
+    public function test_overpayment_does_not_inflate_cash_box_and_can_be_saved_as_customer_credit(): void
+    {
+        $uniqueId = (string) Str::uuid();
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => "test-overpay-{$uniqueId}@example.com",
+            'password' => bcrypt('password'),
+        ]);
+        Shift::create([
+            'shift_no' => random_int(1000, 9999),
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $cashBox = CashBox::create([
+            'name' => 'Cash Box 1',
+            'is_active' => true,
+            'current_balance' => 0,
+        ]);
+        $customer = Customer::create([
+            'name' => 'Test Customer',
+            'balance' => 0,
+            'points' => 0,
+            'is_active' => true,
+        ]);
+        $group = InventoryGroup::create([
+            'name' => 'Test Group',
+            'is_active' => true,
+        ]);
+        $item = CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'Item 1',
+            'sale_price' => 75.00,
+            'purchase_price' => 50.00,
+            'is_product' => true,
+        ]);
+
+        $result = app(CreateDirectSaleAction::class)->execute(
+            items: [[
+                'catalog_item_id' => $item->id,
+                'quantity' => 1,
+                'unit_price' => 75.00,
+                'total_amount' => 75.00,
+            ]],
+            customerId: $customer->id,
+            cashBoxId: $cashBox->id,
+            actor: $user,
+            paidAmount: 100.00,
+            depositRemainderToCustomerBalance: true,
+        );
+
+        $invoice = Invoice::where('invoice_no', $result['invoice_no'])->firstOrFail();
+
+        $this->assertEquals(75.00, $invoice->final_amount);
+        $this->assertEquals(75.00, $invoice->paid_amount);
+        $this->assertEquals(0.00, $invoice->remain_amount);
+        $this->assertSame('75.00', $cashBox->fresh()->current_balance);
+        $this->assertSame('25.00', $customer->fresh()->balance);
+        $this->assertSame('7.50', $customer->fresh()->points);
+
+        $payment = DB::table('invoice_payments')->where('invoice_id', $invoice->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertEquals(75.00, (float) $payment->amount);
+
+        $credit = DB::table('customer_credits')->first();
+        $this->assertNotNull($credit);
+        $this->assertSame('deposit', $credit->type);
+        $this->assertEquals(25.00, (float) $credit->amount);
     }
 
     public function test_throws_exception_when_no_items_provided(): void

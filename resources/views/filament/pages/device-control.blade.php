@@ -547,7 +547,7 @@
 
                                                 <div>
                                                     <label style="display:block;font-size:.7rem;color:#6b7280;margin-bottom:3px;">المبلغ</label>
-                                                    <input type="number" min="0" step="0.01" wire:model.live="busyActionPayments.{{ $index }}.amount" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;" />
+                                                    <input type="number" min="0" step="0.01" wire:model.live.debounce.250ms="busyActionPayments.{{ $index }}.amount" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;" />
                                                 </div>
 
                                                 <button type="button" wire:click="removeBusyActionPaymentRow({{ $index }})" style="border:1px solid #ef4444;background:#fef2f2;color:#b91c1c;padding:8px 10px;border-radius:10px;font-size:.72rem;font-weight:700;cursor:pointer;">
@@ -560,6 +560,13 @@
                                     <div style="margin-top:8px;font-size:.78rem;color:#111827;font-weight:800;">
                                         إجمالي المدفوع: <span style="direction:ltr;unicode-bidi:isolate;color:#2563eb;">{{ number_format((float) $this->busyActionPaidTotal, 2) }}</span>
                                     </div>
+
+                                    @if ($this->busySelectedCustomer && (float) ($closePreview['remain_amount'] ?? 0) > 0)
+                                        <label style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151;font-weight:700;cursor:pointer;">
+                                            <input type="checkbox" wire:model.live="busyCloseDepositRemainderToCustomerBalance" style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;" />
+                                            <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
+                                        </label>
+                                    @endif
                                 </div>
                                 <div style="display:flex;align-items:flex-end;">
                                     <div style="font-size:.86rem;font-weight:800;color:#111827;">

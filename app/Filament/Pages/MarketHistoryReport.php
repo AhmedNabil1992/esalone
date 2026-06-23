@@ -53,26 +53,27 @@ class MarketHistoryReport extends Page implements HasTable
                     ->label('رقم الفاتورة')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('customer_id')
-                    ->label('ID العميل')
-                    ->placeholder('-')
-                    ->sortable(),
+                // TextColumn::make('customer_id')
+                //     ->label('ID العميل')
+                //     ->placeholder('-')
+                //     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('اسم العميل')
                     ->placeholder('-')
                     ->searchable(),
-                TextColumn::make('device_id')
-                    ->label('ID الجهاز')
-                    ->placeholder('-')
-                    ->sortable(),
-                TextColumn::make('device.name')
-                    ->label('اسم الجهاز')
-                    ->placeholder('-')
-                    ->searchable(),
+                // TextColumn::make('device_id')
+                //     ->label('ID الجهاز')
+                //     ->placeholder('-')
+                //     ->sortable(),
                 TextColumn::make('device.type.name')
                     ->label('نوع الجهاز')
                     ->placeholder('-')
                     ->searchable(),
+                TextColumn::make('device.name')
+                    ->label('اسم الجهاز')
+                    ->placeholder('-')
+                    ->searchable(),
+
                 TextColumn::make('subject_name')
                     ->label('اسم مرجعي')
                     ->placeholder('-')

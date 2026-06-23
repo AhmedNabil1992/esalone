@@ -13,7 +13,7 @@ use Illuminate\Support\Number;
 
 class ExpensesTypeSum extends StatsOverviewWidget
 {
-    // protected static ?string $heading = 'إجمالي مصاريف الشهر الحالي حسب النوع';
+    protected ?string $heading = 'إجمالي مصاريف الشهر الحالي حسب النوع';
 
     protected function getStats(): array
     {

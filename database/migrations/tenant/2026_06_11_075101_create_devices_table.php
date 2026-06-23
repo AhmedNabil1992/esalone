@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('mac_address', 17)->nullable();
             $table->integer('limit_time')->default(0);
             $table->boolean('is_time')->default(true);
-            $table->enum('status', ['active', 'inactive', 'busy'])->default('inactive');
+            $table->enum('status', ['active', 'inactive', 'busy'])->default('active');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

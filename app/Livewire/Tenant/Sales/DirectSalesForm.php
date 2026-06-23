@@ -23,7 +23,7 @@ class DirectSalesForm extends Component
 
     public string $customer_search = '';
 
-    #[Validate('nullable|integer')]
+    #[Validate('required|integer|min:1')]
     public ?int $selected_cash_box_id = null;
 
     #[Validate('nullable|integer')]
@@ -32,6 +32,11 @@ class DirectSalesForm extends Component
     #[Validate('required|numeric|min:0')]
     public float $discount_amount = 0;
 
+    #[Validate('required|numeric|min:0')]
+    public float $paid_amount = 0;
+
+    public bool $deposit_remainder_to_customer_balance = false;
+
     /** @var array<int,array{catalog_item_id:int,quantity:int,unit_price:float,total_amount:float}> */
     public array $selectedItems = [];
 
@@ -39,6 +44,7 @@ class DirectSalesForm extends Component
     {
         $this->inventory_group_id = $this->orderGroups->first()?->id;
         $this->selected_cash_box_id = $this->defaultCashBoxId();
+        $this->paid_amount = 0;
     }
 
     /** @return Collection<int, InventoryGroup> */
@@ -237,7 +243,9 @@ class DirectSalesForm extends Component
     {
         $this->selectedItems = [];
         $this->discount_amount = 0;
+        $this->paid_amount = 0;
         $this->selected_customer_id = null;
+        $this->deposit_remainder_to_customer_balance = false;
     }
 
     public function updateQuantity(string $key, int $quantity): void
@@ -264,14 +272,42 @@ class DirectSalesForm extends Component
             return;
         }
 
+        if (! $this->selected_cash_box_id) {
+            Notification::make()
+                ->danger()
+                ->title('خطأ')
+                ->body('يجب تحديد خزينة الدفع قبل حفظ الفاتورة.')
+                ->send();
+
+            return;
+        }
+
+        $selectedCashBoxExists = CashBox::query()
+            ->whereKey($this->selected_cash_box_id)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $selectedCashBoxExists) {
+            Notification::make()
+                ->danger()
+                ->title('خطأ')
+                ->body('خزينة الدفع المختارة غير متاحة. اختر الخزينة الافتراضية أو خزينة نشطة.')
+                ->send();
+
+            return;
+        }
+
         try {
             $items = array_values($this->selectedItems);
+            $submittedPaidAmount = $this->resolveSubmittedPaidAmount();
 
             $result = app(CreateDirectSaleAction::class)->execute(
                 items: $items,
                 customerId: $this->selected_customer_id,
                 cashBoxId: $this->selected_cash_box_id,
-                discountAmount: $this->discount_amount
+                discountAmount: $this->discount_amount,
+                paidAmount: $submittedPaidAmount,
+                depositRemainderToCustomerBalance: $this->deposit_remainder_to_customer_balance,
             );
 
             Notification::make()
@@ -301,6 +337,48 @@ class DirectSalesForm extends Component
     public function getFinalAmount(): float
     {
         return max(0, $this->getTotalAmount() - $this->discount_amount);
+    }
+
+    public function getRemainingAmount(): float
+    {
+        return round(max(0, $this->paid_amount) - $this->getFinalAmount(), 2);
+    }
+
+    public function updatedDiscountAmount(): void
+    {
+        if ($this->paid_amount <= 0) {
+            $this->paid_amount = $this->getFinalAmount();
+        }
+
+        $this->syncDepositRemainderToggle();
+    }
+
+    public function updatedPaidAmount(): void
+    {
+        $this->syncDepositRemainderToggle();
+    }
+
+    public function updatedSelectedCustomerId(): void
+    {
+        $this->syncDepositRemainderToggle();
+    }
+
+    private function syncDepositRemainderToggle(): void
+    {
+        if (! $this->selected_customer_id || $this->getRemainingAmount() <= 0) {
+            $this->deposit_remainder_to_customer_balance = false;
+        }
+    }
+
+    private function resolveSubmittedPaidAmount(): ?float
+    {
+        $normalizedPaidAmount = round(max(0, (float) $this->paid_amount), 2);
+
+        if (! $this->selected_customer_id && $normalizedPaidAmount <= 0) {
+            return null;
+        }
+
+        return $normalizedPaidAmount;
     }
 
     public function render()

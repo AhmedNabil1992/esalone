@@ -24,13 +24,13 @@ class ExpenseHistoryResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
 
-    protected static ?string $navigationLabel = 'المصروفات';
+    protected static ?string $navigationLabel = 'سجل المصروفات';
 
     protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'مصروف';
 
-    protected static ?string $pluralModelLabel = 'المصروفات';
+    protected static ?string $pluralModelLabel = 'سجل المصروفات';
 
     public static function getEloquentQuery(): Builder
     {

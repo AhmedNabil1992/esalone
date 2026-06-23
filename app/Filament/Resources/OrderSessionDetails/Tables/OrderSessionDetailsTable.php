@@ -22,8 +22,8 @@ class OrderSessionDetailsTable
                     ->label('اسم الجهاز')
                     ->placeholder('-')
                     ->searchable(),
-                TextColumn::make('catalogItem.type.name')
-                    ->label('نوع المنتج')
+                TextColumn::make('catalogItem.inventoryGroup.name')
+                    ->label('مجموعة الصنف')
                     ->placeholder('-')
                     ->searchable(),
                 TextColumn::make('catalogItem.name')
@@ -43,7 +43,19 @@ class OrderSessionDetailsTable
                     ->placeholder('-'),
                 TextColumn::make('status')
                     ->label('الحالة')
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'pending' => 'قيد الانتظار',
+                        'completed' => 'مكتمل',
+                        'canceled' => 'ملغي',
+                        default => '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'completed' => 'success',
+                        'canceled' => 'danger',
+                        default => 'secondary',
+                    }),
                 TextColumn::make('order_by')
                     ->label('تم الطلب بواسطة')
                     ->placeholder('-'),

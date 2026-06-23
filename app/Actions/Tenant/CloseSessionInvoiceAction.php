@@ -75,9 +75,9 @@ class CloseSessionInvoiceAction
     /**
      * @param  array<int,array<string,mixed>>|null  $paymentAllocations
      */
-    public function execute(int $deviceId, User $actor, float $paidAmount, float $discountAmount = 0, ?string $discountReason = null, ?array $paymentAllocations = null, ?int $customerId = null): Invoice
+    public function execute(int $deviceId, User $actor, float $paidAmount, float $discountAmount = 0, ?string $discountReason = null, ?array $paymentAllocations = null, ?int $customerId = null, bool $depositRemainderToCustomerBalance = false): Invoice
     {
-        return DB::transaction(function () use ($deviceId, $actor, $paidAmount, $discountAmount, $discountReason, $paymentAllocations, $customerId): Invoice {
+        return DB::transaction(function () use ($deviceId, $actor, $paidAmount, $discountAmount, $discountReason, $paymentAllocations, $customerId, $depositRemainderToCustomerBalance): Invoice {
             if ($paidAmount < 0) {
                 throw new RuntimeException('المبلغ المدفوع لا يمكن أن يكون سالباً.');
             }
@@ -147,6 +147,18 @@ class CloseSessionInvoiceAction
             }
 
             $preview = $this->buildPreviewPayload($device, $session, $discountAmount, $paidAmount, $limitTimeMeta ?? null);
+            $tenderedPaidAmount = round((float) ($preview['paid_amount'] ?? $paidAmount), 2);
+            $appliedPaidAmount = $this->resolveAppliedPaidAmount((float) $preview['final_amount'], $tenderedPaidAmount);
+            $customerBalanceDelta = $this->resolveCustomerBalanceDelta(
+                (float) $preview['final_amount'],
+                $tenderedPaidAmount,
+                $depositRemainderToCustomerBalance,
+            );
+            $storedRemainAmount = $this->resolveStoredRemainAmount(
+                (float) $preview['final_amount'],
+                $tenderedPaidAmount,
+                $customerBalanceDelta,
+            );
 
             $resolvedCustomerId = is_numeric($session->customer_id)
                 ? (int) $session->customer_id
@@ -208,25 +220,26 @@ class CloseSessionInvoiceAction
                 'tax_amount' => $preview['tax_amount'],
                 'deposit_amount' => $preview['deposit_amount'],
                 'final_amount' => $preview['final_amount'],
-                'paid_amount' => $preview['paid_amount'],
-                'remain_amount' => $preview['remain_amount'],
+                'paid_amount' => $appliedPaidAmount,
+                'remain_amount' => $storedRemainAmount,
                 'status' => 'posted',
                 'issued_at' => now(),
             ]);
 
             if ($resolvedAllocations !== []) {
-                $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $resolvedAllocations);
-                $this->recordInvoicePaymentRows($invoice, $actor, $resolvedAllocations);
+                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $appliedPaidAmount);
+                $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $normalizedAllocations);
+                $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
                 $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
                 $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
             } else {
-                $cashBoxId = $this->applyCashReceiptToCashBox((float) $preview['paid_amount'], $targetCashBox);
-                if ((float) $preview['paid_amount'] > 0 && $cashBoxId) {
+                $cashBoxId = $this->applyCashReceiptToCashBox($appliedPaidAmount, $targetCashBox);
+                if ($appliedPaidAmount > 0 && $cashBoxId) {
                     $this->recordInvoicePaymentRows($invoice, $actor, [
                         [
                             'cash_box' => $targetCashBox,
                             'cash_box_id' => $cashBoxId,
-                            'amount' => round((float) $preview['paid_amount'], 2),
+                            'amount' => $appliedPaidAmount,
                             'payment_method' => 'cash',
                         ],
                     ]);
@@ -280,7 +293,8 @@ class CloseSessionInvoiceAction
                 $resolvedCustomerId,
                 $actor,
                 (float) $preview['final_amount'],
-                (float) $preview['paid_amount'],
+                $tenderedPaidAmount,
+                $depositRemainderToCustomerBalance,
                 $invoice->invoice_no,
             );
 
@@ -472,7 +486,7 @@ class CloseSessionInvoiceAction
         $shift->save();
     }
 
-    private function applyCustomerSettlement(?int $customerId, User $actor, float $finalAmount, float $paidAmount, string $invoiceNo): void
+    private function applyCustomerSettlement(?int $customerId, User $actor, float $finalAmount, float $paidAmount, bool $depositRemainderToCustomerBalance, string $invoiceNo): void
     {
         if (! $customerId) {
             return;
@@ -488,11 +502,11 @@ class CloseSessionInvoiceAction
         }
 
         $balanceBefore = round((float) $customer->balance, 2);
-        $amountDelta = round($paidAmount - $finalAmount, 2);
+        $amountDelta = $this->resolveCustomerBalanceDelta($finalAmount, $paidAmount, $depositRemainderToCustomerBalance);
         $balanceAfter = round($balanceBefore + $amountDelta, 2);
 
         $customer->balance = $balanceAfter;
-        $customer->points = round((float) ($customer->points ?? 0) + max(0, $finalAmount), 2);
+        $customer->points = round((float) ($customer->points ?? 0) + $this->calculateEarnedPoints($finalAmount), 2);
         $customer->save();
 
         if ($amountDelta !== 0.0) {
@@ -523,6 +537,51 @@ class CloseSessionInvoiceAction
         $targetCashBox->save();
 
         return (int) $targetCashBox->id;
+    }
+
+    private function resolveAppliedPaidAmount(float $finalAmount, float $enteredPaidAmount): float
+    {
+        return round(min(max(0, $enteredPaidAmount), max(0, $finalAmount)), 2);
+    }
+
+    private function resolveCustomerBalanceDelta(float $finalAmount, float $enteredPaidAmount, bool $depositRemainderToCustomerBalance): float
+    {
+        $difference = round($enteredPaidAmount - $finalAmount, 2);
+
+        if ($difference < 0) {
+            return $difference;
+        }
+
+        if ($difference > 0 && $depositRemainderToCustomerBalance) {
+            return $difference;
+        }
+
+        return 0.0;
+    }
+
+    private function resolveStoredRemainAmount(float $finalAmount, float $enteredPaidAmount, float $customerBalanceDelta): float
+    {
+        $difference = round($enteredPaidAmount - $finalAmount, 2);
+
+        if ($difference < 0) {
+            return $difference;
+        }
+
+        if ($difference > 0 && $customerBalanceDelta > 0) {
+            return 0.0;
+        }
+
+        return 0.0;
+    }
+
+    private function calculateEarnedPoints(float $finalAmount): float
+    {
+        $ratio = (float) SystemConfig::get('sys_customer_points_ratio', 0);
+        if ($ratio <= 0 || $finalAmount <= 0) {
+            return 0.0;
+        }
+
+        return round(($finalAmount * $ratio) / 100, 2);
     }
 
     /**
@@ -842,6 +901,41 @@ class CloseSessionInvoiceAction
         }
 
         return $entryIds;
+    }
+
+    /**
+     * @param  array<int,array{cash_box:CashBox,cash_box_id:int,amount:float}>  $allocations
+     * @return array<int,array{cash_box:CashBox,cash_box_id:int,amount:float}>
+     */
+    private function normalizeAllocationsToAppliedAmount(array $allocations, float $appliedPaidAmount): array
+    {
+        if ($appliedPaidAmount <= 0) {
+            return [];
+        }
+
+        $remainingAmount = round($appliedPaidAmount, 2);
+        $normalizedAllocations = [];
+
+        foreach ($allocations as $allocation) {
+            if ($remainingAmount <= 0) {
+                break;
+            }
+
+            $allocationAmount = round(min((float) $allocation['amount'], $remainingAmount), 2);
+            if ($allocationAmount <= 0) {
+                continue;
+            }
+
+            $normalizedAllocations[] = [
+                'cash_box' => $allocation['cash_box'],
+                'cash_box_id' => $allocation['cash_box_id'],
+                'amount' => $allocationAmount,
+            ];
+
+            $remainingAmount = round($remainingAmount - $allocationAmount, 2);
+        }
+
+        return $normalizedAllocations;
     }
 
     /**

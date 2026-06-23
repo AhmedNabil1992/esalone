@@ -66,6 +66,11 @@ class DeviceControl extends Page
 
     public $busyActionPaidAmount = null;
 
+    /** @var array<string,mixed>|null */
+    public ?array $busyClosePreview = null;
+
+    public bool $busyCloseDepositRemainderToCustomerBalance = false;
+
     /**
      * @var array<int,array{cash_box_id:int|null,amount:float|int|string|null}>
      */
@@ -312,6 +317,8 @@ class DeviceControl extends Page
         $this->busyActionMinutes = null;
         $this->busyActionLimitMinutes = null;
         $this->busyActionPaidAmount = null;
+        $this->busyClosePreview = null;
+        $this->busyCloseDepositRemainderToCustomerBalance = false;
         $this->busyActionPayments = [];
         $this->busyActionDiscountAmount = null;
         $this->busyActionDiscountReason = null;
@@ -342,17 +349,21 @@ class DeviceControl extends Page
         if ($actionLabel === 'تقفيل الحساب') {
             $busySessionCustomer = $this->selectedBusyDevice?->activeSession?->customer;
             $this->busyActionDiscountAmount = 0;
-            $this->busyActionPaidAmount = (float) ($this->busyClosePreview['final_amount'] ?? 0);
             $this->busyActionDiscountReason = null;
             $this->busyActionCustomerId = $busySessionCustomer?->id;
             $this->busyActionCustomerSearch = $busySessionCustomer?->name ?? '';
-            $defaultCashBoxId = data_get($this->busyClosePreview, 'cash_box.id');
+            $basePreview = $this->buildBusyClosePreview(0.0);
+            $this->busyClosePreview = $basePreview;
+
+            $this->busyActionPaidAmount = (float) ($basePreview['final_amount'] ?? 0);
+            $defaultCashBoxId = data_get($basePreview, 'cash_box.id');
             $this->busyActionPayments = [
                 [
                     'cash_box_id' => is_numeric($defaultCashBoxId) ? (int) $defaultCashBoxId : null,
                     'amount' => (float) ($this->busyActionPaidAmount ?? 0),
                 ],
             ];
+            $this->busyClosePreview = $this->buildBusyClosePreview((float) ($this->busyActionPaidAmount ?? 0));
         }
 
         $this->showBusyActionsModal = false;
@@ -367,6 +378,8 @@ class DeviceControl extends Page
         $this->busyActionMinutes = null;
         $this->busyActionLimitMinutes = null;
         $this->busyActionPaidAmount = null;
+        $this->busyClosePreview = null;
+        $this->busyCloseDepositRemainderToCustomerBalance = false;
         $this->busyActionPayments = [];
         $this->busyActionDiscountAmount = null;
         $this->busyActionDiscountReason = null;
@@ -480,22 +493,33 @@ class DeviceControl extends Page
             ->get();
     }
 
-    /** @return array<string,mixed>|null */
-    public function getBusyClosePreviewProperty(): ?array
+    private function refreshBusyClosePreview(): void
     {
         if ($this->selectedBusyActionLabel !== 'تقفيل الحساب' || ! $this->selectedBusyDeviceId) {
-            return null;
+            $this->busyClosePreview = null;
+
+            return;
         }
 
         try {
-            return app(CloseSessionInvoiceAction::class)->preview(
-                (int) $this->selectedBusyDeviceId,
-                (float) ($this->busyActionDiscountAmount ?? 0),
-                (float) $this->busyActionPaidTotal,
-            );
+            $this->busyClosePreview = $this->buildBusyClosePreview((float) $this->busyActionPaidTotal);
         } catch (RuntimeException) {
+            $this->busyClosePreview = null;
+        }
+    }
+
+    /** @return array<string,mixed>|null */
+    private function buildBusyClosePreview(float $paidAmount): ?array
+    {
+        if (! $this->selectedBusyDeviceId) {
             return null;
         }
+
+        return app(CloseSessionInvoiceAction::class)->preview(
+            (int) $this->selectedBusyDeviceId,
+            (float) ($this->busyActionDiscountAmount ?? 0),
+            $paidAmount,
+        );
     }
 
     /** @return Collection<int, CashBox> */
@@ -551,6 +575,9 @@ class DeviceControl extends Page
             'cash_box_id' => null,
             'amount' => null,
         ];
+
+        $this->busyCloseDepositRemainderToCustomerBalance = false;
+        $this->refreshBusyClosePreview();
     }
 
     public function removeBusyActionPaymentRow(int $index): void
@@ -571,11 +598,22 @@ class DeviceControl extends Page
         }
 
         $this->syncSingleClosePaymentAmount();
+        $this->syncBusyCloseDepositToggle();
+        $this->refreshBusyClosePreview();
     }
 
     public function updatedBusyActionDiscountAmount(): void
     {
         $this->syncSingleClosePaymentAmount();
+        $this->syncBusyCloseDepositToggle();
+        $this->refreshBusyClosePreview();
+    }
+
+    public function updatedBusyActionPayments(): void
+    {
+        $this->busyActionPaidAmount = $this->busyActionPaidTotal;
+        $this->syncBusyCloseDepositToggle();
+        $this->refreshBusyClosePreview();
     }
 
     public function selectBusyActionCustomer(int $customerId): void
@@ -590,12 +628,14 @@ class DeviceControl extends Page
 
         $this->busyActionCustomerId = $customer->id;
         $this->busyActionCustomerSearch = $customer->name;
+        $this->syncBusyCloseDepositToggle();
     }
 
     public function clearBusyActionCustomer(): void
     {
         $this->busyActionCustomerId = null;
         $this->busyActionCustomerSearch = '';
+        $this->busyCloseDepositRemainderToCustomerBalance = false;
     }
 
     /** @return Collection<int, InventoryGroup> */
@@ -1029,6 +1069,7 @@ class DeviceControl extends Page
                 $this->busyActionDiscountReason,
                 $paymentAllocations,
                 is_numeric($this->busyActionCustomerId) ? (int) $this->busyActionCustomerId : null,
+                $this->busyCloseDepositRemainderToCustomerBalance,
             );
 
             $cashBoxName = trim((string) ($invoice->cashBox?->name ?? ''));
@@ -1139,9 +1180,28 @@ class DeviceControl extends Page
 
         $finalAmount = (float) ($this->busyClosePreview['final_amount'] ?? 0);
         $normalizedFinalAmount = round(max(0, $finalAmount), 2);
+        $currentAmount = round((float) ($this->busyActionPayments[0]['amount'] ?? 0), 2);
+
+        if ($currentAmount > 0) {
+            return;
+        }
 
         $this->busyActionPayments[0]['amount'] = $normalizedFinalAmount;
         $this->busyActionPaidAmount = $normalizedFinalAmount;
+    }
+
+    private function syncBusyCloseDepositToggle(): void
+    {
+        if (! is_numeric($this->busyActionCustomerId)) {
+            $this->busyCloseDepositRemainderToCustomerBalance = false;
+
+            return;
+        }
+
+        $remainAmount = (float) ($this->busyClosePreview['remain_amount'] ?? 0);
+        if ($remainAmount <= 0) {
+            $this->busyCloseDepositRemainderToCustomerBalance = false;
+        }
     }
 
     private function isPlayInvoicePrintingEnabled(): bool

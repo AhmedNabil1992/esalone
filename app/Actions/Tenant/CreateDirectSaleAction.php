@@ -8,7 +8,9 @@ use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\Invoice;
+use App\Models\Tenant\InvoicePayment;
 use App\Models\Tenant\MarketHistory;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\StockMovement;
@@ -17,6 +19,7 @@ use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -31,13 +34,19 @@ class CreateDirectSaleAction
         ?int $customerId = null,
         ?int $cashBoxId = null,
         float $discountAmount = 0,
-        ?User $actor = null
+        ?User $actor = null,
+        ?float $paidAmount = null,
+        bool $depositRemainderToCustomerBalance = false,
     ): array {
         if (empty($items)) {
             throw new RuntimeException('يجب اختيار صنف واحد على الأقل.');
         }
 
-        $actor ??= auth()->user();
+        $actor ??= Auth::user();
+
+        if (! $actor instanceof User) {
+            throw new RuntimeException('المستخدم الحالي غير صالح لتنفيذ عملية البيع.');
+        }
 
         $activeShift = Shift::query()
             ->where('is_active', true)
@@ -49,7 +58,7 @@ class CreateDirectSaleAction
 
         $defaultCashBox = $this->resolveCashBox($cashBoxId);
 
-        return DB::transaction(function () use ($items, $customerId, $discountAmount, $actor, $activeShift, $defaultCashBox): array {
+        return DB::transaction(function () use ($items, $customerId, $discountAmount, $actor, $activeShift, $defaultCashBox, $paidAmount, $depositRemainderToCustomerBalance): array {
             // Calculate totals
             $subtotal = 0;
             $catalogItems = [];
@@ -85,6 +94,21 @@ class CreateDirectSaleAction
             $taxAmount = $taxEnabled ? round(($taxBase * $taxPercent) / 100, 2) : 0.0;
 
             $finalAmount = round($afterDiscount + $serviceAmount + $taxAmount, 2);
+            $enteredPaidAmount = $paidAmount === null
+                ? $finalAmount
+                : round(max(0, $paidAmount), 2);
+
+            if (! $customerId && $enteredPaidAmount < $finalAmount) {
+                throw new RuntimeException('لا يمكن حفظ الفاتورة بدون عميل إذا لم يتم تحصيل كامل المبلغ.');
+            }
+
+            $appliedPaidAmount = $this->resolveAppliedPaidAmount($finalAmount, $enteredPaidAmount);
+            $customerBalanceDelta = $this->resolveCustomerBalanceDelta(
+                $finalAmount,
+                $enteredPaidAmount,
+                $depositRemainderToCustomerBalance
+            );
+            $storedRemainAmount = $this->resolveStoredRemainAmount($finalAmount, $enteredPaidAmount, $customerBalanceDelta);
 
             // Create invoice
             $invoiceNo = $this->generateInvoiceNo();
@@ -107,8 +131,8 @@ class CreateDirectSaleAction
                 'tax_amount' => $taxAmount,
                 'deposit_amount' => 0,
                 'final_amount' => $finalAmount,
-                'paid_amount' => $finalAmount,
-                'remain_amount' => 0,
+                'paid_amount' => $appliedPaidAmount,
+                'remain_amount' => $storedRemainAmount,
                 'status' => 'posted',
                 'issued_at' => now(),
             ]);
@@ -165,9 +189,9 @@ class CreateDirectSaleAction
 
             // Update cash box balance and record ledger entry
             $cashBoxToUpdate = CashBox::query()->whereKey($defaultCashBox->id)->first();
-            if ($cashBoxToUpdate) {
+            if ($cashBoxToUpdate && $appliedPaidAmount > 0) {
                 $cashBoxToUpdate->update([
-                    'current_balance' => $cashBoxToUpdate->current_balance + $finalAmount,
+                    'current_balance' => $cashBoxToUpdate->current_balance + $appliedPaidAmount,
                 ]);
 
                 // Record cash box ledger entry
@@ -179,19 +203,29 @@ class CreateDirectSaleAction
                     'reference_id' => $invoice->id,
                     'direction' => 'in',
                     'operation' => 'direct_sale',
-                    'amount' => $finalAmount,
+                    'amount' => $appliedPaidAmount,
                     'description' => 'بيع مباشر - '.$invoiceNo,
                     'occurred_at' => now(),
                 ]);
+
+                InvoicePayment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_box_id' => $defaultCashBox->id,
+                    'created_by_user_id' => $actor->id,
+                    'payment_method' => 'cash',
+                    'amount' => $appliedPaidAmount,
+                    'notes' => null,
+                ]);
             }
 
-            // Update customer balance if applicable
-            if ($customerId) {
-                $customer = Customer::query()->whereKey($customerId)->first();
-                if ($customer) {
-                    $customer->decrement('balance', $finalAmount);
-                }
-            }
+            $this->applyCustomerSettlement(
+                $customerId,
+                $actor,
+                $finalAmount,
+                $enteredPaidAmount,
+                $depositRemainderToCustomerBalance,
+                $invoiceNo,
+            );
 
             return [
                 'invoice' => $invoice,
@@ -250,5 +284,94 @@ class CreateDirectSaleAction
             ->count() + 1;
 
         return sprintf('S-%s-%d', $prefix, $dailyCount);
+    }
+
+    private function applyCustomerSettlement(
+        ?int $customerId,
+        User $actor,
+        float $finalAmount,
+        float $enteredPaidAmount,
+        bool $depositRemainderToCustomerBalance,
+        string $invoiceNo,
+    ): void {
+        if (! $customerId) {
+            return;
+        }
+
+        $customer = Customer::query()
+            ->whereKey($customerId)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $customer) {
+            return;
+        }
+
+        $balanceBefore = round((float) $customer->balance, 2);
+        $balanceDelta = $this->resolveCustomerBalanceDelta($finalAmount, $enteredPaidAmount, $depositRemainderToCustomerBalance);
+        $balanceAfter = round($balanceBefore + $balanceDelta, 2);
+
+        $customer->balance = $balanceAfter;
+        $customer->points = round((float) ($customer->points ?? 0) + $this->calculateEarnedPoints($finalAmount), 2);
+        $customer->save();
+
+        if ($balanceDelta === 0.0) {
+            return;
+        }
+
+        CustomerCredit::query()->create([
+            'customer_id' => $customer->id,
+            'user_id' => $actor->id,
+            'type' => $balanceDelta > 0 ? 'deposit' : 'withdraw',
+            'amount' => abs($balanceDelta),
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceAfter,
+            'description' => 'فاتورة رقم '.$invoiceNo,
+        ]);
+    }
+
+    private function resolveAppliedPaidAmount(float $finalAmount, float $enteredPaidAmount): float
+    {
+        return round(min(max(0, $enteredPaidAmount), max(0, $finalAmount)), 2);
+    }
+
+    private function resolveCustomerBalanceDelta(float $finalAmount, float $enteredPaidAmount, bool $depositRemainderToCustomerBalance): float
+    {
+        $difference = round($enteredPaidAmount - $finalAmount, 2);
+
+        if ($difference < 0) {
+            return $difference;
+        }
+
+        if ($difference > 0 && $depositRemainderToCustomerBalance) {
+            return $difference;
+        }
+
+        return 0.0;
+    }
+
+    private function resolveStoredRemainAmount(float $finalAmount, float $enteredPaidAmount, float $customerBalanceDelta): float
+    {
+        $difference = round($enteredPaidAmount - $finalAmount, 2);
+
+        if ($difference < 0) {
+            return $difference;
+        }
+
+        if ($difference > 0 && $customerBalanceDelta > 0) {
+            return 0.0;
+        }
+
+        return 0.0;
+    }
+
+    private function calculateEarnedPoints(float $finalAmount): float
+    {
+        $ratio = (float) SystemConfig::get('sys_customer_points_ratio', 0);
+        if ($ratio <= 0 || $finalAmount <= 0) {
+            return 0.0;
+        }
+
+        return round(($finalAmount * $ratio) / 100, 2);
     }
 }

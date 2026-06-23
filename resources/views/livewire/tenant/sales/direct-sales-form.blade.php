@@ -157,6 +157,25 @@
                             placeholder="0.00"
                         />
                     </div>
+
+                    <div>
+                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">المدفوع</div>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            wire:model.live.debounce.250ms="paid_amount"
+                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                            placeholder="0.00"
+                        />
+                    </div>
+
+                    @if ($selected_customer_id && $this->getRemainingAmount() > 0)
+                        <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151;font-weight:700;cursor:pointer;">
+                            <input type="checkbox" wire:model.live="deposit_remainder_to_customer_balance" style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;" />
+                            <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
+                        </label>
+                    @endif
                 </div>
 
                 <div style="margin-top:10px;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;display:grid;gap:6px;">
@@ -167,6 +186,10 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;font-size:.95rem;color:#111827;font-weight:900;border-top:1px solid #e5e7eb;padding-top:6px;">
                         <span>الصافي</span>
                         <span style="color:#16a34a;direction:ltr;unicode-bidi:isolate;">{{ number_format($this->getFinalAmount(), 2) }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.9rem;color:#111827;font-weight:800;border-top:1px solid #e5e7eb;padding-top:6px;">
+                        <span>الباقي</span>
+                        <span style="color:{{ $this->getRemainingAmount() > 0 ? '#2563eb' : '#16a34a' }};direction:ltr;unicode-bidi:isolate;">{{ number_format($this->getRemainingAmount(), 2) }}</span>
                     </div>
                 </div>
 
