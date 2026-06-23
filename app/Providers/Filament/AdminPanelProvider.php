@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\PurchaseOverviewWidget;
+use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantHasOpenShift;
 use App\Models\Tenant\SystemConfig as Setting;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -17,17 +18,18 @@ use Filament\Schemas\Schema as FilamentSchema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Table;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Throwable;
-use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -113,6 +115,12 @@ class AdminPanelProvider extends PanelProvider
                         'sm' => 2,
                     ]),
             ])
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): HtmlString => new HtmlString(
+                    view('filament.banners.subscription-warning')->render()
+                ),
+            )
             ->middleware([
                 InitializeTenancyByDomain::class,
                 PreventAccessFromCentralDomains::class,

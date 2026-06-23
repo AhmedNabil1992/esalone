@@ -108,6 +108,7 @@ class SwitchDeviceAction
             $isTimed = $currentDetail->period !== null && $currentDetail->end_time !== null;
             $newEndTime = null;
             $newPeriod = null;
+            $newDeviceBridgeAction = 'ON,Unlimited,0';
 
             if ($isTimed) {
                 $remainingMinutes = (int) floor((float) $now->diffInMinutes($currentDetail->end_time, false));
@@ -117,6 +118,7 @@ class SwitchDeviceAction
 
                 $newEndTime = $now->copy()->addMinutes($remainingMinutes);
                 $newPeriod = $this->roundMinutesForSwitchDevice((float) $remainingMinutes);
+                $newDeviceBridgeAction = 'ON,Limit,'.(string) $remainingMinutes;
             }
 
             $targetPlayPrice = $this->resolveTargetPlayPrice($newDevice, $currentPlayType);
@@ -179,8 +181,8 @@ class SwitchDeviceAction
             $oldDevice->update(['status' => 'active']);
             $newDevice->update(['status' => 'busy']);
 
-            app(QueueDeviceControlCommandAction::class)->execute($oldDevice, $actor, 'OFF', 'Switch Device');
-            app(QueueDeviceControlCommandAction::class)->execute($newDevice, $actor, 'ON', 'Switch Device');
+            app(DispatchDeviceControlCommandAction::class)->execute($oldDevice, $actor, 'OFF', 'Switch Device');
+            app(DispatchDeviceControlCommandAction::class)->execute($newDevice, $actor, $newDeviceBridgeAction, 'Switch Device');
 
             return $newDetail;
         });

@@ -291,7 +291,7 @@ class CloseSessionInvoiceAction
 
             $device->update(['status' => 'active']);
 
-            app(QueueDeviceControlCommandAction::class)->execute($device, $actor, 'OFF', 'Finish Time');
+            app(DispatchDeviceControlCommandAction::class)->execute($device, $actor, 'OFF', 'Finish Time');
 
             $session->delete();
 

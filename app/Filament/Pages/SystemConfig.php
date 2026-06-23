@@ -214,20 +214,6 @@ class SystemConfig extends Page
                                             TextInput::make('sys_close_duration')->label('المدة :')->numeric(),
                                             TextInput::make('sys_close_order_count')->label('عدد الطلبات :')->numeric(),
                                         ]),
-                                        Grid::make(3)->schema([
-                                            TextInput::make('sys_iot_bridge_url')
-                                                ->label('Bridge URL')
-                                                ->placeholder('http://127.0.0.1:17325')
-                                                ->url(),
-                                            TextInput::make('sys_iot_bridge_token')
-                                                ->label('Bridge Token')
-                                                ->password()
-                                                ->revealable(),
-                                            TextInput::make('sys_iot_udp_port')
-                                                ->label('UDP Port')
-                                                ->numeric()
-                                                ->default(4210),
-                                        ]),
                                     ]),
                             ]),
 

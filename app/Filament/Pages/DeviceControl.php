@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Actions\Tenant\AddSessionTimeAction;
 use App\Actions\Tenant\CloseSessionInvoiceAction;
 use App\Actions\Tenant\LimitSessionTimeAction;
+use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
 use App\Actions\Tenant\SwitchPlayAction;
@@ -96,6 +97,8 @@ class DeviceControl extends Page
 
     public $customDurationMinutes = null;
 
+    public bool $bridgeUnavailable = false;
+
     public function mount(): void
     {
         $first = DevicesType::query()
@@ -104,6 +107,50 @@ class DeviceControl extends Page
             ->first();
 
         $this->selectedTypeId = $first?->id;
+
+        $this->verifyBridgeConnectivity();
+    }
+
+    private function verifyBridgeConnectivity(): void
+    {
+        $controlActive = in_array(
+            (string) SystemConfig::get('sys_control_active', '0'),
+            ['1', 'true', 'on', 'yes'],
+            true
+        );
+
+        if (! $controlActive) {
+            $this->bridgeUnavailable = false;
+
+            return;
+        }
+
+        $bridgeOnline = app(SendDeviceControlCommandViaBridgeAction::class)->isBridgeOnline();
+
+        if (! $bridgeOnline) {
+            $this->bridgeUnavailable = true;
+            Notification::make()
+                ->title('نظام التحكم متوقف')
+                ->body('نظام التحكم فعال ولا يوجد اتصال مباشر بأجهزة التحكم')
+                ->warning()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        $this->bridgeUnavailable = false;
+    }
+
+    private function isBridgeRequiredForDevice(?Devices $device): bool
+    {
+        if (! $device) {
+            return false;
+        }
+
+        $ipAddress = trim((string) ($device->ip_address ?? ''));
+
+        return $ipAddress !== '' && $ipAddress !== '127.0.0.1';
     }
 
     public function selectType(int $typeId): void
@@ -182,6 +229,16 @@ class DeviceControl extends Page
             return;
         }
 
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($device)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن فتح وقت للجهاز بدون Bridge.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $this->selectedDeviceId = $device->id;
         $this->selectedCustomerId = null;
         $this->customerSearch = '';
@@ -209,6 +266,16 @@ class DeviceControl extends Page
 
         if (! $device || $device->status !== 'busy') {
             Notification::make()->title('الجهاز غير مشغول حالياً')->warning()->send();
+
+            return;
+        }
+
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($device)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن إجراء عمليات على هذا الجهاز بدون Bridge.')
+                ->warning()
+                ->send();
 
             return;
         }
@@ -735,6 +802,16 @@ class DeviceControl extends Page
             return;
         }
 
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن إضافة وقت للجهاز.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         if (! is_numeric($this->busyActionMinutes) || (int) $this->busyActionMinutes <= 0) {
             Notification::make()->title('يرجى إدخال عدد دقائق صحيح أكبر من صفر')->warning()->send();
 
@@ -827,6 +904,16 @@ class DeviceControl extends Page
             return;
         }
 
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن تبديل الجهاز.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         if (! $this->selectedBusyDeviceId || ! is_numeric($this->selectedSwitchDeviceId)) {
             Notification::make()->title('اختر الجهاز الجديد أولاً')->warning()->send();
 
@@ -867,6 +954,16 @@ class DeviceControl extends Page
     public function closeBusySessionInvoice(): void
     {
         if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن تقفيل الحساب للجهاز.')
+                ->warning()
+                ->send();
+
             return;
         }
 

@@ -126,6 +126,13 @@ class AddSessionTimeAction
                 'shift_id' => $shiftId,
             ]);
 
+            app(DispatchDeviceControlCommandAction::class)->execute(
+                $device,
+                $actor,
+                'ON,Add,'.(string) $addedMinutesInput,
+                'Add Session Time'
+            );
+
             return $newDetail;
         });
     }

@@ -75,7 +75,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             return 0;
         }
 
-        return max(0, Carbon::now()->diffInDays($this->ended_at, false));
+        return (int) max(0, Carbon::now()->diffInDays($this->ended_at, false));
     }
 
     /**

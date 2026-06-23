@@ -39,4 +39,9 @@ return [
         'token' => env('TENANT_PROVISIONING_API_TOKEN'),
     ],
 
+    'bridge' => [
+        'url' => env('BRIDGE_URL'),
+        'token' => env('BRIDGE_TOKEN'),
+    ],
+
 ];

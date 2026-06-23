@@ -97,6 +97,17 @@ class StartSessionAction
             // تحديث حالة الجهاز إلى مشغول
             $device->update(['status' => 'busy']);
 
+            $bridgeAction = $isTimedSession
+                ? 'ON,Limit,'.(string) $durationMinutes
+                : 'ON,Unlimited,0';
+
+            app(DispatchDeviceControlCommandAction::class)->execute(
+                $device,
+                $actor,
+                $bridgeAction,
+                'Start Session'
+            );
+
             return $session;
         });
     }
