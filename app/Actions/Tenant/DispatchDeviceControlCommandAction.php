@@ -50,6 +50,7 @@ class DispatchDeviceControlCommandAction
         $result = app(SendDeviceControlCommandViaBridgeAction::class)->execute(
             ipAddress: $ipAddress,
             action: $normalizedAction,
+            deviceName: trim((string) ($device->name ?? 'DEVICE_CONTROL')),
         );
 
         if (! $result['ok']) {

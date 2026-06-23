@@ -60,7 +60,7 @@ class SendDeviceControlCommandViaBridgeAction
     /**
      * @return array{ok:bool,error:string|null}
      */
-    public function execute(string $ipAddress, string $action): array
+    public function execute(string $ipAddress, string $action, string $deviceName = 'DEVICE_CONTROL'): array
     {
         $bridgeUrl = rtrim($this->bridgeUrl(), '/');
         $bridgeToken = $this->bridgeToken();
@@ -80,6 +80,7 @@ class SendDeviceControlCommandViaBridgeAction
                     bridgeUrl: $bridgeUrl,
                     ipAddress: $ipAddress,
                     order: $order,
+                    deviceName: $deviceName,
                 );
             }
 
@@ -87,7 +88,7 @@ class SendDeviceControlCommandViaBridgeAction
                 bridgeUrl: $bridgeUrl,
                 bridgeToken: $bridgeToken,
                 ipAddress: $ipAddress,
-                deviceName: 'DEVICE_CONTROL',
+                deviceName: $deviceName,
             );
 
             if (! $preflightResult['ok']) {
@@ -321,9 +322,9 @@ class SendDeviceControlCommandViaBridgeAction
     /**
      * @return array{ok:bool,error:string|null}
      */
-    private function sendOrderViaWebSocket(string $bridgeUrl, string $ipAddress, string $order): array
+    private function sendOrderViaWebSocket(string $bridgeUrl, string $ipAddress, string $order, string $deviceName = 'DEVICE_CONTROL'): array
     {
-        $message = $ipAddress.','.$order.',DEVICE_CONTROL';
+        $message = $ipAddress.','.$order.','.$deviceName;
         $result = $this->sendWebSocketMessage($bridgeUrl, $message);
 
         if (! $result['ok']) {

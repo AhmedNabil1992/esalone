@@ -99,6 +99,10 @@ class DeviceControl extends Page
 
     public bool $bridgeUnavailable = false;
 
+    public ?string $lastCloseInvoiceError = null;
+
+    public ?string $lastCloseInvoiceDeviceName = null;
+
     public function mount(): void
     {
         $first = DevicesType::query()
@@ -1044,6 +1048,9 @@ class DeviceControl extends Page
 
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
+            $this->lastCloseInvoiceError = $e->getMessage();
+            $this->lastCloseInvoiceDeviceName = $this->selectedBusyDevice?->name ?? 'غير معروف';
+
             Notification::make()
                 ->title('فشل تقفيل الحساب')
                 ->body($e->getMessage())

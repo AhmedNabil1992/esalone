@@ -574,6 +574,22 @@
                                 <button type="button" wire:click="closeBusyActionDetailsModal" style="border:1px solid #d1d5db;background:#fff;color:#111827;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">إلغاء</button>
                                 <button type="button" wire:click="closeBusySessionInvoice" style="border:1px solid #16a34a;background:#16a34a;color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">تقفيل الحساب</button>
                             </div>
+
+                            @if ($lastCloseInvoiceError)
+                                <div style="margin-top:16px;padding:12px;border:1px solid #fca5a5;background:#fef2f2;border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+                                    <svg style="width:18px;height:18px;color:#dc2626;flex-shrink:0;margin-top:2px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div style="flex:1;">
+                                        <div style="font-size:.82rem;font-weight:700;color:#dc2626;">
+                                            ❌ فشل تقفيل الجهاز: <strong>{{ $lastCloseInvoiceDeviceName }}</strong>
+                                        </div>
+                                        <div style="font-size:.78rem;color:#991b1b;margin-top:4px;line-height:1.5;">
+                                            {{ $lastCloseInvoiceError }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         @endif
                     @elseif ($selectedBusyActionLabel === 'إضافة فلوس')
                         @php
