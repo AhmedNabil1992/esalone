@@ -22,7 +22,7 @@ class ExpensesTypeSum extends StatsOverviewWidget
         $now = Carbon::now();
 
         // سحب رمز العملة الحالي للصالة (مثلاً EGP) لتنسيق المظهر المالي
-        $currencyCode = Setting::get('sys_locale_currency', 'EGP');
+        $currencyCode = (string) (Setting::get('sys_locale_currency') ?: 'EGP');
 
         $expenseHistoriesTable = (new ExpenseHistory)->getTable();
 
