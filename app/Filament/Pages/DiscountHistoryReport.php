@@ -25,7 +25,7 @@ class DiscountHistoryReport extends Page implements HasTable
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reports';
+    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
 
     protected static ?int $navigationSort = 8;
 

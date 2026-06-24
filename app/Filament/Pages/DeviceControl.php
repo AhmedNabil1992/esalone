@@ -40,7 +40,7 @@ class DeviceControl extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Play';
+    protected static string|\UnitEnum|null $navigationGroup = 'اللعب';
 
     protected static ?int $navigationSort = 1;
 

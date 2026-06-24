@@ -16,13 +16,13 @@ class SalesResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Play';
+    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
 
     protected static ?string $navigationLabel = 'المبيعات المباشرة';
 
     protected static ?string $label = 'مبيعات الأصناف';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
     public static function getPages(): array
     {

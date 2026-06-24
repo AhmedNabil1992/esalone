@@ -30,7 +30,7 @@ class SystemConfig extends Page
 
     protected string $view = 'filament.pages.system-config';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
+    protected static string|\UnitEnum|null $navigationGroup = 'إعدادات النظام';
 
     // مصفوفة لتخزين البيانات مؤقتاً في الـ Form
     public ?array $data = [];

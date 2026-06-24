@@ -21,7 +21,7 @@ class CustomerCreditResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Customers';
+    protected static string|UnitEnum|null $navigationGroup = 'العملاء';
 
     protected static ?string $navigationLabel = 'حركات الرصيد';
 

@@ -23,7 +23,7 @@ class DeviceTypeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Devices';
+    protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';
 
     protected static ?string $navigationLabel = 'أنواع الأجهزة';
 

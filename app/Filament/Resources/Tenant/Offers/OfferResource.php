@@ -22,7 +22,7 @@ class OfferResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-ticket';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Devices';
+    protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';
 
     protected static ?string $navigationLabel = 'العروض';
 

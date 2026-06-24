@@ -22,7 +22,7 @@ class CashBoxResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Financial';
+    protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
 
     protected static ?string $navigationLabel = 'الخزن';
 

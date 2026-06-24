@@ -22,7 +22,7 @@ class ExpenseHistoryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Financial';
+    protected static string|UnitEnum|null $navigationGroup = 'التقارير';
 
     protected static ?string $navigationLabel = 'سجل المصروفات';
 

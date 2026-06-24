@@ -22,7 +22,7 @@ class PurchaseItemResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-queue-list';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Purchases';
+    protected static string|UnitEnum|null $navigationGroup = 'المشتريات';
 
     protected static ?string $navigationLabel = 'بنود المشتريات';
 

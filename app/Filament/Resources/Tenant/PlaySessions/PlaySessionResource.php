@@ -24,11 +24,11 @@ class PlaySessionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Play';
+    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
 
     protected static ?string $navigationLabel = 'جلسات اللعب';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $modelLabel = 'جلسة لعب';
 

@@ -56,7 +56,17 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->profile()
-            ->brandName(fn (): string => $this->resolveTenantBrandName())
+            ->brandName(fn (): string => $this->resolveTenantBrandName()) // سيب دي عشان الـ Title بتاع المتصفح
+            ->favicon(asset('apple-touch-icon.png'))
+            ->brandLogo(fn (): HtmlString => new HtmlString('
+                <div style="display: flex; align-items: center; gap: 12px; white-space: nowrap;">
+                    <img src="' . asset('images/favicon.svg') . '" style="height: 2.5rem; width: auto; flex-shrink: 0;" alt="Logo">
+                    <span style="font-size: 1.25rem; font-weight: bold; line-height: 1;" class="text-gray-950 dark:text-white">
+                        ' . $this->resolveTenantBrandName() . '
+                    </span>
+                </div>
+            '))
+            ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::Blue,
             ])
@@ -76,52 +86,62 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 // 1. العمليات اليومية
-                NavigationGroup::make('Play')
+                NavigationGroup::make()
                     ->label('اللعب')
-                    ->icon('heroicon-o-play'),
+                    // ->icon('heroicon-o-play')
+                    ,
                     
-                NavigationGroup::make('Shifts')
+                NavigationGroup::make()
                     ->label('الشيفتات')
-                    ->icon('heroicon-o-clock'),
+                    // ->icon('heroicon-o-clock')
+                    ,
 
-                NavigationGroup::make('Customers')
+                NavigationGroup::make()
                     ->label('العملاء')
-                    ->icon('heroicon-o-user-group'),
+                    // ->icon('heroicon-o-user-group')
+                    ,
 
                 // 2. الحسابات والمخازن
-                NavigationGroup::make('Financial')
+                NavigationGroup::make()
                     ->label('الإدارة المالية')
-                    ->icon('heroicon-o-banknotes'),
+                    // ->icon('heroicon-o-banknotes')
+                    ,
 
-                NavigationGroup::make('Inventory')
+                NavigationGroup::make()
                     ->label('إدارة المخزون')
-                    ->icon('heroicon-o-archive-box'),
+                    // ->icon('heroicon-o-archive-box')
+                    ,
 
-                NavigationGroup::make('Purchases')
+                NavigationGroup::make()
                     ->label('المشتريات')
-                    ->icon('heroicon-o-shopping-cart'),
+                    // ->icon('heroicon-o-shopping-cart')
+                    ,
 
                 // 3. التقارير
-                NavigationGroup::make('Reports')
+                NavigationGroup::make()
                     ->label('التقارير')
-                    ->icon('heroicon-o-chart-pie'),
+                    // ->icon('heroicon-o-chart-pie')
+                    ,
 
                 // 4. الإعدادات (في الأسفل)
-                NavigationGroup::make('Devices')
+                NavigationGroup::make()
                     ->label('إدارة الأجهزة')
-                    ->icon('heroicon-o-tv'),
+                    // ->icon('heroicon-o-tv')
+                    ,
 
-                NavigationGroup::make('Users')
+                NavigationGroup::make()
                     ->label('إعدادات المستخدمين')
-                    ->icon('heroicon-o-users'),
+                    // ->icon('heroicon-o-users')
+                    ,
 
-                NavigationGroup::make('Settings')
+                NavigationGroup::make()
                     ->label('إعدادات النظام')
-                    ->icon('heroicon-o-cog-6-tooth'),
+                    // ->icon('heroicon-o-cog-6-tooth')
+                    ,
             ])
             ->plugins([
                 FilamentShieldPlugin::make()
-                    ->navigationGroup('Users')
+                    ->navigationGroup('إعدادات المستخدمين')
                     ->navigationLabel('صلاحيات المستخدمين')
                     ->gridColumns([
                         'default' => 1,
