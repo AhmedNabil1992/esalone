@@ -16,7 +16,7 @@ class SalesResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-cart';
 
-    protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
+    protected static string|UnitEnum|null $navigationGroup = 'Play';
 
     protected static ?string $navigationLabel = 'المبيعات المباشرة';
 

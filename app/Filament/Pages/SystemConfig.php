@@ -26,8 +26,11 @@ class SystemConfig extends Page
     protected static ?string $title = 'إعدادات النظام';
 
     protected static ?string $navigationLabel = 'إعدادات النظام';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected string $view = 'filament.pages.system-config';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
 
     // مصفوفة لتخزين البيانات مؤقتاً في الـ Form
     public ?array $data = [];

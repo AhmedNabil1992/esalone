@@ -21,7 +21,7 @@ class OrderSessionDetailsResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
+    protected static string|UnitEnum|null $navigationGroup = 'Play';
 
     protected static ?string $navigationLabel = 'تقرير الطلبات الحالي';
 

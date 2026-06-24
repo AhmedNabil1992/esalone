@@ -1,5 +1,20 @@
 <x-filament-panels::page>
-    <div dir="rtl" wire:poll.10000ms style="display:flex;flex-direction:column;gap:20px;">
+    <div
+        dir="rtl"
+        wire:poll.30000ms
+        x-data
+        x-init="
+            const channelName = @js($this->getRealtimeDeviceControlChannel());
+
+            if (window.Echo) {
+                window.Echo.channel(channelName)
+                    .listen('.device-control.updated', () => {
+                        $wire.$refresh();
+                    });
+            }
+        "
+        style="display:flex;flex-direction:column;gap:20px;"
+    >
 
         {{-- ===== تبويبات أنواع الأجهزة ===== --}}
         <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;border-bottom:2px solid #e5e7eb;">
@@ -66,7 +81,7 @@
                 <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0 1 16 0M20 15a8 8 0 0 1-16 0"/>
                 </svg>
-                تحديث كل 10 ث
+                تحديث لحظي + احتياطي كل 30 ث
             </span>
         </div>
         @endif

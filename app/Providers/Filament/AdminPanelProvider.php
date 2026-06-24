@@ -24,17 +24,21 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Throwable;
+use Filament\Navigation\NavigationGroup;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function boot(): void
     {
+        $this->configureBroadcasting();
+
         FilamentSchema::configureUsing(function (FilamentSchema $schema): void {
             $schema->defaultCurrency(fn (): string => $this->resolveTenantCurrency());
         });
@@ -51,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile()
             ->brandName(fn (): string => $this->resolveTenantBrandName())
             ->colors([
                 'primary' => Color::Blue,
@@ -69,33 +74,54 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 PurchaseOverviewWidget::class,
             ])
-            // ->navigationGroups([
-            //     NavigationGroup::make('System')
-            //         ->label('System')
-            //         ->icon('heroicon-o-cog'),
-            //     NavigationGroup::make('User Management')
-            //         ->label('User Management')
-            //         ->icon('heroicon-o-users'),
-            // ])
-            // ->navigationItems([
-            //     NavigationItem::make('Dashboard')
-            //         ->icon('heroicon-o-home')
-            //         ->url('/admin')
-            //         ->group('System'),
-            //     NavigationItem::make('Users')
-            //         ->icon('heroicon-o-users')
-            //         ->url('/admin/users')
-            //         ->group('User Management')
-            //         ->sort(1),
-            //     NavigationItem::make('Roles')
-            //         ->icon('heroicon-o-shield-check')
-            //         ->url('/admin/shield/roles')
-            //         ->group('User Management')
-            //         ->sort(2),
-            // ])
+            ->navigationGroups([
+                // 1. العمليات اليومية
+                NavigationGroup::make('Play')
+                    ->label('اللعب')
+                    ->icon('heroicon-o-play'),
+                    
+                NavigationGroup::make('Shifts')
+                    ->label('الشيفتات')
+                    ->icon('heroicon-o-clock'),
+
+                NavigationGroup::make('Customers')
+                    ->label('العملاء')
+                    ->icon('heroicon-o-user-group'),
+
+                // 2. الحسابات والمخازن
+                NavigationGroup::make('Financial')
+                    ->label('الإدارة المالية')
+                    ->icon('heroicon-o-banknotes'),
+
+                NavigationGroup::make('Inventory')
+                    ->label('إدارة المخزون')
+                    ->icon('heroicon-o-archive-box'),
+
+                NavigationGroup::make('Purchases')
+                    ->label('المشتريات')
+                    ->icon('heroicon-o-shopping-cart'),
+
+                // 3. التقارير
+                NavigationGroup::make('Reports')
+                    ->label('التقارير')
+                    ->icon('heroicon-o-chart-pie'),
+
+                // 4. الإعدادات (في الأسفل)
+                NavigationGroup::make('Devices')
+                    ->label('إدارة الأجهزة')
+                    ->icon('heroicon-o-tv'),
+
+                NavigationGroup::make('Users')
+                    ->label('إعدادات المستخدمين')
+                    ->icon('heroicon-o-users'),
+
+                NavigationGroup::make('Settings')
+                    ->label('إعدادات النظام')
+                    ->icon('heroicon-o-cog-6-tooth'),
+            ])
             ->plugins([
                 FilamentShieldPlugin::make()
-                    ->navigationGroup('إعدادات المستخدمين')
+                    ->navigationGroup('Users')
                     ->navigationLabel('صلاحيات المستخدمين')
                     ->gridColumns([
                         'default' => 1,
@@ -115,6 +141,12 @@ class AdminPanelProvider extends PanelProvider
                         'sm' => 2,
                     ]),
             ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_START,
+                fn (): HtmlString => new HtmlString(
+                    '<meta name="mobile-web-app-capable" content="yes">'
+                ),
+            )
             ->renderHook(
                 PanelsRenderHook::BODY_START,
                 fn (): HtmlString => new HtmlString(
@@ -138,7 +170,8 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsureTenantHasOpenShift::class,
-            ]);
+            ])
+            ->databaseNotifications();
     }
 
     protected function resolveTenantCurrency(): string
@@ -169,5 +202,21 @@ class AdminPanelProvider extends PanelProvider
         } catch (Throwable) {
             return 'PS Web';
         }
+    }
+
+    protected function configureBroadcasting(): void
+    {
+        $isSecure = (string) config('reverb.apps.apps.0.options.scheme', 'https') === 'https';
+        $host = (string) config('reverb.apps.apps.0.options.host', 'ps-web.test');
+        $port = (int) config('reverb.apps.apps.0.options.port', 8080);
+        $key = (string) config('broadcasting.connections.reverb.key', '');
+
+        Config::set('filament.broadcasting.echo.key', $key);
+        Config::set('filament.broadcasting.echo.wsHost', $host);
+        Config::set('filament.broadcasting.echo.wsPort', $port);
+        Config::set('filament.broadcasting.echo.wssPort', $port);
+        Config::set('filament.broadcasting.echo.forceTLS', $isSecure);
+        Config::set('filament.broadcasting.echo.encrypted', $isSecure);
+        Config::set('filament.broadcasting.echo.enabledTransports', ['ws', 'wss']);
     }
 }

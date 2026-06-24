@@ -21,7 +21,7 @@ class ExpensesTypesResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
+    protected static string|UnitEnum|null $navigationGroup = 'Financial';
     protected static ?string $recordTitleAttribute = 'أنواع المصروفات';
     protected static ?string $navigationLabel = 'أنواع المصروفات';
     protected static ?string $pluralModelLabel = 'أنواع المصروفات';

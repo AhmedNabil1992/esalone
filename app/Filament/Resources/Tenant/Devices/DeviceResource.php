@@ -23,7 +23,7 @@ class DeviceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-device-tablet';
 
-    protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';
+    protected static string|UnitEnum|null $navigationGroup = 'Devices';
 
     protected static ?string $navigationLabel = 'الأجهزة';
 

@@ -21,7 +21,7 @@ class ShiftResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static string|UnitEnum|null $navigationGroup = 'الشيفتات';
+    protected static string|UnitEnum|null $navigationGroup = 'Shifts';
 
     protected static ?string $navigationLabel = 'إدارة الشيفتات';
 

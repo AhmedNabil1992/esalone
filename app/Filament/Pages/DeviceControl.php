@@ -11,6 +11,7 @@ use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
 use App\Actions\Tenant\SwitchPlayAction;
+use App\Events\Tenant\DeviceControlUpdated;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
@@ -21,6 +22,7 @@ use App\Models\Tenant\OrderSessionDetail;
 use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\PlaySessionDetail;
 use App\Models\Tenant\PlaySessions;
+use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
 use Carbon\Carbon;
@@ -38,7 +40,7 @@ class DeviceControl extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'اللعب';
+    protected static string|\UnitEnum|null $navigationGroup = 'Play';
 
     protected static ?int $navigationSort = 1;
 
@@ -790,6 +792,8 @@ class DeviceControl extends Page
             ->success()
             ->send();
 
+        $this->broadcastDeviceControlRefresh('order_added');
+
         $this->closeOrderItemQuantityModal();
     }
 
@@ -836,6 +840,8 @@ class DeviceControl extends Page
             ->body('الرصيد المقدم الحالي: '.number_format((float) $session->fresh()->prepaid_amount, 2))
             ->success()
             ->send();
+
+        $this->broadcastDeviceControlRefresh('amount_added');
 
         $this->closeBusyActionDetailsModal();
     }
@@ -889,6 +895,8 @@ class DeviceControl extends Page
                 ->success()
                 ->send();
 
+            $this->broadcastDeviceControlRefresh('time_added');
+
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
             Notification::make()
@@ -931,6 +939,8 @@ class DeviceControl extends Page
                 ->title('تم تبديل نوع اللعب بنجاح')
                 ->success()
                 ->send();
+
+            $this->broadcastDeviceControlRefresh('play_switched');
 
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
@@ -984,6 +994,8 @@ class DeviceControl extends Page
                 ->title('تم تبديل الجهاز بنجاح')
                 ->success()
                 ->send();
+
+            $this->broadcastDeviceControlRefresh('device_switched');
 
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
@@ -1087,6 +1099,8 @@ class DeviceControl extends Page
                 $this->dispatch('open-print-window', url: route('tenant.invoices.print', ['invoice' => $invoice->id, 'silent' => 1]));
             }
 
+            $this->broadcastDeviceControlRefresh('invoice_closed');
+
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
             $this->lastCloseInvoiceError = $e->getMessage();
@@ -1128,6 +1142,8 @@ class DeviceControl extends Page
                 ->title('تم تحديد الوقت بنجاح')
                 ->success()
                 ->send();
+
+            $this->broadcastDeviceControlRefresh('time_limited');
 
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
@@ -1215,14 +1231,19 @@ class DeviceControl extends Page
             return false;
         }
 
-        return PlaySessionDetail::query()
+        // return PlaySessionDetail::query()
+        //     ->where('device_id', $this->selectedDeviceId)
+        //     ->where('start_time', '>=', Carbon::today())
+        //     ->where('start_time', '<=', Carbon::today()->endOfDay())
+        //     ->where(function ($query): void {
+        //         $query->where('status', 'محجوز')
+        //             ->orWhere('play_category', 'حجز');
+        //     })
+        //     ->exists();
+        return Reservation::query()
             ->where('device_id', $this->selectedDeviceId)
             ->where('start_time', '>=', Carbon::today())
             ->where('start_time', '<=', Carbon::today()->endOfDay())
-            ->where(function ($query): void {
-                $query->where('status', 'محجوز')
-                    ->orWhere('play_category', 'حجز');
-            })
             ->exists();
     }
 
@@ -1270,6 +1291,8 @@ class DeviceControl extends Page
                 ->title('تم فتح الجلسة بنجاح')
                 ->success()
                 ->send();
+
+            $this->broadcastDeviceControlRefresh('session_started');
         } catch (RuntimeException $e) {
             Notification::make()
                 ->title('فشل فتح الجلسة')
@@ -1297,6 +1320,8 @@ class DeviceControl extends Page
                 ->title('تم فتح الجلسة بنجاح')
                 ->success()
                 ->send();
+
+            $this->broadcastDeviceControlRefresh('session_started');
         } catch (RuntimeException $e) {
             Notification::make()
                 ->title('فشل فتح الجلسة')
@@ -1311,6 +1336,26 @@ class DeviceControl extends Page
         $busy = Devices::query()->where('status', 'busy')->count('*');
 
         return $busy > 0 ? (string) $busy : null;
+    }
+
+    public function getRealtimeDeviceControlChannel(): string
+    {
+        return 'tenant.'.$this->getTenantBroadcastKey().'.device-control';
+    }
+
+    private function broadcastDeviceControlRefresh(string $action): void
+    {
+        event(new DeviceControlUpdated(
+            tenantKey: $this->getTenantBroadcastKey(),
+            action: $action,
+        ));
+    }
+
+    private function getTenantBroadcastKey(): string
+    {
+        $tenant = tenant();
+
+        return $tenant ? (string) $tenant->getTenantKey() : 'central';
     }
 
     public static function getNavigationBadgeColor(): ?string

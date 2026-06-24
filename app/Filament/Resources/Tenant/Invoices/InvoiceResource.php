@@ -25,7 +25,7 @@ class InvoiceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-receipt-refund';
 
-    protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
+    protected static string|UnitEnum|null $navigationGroup = 'Reports';
 
     protected static ?string $navigationLabel = 'سجل الفواتير';
 

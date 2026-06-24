@@ -22,7 +22,7 @@ class CashBoxLedgerEntryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';
 
-    protected static string|UnitEnum|null $navigationGroup = 'الإدارة المالية';
+    protected static string|UnitEnum|null $navigationGroup = 'Financial';
 
     protected static ?string $navigationLabel = 'سجل حركة الخزنة';
 
