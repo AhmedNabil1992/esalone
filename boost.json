@@ -15,7 +15,12 @@
         "laravel-best-practices",
         "fluxui-development",
         "livewire-development",
+        "echo-development",
         "tailwindcss-development",
-        "blaze-optimize"
+        "blaze-optimize",
+        "laravel-database-optimization",
+        "laravel-filament",
+        "laravel-specialist",
+        "spatie-laravel-php"
     ]
 }
