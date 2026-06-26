@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Tenant\PlaySessions\RelationManagers;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Models\Tenant\SystemConfig;
 
 class PlaySessionDetailsRelationManager extends RelationManager
 {
@@ -46,10 +47,12 @@ class PlaySessionDetailsRelationManager extends RelationManager
                 TextColumn::make('start_time')
                     ->label('بداية الوقت')
                     ->dateTime()
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->placeholder('-'),
                 TextColumn::make('end_time')
                     ->label('نهاية الوقت')
                     ->dateTime()
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->placeholder('-'),
                 TextColumn::make('user.name')
                     ->label('المستخدم')

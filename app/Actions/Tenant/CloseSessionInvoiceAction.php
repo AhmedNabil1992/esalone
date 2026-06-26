@@ -581,7 +581,7 @@ class CloseSessionInvoiceAction
             return 0.0;
         }
 
-        return round(($finalAmount * $ratio) / 100, 2);
+        return round(($finalAmount * $ratio), 2);
     }
 
     /**

@@ -197,6 +197,8 @@ class DirectSalesForm extends Component
             'total_amount' => $totalAmount,
         ];
 
+        $this->syncPaidAmount();
+
         Notification::make()
             ->success()
             ->title('تمت الإضافة')
@@ -232,7 +234,7 @@ class DirectSalesForm extends Component
     public function removeItem(string $key): void
     {
         unset($this->selectedItems[$key]);
-
+        $this->syncPaidAmount();
         Notification::make()
             ->success()
             ->title('تمت الإزالة')
@@ -254,8 +256,20 @@ class DirectSalesForm extends Component
             $item = $this->selectedItems[$key];
             $item['quantity'] = $quantity;
             $item['total_amount'] = round($item['unit_price'] * $quantity, 2);
+            
             $this->selectedItems[$key] = $item;
+
+            $this->syncPaidAmount();
         }
+    }
+
+    private function syncPaidAmount(): void
+    {
+        // تحديث المبلغ المدفوع ليساوي الإجمالي النهائي بعد الخصم
+        $this->paid_amount = $this->getFinalAmount();
+        
+        // مزامنة حالة زر "إيداع الباقي في رصيد العميل" بناءً على التحديث الجديد
+        $this->syncDepositRemainderToggle();
     }
 
     public function saveSale(): void

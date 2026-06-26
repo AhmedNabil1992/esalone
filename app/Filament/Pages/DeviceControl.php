@@ -120,6 +120,11 @@ class DeviceControl extends Page
         $this->selectedTypeId = $first?->id;
 
         $this->verifyBridgeConnectivity();
+
+        // dd([
+        //     'Config Timezone' => config('app.timezone'),
+        //     'Carbon Now' => now()->format('Y-m-d H:i:s A'),
+        // ]);
     }
 
     private function verifyBridgeConnectivity(): void

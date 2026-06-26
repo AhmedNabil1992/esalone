@@ -188,6 +188,24 @@ class SystemConfig extends Page
                                         return Warehouse::pluck('name', 'id');
                                     })->searchable()->preload(),
                                     TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط :')->numeric(),
+                                    Select::make('sys_system_time_zone')->label('التوقيت المحلي للنظام')->options([
+                                        'Africa/Cairo' => 'مصر - القاهرة',
+                                        'Asia/Riyadh' => 'السعودية - الرياض',
+                                        'Asia/Dubai' => 'الإمارات - دبي',
+                                        'Asia/Kuwait' => 'الكويت - العاصمة',
+                                        'Asia/Qatar' => 'قطر - الدوحة',
+                                        'Asia/Bahrain' => 'البحرين - المنامة',
+                                        'Asia/Muscat' => 'عُمان - مسقط',
+                                        'Asia/Baghdad' => 'العراق - بغداد',
+                                        'Asia/Amman' => 'الأردن - عمان',
+                                        'Asia/Beirut' => 'لبنان - بيروت',
+                                        'Asia/Damascus' => 'سوريا - دمشق',
+                                        'Africa/Tripoli' => 'ليبيا - طرابلس',
+                                        'Africa/Tunis' => 'تونس - العاصمة',
+                                        'Africa/Algiers' => 'الجزائر - العاصمة',
+                                        'Africa/Casablanca' => 'المغرب - الدار البيضاء',
+                                        'Africa/Khartoum' => 'السودان - الخرطوم',
+                                ])->searchable()->preload(),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')

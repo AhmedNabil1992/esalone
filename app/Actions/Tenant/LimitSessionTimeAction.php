@@ -89,8 +89,8 @@ class LimitSessionTimeAction
             }
 
             $targetEndTime = $baseStartTime->copy()->addMinutes($totalMinutes);
-            if ($targetEndTime->lessThanOrEqualTo(now()->addMinutes(15))) {
-                throw new RuntimeException('يجب أن يكون وقت النهاية بعد الوقت الحالي بـ 15 دقيقة على الأقل.');
+            if ($targetEndTime->lessThanOrEqualTo(now()->addMinutes(5))) {
+                throw new RuntimeException('يجب أن يكون وقت النهاية بعد الوقت الحالي بـ 5 دقيقة على الأقل.');
             }
 
             $elapsedBeforeCurrent = (int) ceil((float) $baseStartTime->diffInMinutes($currentSegmentStart));

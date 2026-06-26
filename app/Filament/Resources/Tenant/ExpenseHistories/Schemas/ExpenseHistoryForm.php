@@ -31,10 +31,10 @@ class ExpenseHistoryForm
                     ->numeric()
                     ->minValue(0.01)
                     ->required(),
-                DateTimePicker::make('occurred_at')
-                    ->label('تاريخ العملية')
-                    ->default(now())
-                    ->required(),
+                // DateTimePicker::make('occurred_at')
+                //     ->label('تاريخ العملية')
+                //     ->default(now())
+                //     ->required(),
                 Textarea::make('description')
                     ->label('الوصف')
                     ->columnSpanFull()

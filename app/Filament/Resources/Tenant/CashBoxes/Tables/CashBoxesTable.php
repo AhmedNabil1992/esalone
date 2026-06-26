@@ -18,7 +18,13 @@ class CashBoxesTable
             ->columns([
                 TextColumn::make('name')->label('الإسم')->searchable()->sortable(),
                 TextColumn::make('code')->label('الرمز')->searchable()->sortable(),
-                TextColumn::make('type')->label('النوع')->searchable()->sortable(),
+                TextColumn::make('type')->label('النوع')->searchable()->sortable()
+                ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'cash' => 'كاش',
+                        'bank' => 'بنك',
+                        'wallet' => 'محفظة إلكترونية',
+                        default => '-',
+                    }),
                 TextColumn::make('opening_balance')->label('الرصيد الافتتاحي')->money()->sortable(),
                 TextColumn::make('current_balance')->label('الرصيد الحالي')->money()->sortable(),
                 ToggleColumn::make('is_active')->label('نشط')->sortable(),

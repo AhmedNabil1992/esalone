@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Tenant\ExpenseHistories\Tables;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-
+use App\Models\Tenant\SystemConfig as Setting;
 class ExpenseHistoriesTable
 {
     public static function configure(Table $table): Table
@@ -38,7 +38,8 @@ class ExpenseHistoriesTable
                 TextColumn::make('occurred_at')
                     ->label('تاريخ العملية')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ,
             ])
             ->filters([
                 //

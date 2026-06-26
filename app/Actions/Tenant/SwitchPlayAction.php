@@ -86,9 +86,9 @@ class SwitchPlayAction
             $elapsedMinutesRaw = $elapsedSeconds / 60;
 
             // نفس سلوك الديسكتوب: منع التبديل قبل مرور 5 دقائق على الأقل.
-            if ($elapsedMinutesRaw < 5) {
-                throw new RuntimeException('لا يمكن تبديل اللعب قبل مرور 5 دقائق من بداية النوع الحالي.');
-            }
+            // if ($elapsedMinutesRaw < 5) {
+            //     throw new RuntimeException('لا يمكن تبديل اللعب قبل مرور 5 دقائق من بداية النوع الحالي.');
+            // }
 
             $segmentPeriod = $this->roundMinutesForSwitchPlay($elapsedMinutesRaw);
             $segmentCostRaw = ($segmentPeriod / 60) * (float) $currentDetail->play_price;

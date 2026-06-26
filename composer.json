@@ -18,8 +18,11 @@
         "livewire/blaze": "^1.0",
         "livewire/flux": "^2.13.1",
         "livewire/livewire": "^4.1",
+        "marjose123/filament-lockscreen": "*",
         "qalainau/filament-team-chat": "^0.4.3",
-        "stancl/tenancy": "*"
+        "stancl/tenancy": "*",
+        "swisnl/filament-backgrounds": "^2.0",
+        "tapp/filament-footer": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",

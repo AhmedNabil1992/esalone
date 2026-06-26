@@ -32,6 +32,13 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Throwable;
 use Filament\Navigation\NavigationGroup;
+use App\Http\Middleware\SetTenantTimezone;
+use lockscreen\FilamentLockscreen\Lockscreen;
+use lockscreen\FilamentLockscreen\Http\Middleware\Locker;
+use lockscreen\FilamentLockscreen\Http\Middleware\LockerTimer;
+use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
+use Swis\Filament\Backgrounds\ImageProviders\MyImages;
+use App\Tenancy\TenantBackgroundsProvider;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -160,6 +167,21 @@ class AdminPanelProvider extends PanelProvider
                         'default' => 1,
                         'sm' => 2,
                     ]),
+                    Lockscreen::make()
+                        // ->usingCustomTableColumns('email','password') // Use custom table columns. Default:  email, password.
+                        ->enableRateLimit() // Enable rate limit for the lockscreen. Default: Enable, 5 attempts in 1 minute.
+                        // ->setUrl() // Customize the lockscreen url.
+                        ->enableIdleTimeout() // Enable auto lock during idle time. Default: Enable, 30 minutes.
+                        ->disableDisplayName() // Display the name of the user based on the attribute supplied. Default: name
+                        // ->icon() // Customize the icon of the lockscreen.
+                        ->enablePlugin(), // Enable the plugin.
+                    FilamentBackgroundsPlugin::make()
+                        ->showAttribution(false)
+                        ->imageProvider(
+                            TenantBackgroundsProvider::make()
+                        )
+                        ,
+                    
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_START,
@@ -176,6 +198,7 @@ class AdminPanelProvider extends PanelProvider
             ->middleware([
                 InitializeTenancyByDomain::class,
                 PreventAccessFromCentralDomains::class,
+                SetTenantTimezone::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
