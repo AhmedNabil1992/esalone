@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Models\Tenant\Shift;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,9 @@ Route::middleware([
 ])->group(function () {
     Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
         ->name('tenant.invoices.print');
+
+    Route::middleware('auth')->get('/tenant/order-prepares/print', [PrintOrderPrepareController::class, 'print'])
+        ->name('tenant.order-prepares.print');
 
     Route::middleware('auth')->get('/tenant/shifts/quick-open', function () {
         if (! Shift::currentOpenShift()) {

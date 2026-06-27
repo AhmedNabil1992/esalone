@@ -256,7 +256,7 @@ class DirectSalesForm extends Component
             $item = $this->selectedItems[$key];
             $item['quantity'] = $quantity;
             $item['total_amount'] = round($item['unit_price'] * $quantity, 2);
-            
+
             $this->selectedItems[$key] = $item;
 
             $this->syncPaidAmount();
@@ -267,7 +267,7 @@ class DirectSalesForm extends Component
     {
         // تحديث المبلغ المدفوع ليساوي الإجمالي النهائي بعد الخصم
         $this->paid_amount = $this->getFinalAmount();
-        
+
         // مزامنة حالة زر "إيداع الباقي في رصيد العميل" بناءً على التحديث الجديد
         $this->syncDepositRemainderToggle();
     }
@@ -329,6 +329,13 @@ class DirectSalesForm extends Component
                 ->title('تمت المبيعات')
                 ->body("تم إنشاء الفاتورة {$result['invoice_no']} بنجاح.")
                 ->send();
+
+            $printActive = in_array((string) Setting::get('print_active', '0'), ['1', 'true', 'on', 'yes'], true);
+            $printDirectSale = in_array((string) Setting::get('print_direct_sale', '0'), ['1', 'true', 'on', 'yes'], true);
+
+            if ($printActive && $printDirectSale) {
+                $this->dispatch('open-print-window', url: route('tenant.invoices.print', ['invoice' => $result['invoice']->id, 'silent' => 1]));
+            }
 
             $this->clearCart();
             $this->item_search = '';

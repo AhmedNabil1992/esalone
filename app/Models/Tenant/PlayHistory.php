@@ -40,4 +40,19 @@ class PlayHistory extends Model
     {
         return $this->belongsTo(Devices::class, 'device_id');
     }
+
+    public function getPlayPriceAttribute(): mixed
+    {
+        return $this->hour_price;
+    }
+
+    public function getPeriodAttribute(): ?int
+    {
+        return $this->play_time;
+    }
+
+    public function getPlayCategoryAttribute(): ?string
+    {
+        return null;
+    }
 }

@@ -63,7 +63,7 @@ class PlayPricesRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()->label('أضافة سعر'),
             ])
             ->recordActions([
                 EditAction::make(),

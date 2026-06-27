@@ -16,6 +16,7 @@ class InventoryGroup extends Model
         'description',
         'picture',
         'is_active',
+        'printer_name',
     ];
 
     protected $casts = [

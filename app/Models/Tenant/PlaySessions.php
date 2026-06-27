@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,5 +73,21 @@ class PlaySessions extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function getOriginalStartTime(): ?Carbon
+    {
+        $first = $this->relationLoaded('details')
+            ? $this->details->sortBy('id')->firstWhere('start_time', '!==', null)
+            : $this->details()->whereNotNull('start_time')->orderBy('id', 'asc')->first();
+
+        return $first && $first->start_time ? \Illuminate\Support\Carbon::parse($first->start_time) : null;
+    }
+
+    public function getTotalPeriod(): int
+    {
+        return (int) ($this->relationLoaded('details')
+            ? $this->details->sum('period')
+            : $this->details()->sum('period'));
     }
 }

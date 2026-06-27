@@ -30,14 +30,11 @@ class PlaySessionDetailsRelationManager extends RelationManager
                 TextColumn::make('play_type')
                     ->label('نوع اللعب')
                     ->placeholder('-'),
-                TextColumn::make('play_category')
-                    ->label('الفئة')
-                    ->placeholder('-'),
-                TextColumn::make('play_price')
+                TextColumn::make('hour_price')
                     ->label('سعر الساعة')
                     ->money()
                     ->placeholder('-'),
-                TextColumn::make('period')
+                TextColumn::make('play_time')
                     ->label('المدة (دقيقة)')
                     ->placeholder('-'),
                 TextColumn::make('cost')
@@ -52,7 +49,7 @@ class PlaySessionDetailsRelationManager extends RelationManager
                     ->label('نهاية الوقت')
                     ->dateTime()
                     ->placeholder('-'),
-                TextColumn::make('user.name')
+                TextColumn::make('username')
                     ->label('بواسطة')
                     ->placeholder('-')
                     ->searchable(),

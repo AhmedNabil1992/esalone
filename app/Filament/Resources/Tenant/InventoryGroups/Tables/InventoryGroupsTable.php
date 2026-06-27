@@ -25,6 +25,10 @@ class InventoryGroupsTable
                     ->label('الوصف')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('printer_name')
+                    ->label('طابعة المطبخ')
+                    ->searchable()
+                    ->sortable(),
                 ImageColumn::make('picture')
                     ->label('صورة المجموعة')
                     ->getStateUsing(static fn ($record): ?string => filled($record->picture) ? tenant_asset($record->picture) : null)

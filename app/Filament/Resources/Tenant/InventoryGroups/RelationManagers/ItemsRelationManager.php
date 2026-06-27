@@ -96,8 +96,8 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
-                AssociateAction::make(),
+                CreateAction::make()->label('أضافة صنف'),
+                // AssociateAction::make(),
             ])
             ->recordActions([
                 EditAction::make(),

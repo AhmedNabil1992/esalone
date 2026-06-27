@@ -19,6 +19,7 @@ class OrderSessionDetail extends Model
         'order_by',
         'user_id',
         'notes',
+        'printed',
     ];
 
     public function playSession()

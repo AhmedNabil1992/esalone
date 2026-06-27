@@ -18,6 +18,7 @@ class DevicesType extends Model
         'description',
         'picture',
         'is_active',
+        'fixed_times',
     ];
 
     /**
@@ -26,6 +27,7 @@ class DevicesType extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'fixed_times' => 'array',
     ];
 
     /**

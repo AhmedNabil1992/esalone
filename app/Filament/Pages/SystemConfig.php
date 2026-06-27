@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Models\Tenant\Warehouse;
@@ -26,6 +27,7 @@ class SystemConfig extends Page
     protected static ?string $title = 'إعدادات النظام';
 
     protected static ?string $navigationLabel = 'إعدادات النظام';
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected string $view = 'filament.pages.system-config';
@@ -73,6 +75,29 @@ class SystemConfig extends Page
                                             Toggle::make('print_again')->label('طباعة مرة أخرى'),
                                             Toggle::make('print_order_prepare')->label('طباعة تجهيز الأوردرات'),
                                             Toggle::make('print_multi_printers')->label('تعدد الطابعات'),
+                                        ]),
+
+                                    Section::make('إختيار الطابعات')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            Select::make('sys_invoice_printer')
+                                                ->label('طابعة الفواتير : ')
+                                                ->searchable()
+                                                ->options(fn () => $this->getPrintersOptions())
+                                                ->suffixAction(
+                                                    Action::make('fetchInvoicePrinters')
+                                                        ->icon('heroicon-m-arrow-path')
+                                                        ->action(fn () => $this->refreshPrintersList())
+                                                ),
+                                            Select::make('sys_order_printer')
+                                                ->label('طابعة الأوردرات : ')
+                                                ->searchable()
+                                                ->options(fn () => $this->getPrintersOptions())
+                                                ->suffixAction(
+                                                    Action::make('fetchOrderPrinters')
+                                                        ->icon('heroicon-m-arrow-path')
+                                                        ->action(fn () => $this->refreshPrintersList())
+                                                ),
                                         ]),
 
                                     Section::make('مظهر الفاتورة واللوجو')
@@ -205,7 +230,7 @@ class SystemConfig extends Page
                                         'Africa/Algiers' => 'الجزائر - العاصمة',
                                         'Africa/Casablanca' => 'المغرب - الدار البيضاء',
                                         'Africa/Khartoum' => 'السودان - الخرطوم',
-                                ])->searchable()->preload(),
+                                    ])->searchable()->preload(),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')
@@ -298,5 +323,42 @@ class SystemConfig extends Page
         }
 
         Notification::make()->title('تم حفظ كافة إعدادات الصالة بنجاح')->success()->send();
+    }
+
+    public function getPrintersOptions(): array
+    {
+        $printers = Setting::get('sys_available_printers');
+        if (! $printers) {
+            return [];
+        }
+
+        $decoded = json_decode($printers, true);
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        return array_combine($decoded, $decoded);
+    }
+
+    public function refreshPrintersList(): void
+    {
+        try {
+            $printers = app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
+            Setting::updateOrCreate(
+                ['key' => 'sys_available_printers'],
+                ['value' => json_encode($printers, JSON_UNESCAPED_UNICODE)]
+            );
+
+            Notification::make()
+                ->title('تم تحديث قائمة الطابعات بنجاح')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('فشل الاتصال بالـ Bridge')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }

@@ -35,24 +35,18 @@ class OrderSessionDetailsRelationManager extends RelationManager
                     ->label('اسم الصنف')
                     ->placeholder('-')
                     ->searchable(),
-                TextColumn::make('price')
+                TextColumn::make('unit_price')
                     ->label('السعر')
                     ->money()
                     ->placeholder('-'),
                 TextColumn::make('quantity')
                     ->label('الكمية')
                     ->placeholder('-'),
-                TextColumn::make('total')
+                TextColumn::make('total_amount')
                     ->label('الإجمالي')
                     ->money()
                     ->placeholder('-'),
-                TextColumn::make('status')
-                    ->label('الحالة')
-                    ->placeholder('-'),
-                TextColumn::make('order_by')
-                    ->label('تم الطلب بواسطة')
-                    ->placeholder('-'),
-                TextColumn::make('user.name')
+                TextColumn::make('created_by')
                     ->label('المستخدم')
                     ->placeholder('-')
                     ->searchable(),

@@ -98,11 +98,11 @@ class Invoice extends Model
 
     public function playSessionDetails(): HasMany
     {
-        return $this->hasMany(PlaySessionDetail::class, 'play_session_id', 'play_session_id');
+        return $this->hasMany(PlayHistory::class, 'invoice_no', 'invoice_no');
     }
 
     public function orderSessionDetails(): HasMany
     {
-        return $this->hasMany(OrderSessionDetail::class, 'play_session_id', 'play_session_id');
+        return $this->hasMany(MarketHistory::class, 'invoice_no', 'invoice_no');
     }
 }

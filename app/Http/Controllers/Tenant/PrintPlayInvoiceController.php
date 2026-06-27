@@ -25,9 +25,7 @@ class PrintPlayInvoiceController extends Controller
             'shift',
             'createdBy',
             'playSessionDetails.device',
-            'playSessionDetails.user',
             'orderSessionDetails.catalogItem',
-            'orderSessionDetails.user',
             'payments.cashBox',
             'payments.createdBy',
         ]);

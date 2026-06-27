@@ -550,4 +550,107 @@ class SendDeviceControlCommandViaBridgeAction
 
         return $payload;
     }
+
+    public function fetchPrinters(): array
+    {
+        $bridgeUrl = rtrim($this->bridgeUrl(), '/');
+        if ($bridgeUrl === '') {
+            throw new RuntimeException('Bridge URL غير مضبوط.');
+        }
+
+        if (! $this->usesWebSocket($bridgeUrl)) {
+            throw new RuntimeException('طريقة الاتصال بالـ Bridge يجب أن تكون عبر WebSocket.');
+        }
+
+        $reply = $this->sendWebSocketMessageWithReply($bridgeUrl, 'GET_PRINTERS');
+
+        if ($reply === null) {
+            throw new RuntimeException('لم يتم استلام رد من الـ Bridge.');
+        }
+
+        $payload = json_decode($reply, true);
+        if (! is_array($payload)) {
+            throw new RuntimeException('الـ Bridge أرجع رد غير صالح.');
+        }
+
+        if (($payload['status'] ?? '') === 'printers' && is_array($payload['printers'] ?? null)) {
+            return $payload['printers'];
+        }
+
+        throw new RuntimeException($payload['message'] ?? 'فشل الحصول على الطابعات.');
+    }
+
+    private function sendWebSocketMessageWithReply(string $bridgeUrl, string $message): ?string
+    {
+        $parts = parse_url($bridgeUrl);
+        if (! is_array($parts)) {
+            return null;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = (string) ($parts['host'] ?? '');
+        $port = (int) ($parts['port'] ?? ($scheme === 'wss' ? 443 : 80));
+        $path = (string) ($parts['path'] ?? '/');
+        if ($path === '') {
+            $path = '/';
+        }
+        $query = (string) ($parts['query'] ?? '');
+        if ($query !== '') {
+            $path .= '?'.$query;
+        }
+
+        if ($host === '' || ! in_array($scheme, ['ws', 'wss'], true)) {
+            return null;
+        }
+
+        $transport = $scheme === 'wss' ? 'tls' : 'tcp';
+        $socket = @stream_socket_client(
+            $transport.'://'.$host.':'.$port,
+            $errorNumber,
+            $errorMessage,
+            4
+        );
+
+        if (! is_resource($socket)) {
+            return null;
+        }
+
+        stream_set_timeout($socket, 5);
+
+        $key = base64_encode(random_bytes(16));
+        $headers = "GET {$path} HTTP/1.1\r\n"
+            ."Host: {$host}:{$port}\r\n"
+            ."Upgrade: websocket\r\n"
+            ."Connection: Upgrade\r\n"
+            ."Sec-WebSocket-Key: {$key}\r\n"
+            ."Sec-WebSocket-Version: 13\r\n\r\n";
+
+        fwrite($socket, $headers);
+
+        $handshakeResponse = '';
+        while (! feof($socket)) {
+            $line = fgets($socket);
+            if ($line === false) {
+                break;
+            }
+
+            $handshakeResponse .= $line;
+            if (rtrim($line) === '') {
+                break;
+            }
+        }
+
+        if (! str_contains($handshakeResponse, ' 101 ')) {
+            fclose($socket);
+
+            return null;
+        }
+
+        fwrite($socket, $this->encodeWebSocketFrame($message));
+
+        $reply = $this->decodeWebSocketFrame($socket);
+        fclose($socket);
+
+        return $reply;
+    }
 }

@@ -288,7 +288,7 @@ class CloseSessionInvoiceAction
             $this->insertPlayHistoryRows($session, $invoice, $actor, $shiftNo);
             $this->insertMarketHistoryRows($device, $session, $invoice, $actor, $shiftNo, $coreLedgerEntries['orders'] ?? null);
 
-            $this->updateShiftTotals($shiftId, $preview);
+            // $this->updateShiftTotals($shiftId, $preview);
             $this->applyCustomerSettlement(
                 $resolvedCustomerId,
                 $actor,
@@ -471,20 +471,20 @@ class CloseSessionInvoiceAction
     /**
      * @param  array<string,mixed>  $preview
      */
-    private function updateShiftTotals(int $shiftId, array $preview): void
-    {
-        $shift = Shift::query()->whereKey($shiftId)->lockForUpdate()->first();
-        if (! $shift) {
-            return;
-        }
+    // private function updateShiftTotals(int $shiftId, array $preview): void
+    // {
+    //     $shift = Shift::query()->whereKey($shiftId)->lockForUpdate()->first();
+    //     if (! $shift) {
+    //         return;
+    //     }
 
-        $shift->playstation_amount = round((float) $shift->playstation_amount + (float) $preview['play_amount'], 2);
-        $shift->sales_amount = round((float) $shift->sales_amount + (float) $preview['order_amount'], 2);
-        $shift->tax_amount = round((float) $shift->tax_amount + (float) $preview['tax_amount'], 2);
-        $shift->service_amount = round((float) $shift->service_amount + (float) $preview['service_amount'], 2);
-        $shift->discount_amount = round((float) $shift->discount_amount + (float) $preview['discount_amount'], 2);
-        $shift->save();
-    }
+    //     $shift->playstation_amount = round((float) $shift->playstation_amount + (float) $preview['play_amount'], 2);
+    //     $shift->sales_amount = round((float) $shift->sales_amount + (float) $preview['order_amount'], 2);
+    //     $shift->tax_amount = round((float) $shift->tax_amount + (float) $preview['tax_amount'], 2);
+    //     $shift->service_amount = round((float) $shift->service_amount + (float) $preview['service_amount'], 2);
+    //     $shift->discount_amount = round((float) $shift->discount_amount + (float) $preview['discount_amount'], 2);
+    //     $shift->save();
+    // }
 
     private function applyCustomerSettlement(?int $customerId, User $actor, float $finalAmount, float $paidAmount, bool $depositRemainderToCustomerBalance, string $invoiceNo): void
     {
@@ -780,15 +780,17 @@ class CloseSessionInvoiceAction
         $playCategory = trim((string) ($latestDetail->play_category ?? ''));
         $detailEnd = $latestDetail->end_time;
 
-        if ((bool) $device->is_time && $playCategory === 'وقت محدد' && $detailEnd) {
+        if ((bool) $device->is_time && $playCategory === 'محدد' && $detailEnd) {
             if ($now->greaterThan($detailEnd)) {
                 $lockMinutes = (int) SystemConfig::get('sys_lock_device_time', 0);
                 if ($lockMinutes > 0 && $detailEnd->diffInMinutes($now) >= $lockMinutes) {
                     throw new RuntimeException('لقد تجاوزت وقت السماح لتقفيل الجهاز. يرجى إضافة وقت أولاً.');
                 }
+
+                return Carbon::instance($detailEnd->toMutable());
             }
 
-            return Carbon::instance($detailEnd->toMutable());
+            return $now;
         }
 
         return $now;
@@ -978,8 +980,8 @@ class CloseSessionInvoiceAction
             ? $session->details
             : collect();
 
-        $firstDetailWithStart = $details->first(static fn (mixed $detail): bool => $detail instanceof PlaySessionDetail && $detail->start_time !== null);
-        if (! $firstDetailWithStart instanceof PlaySessionDetail || ! $firstDetailWithStart->start_time || ! $latestDetail->start_time) {
+        $firstStart = $session->getOriginalStartTime();
+        if (! $firstStart || ! $latestDetail->start_time) {
             return [
                 'minutes' => $roundedMinutes,
                 'applied' => false,
@@ -988,7 +990,7 @@ class CloseSessionInvoiceAction
             ];
         }
 
-        $elapsedFromSessionStart = (int) max(0, $firstDetailWithStart->start_time->diffInMinutes($effectiveEnd));
+        $elapsedFromSessionStart = (int) max(0, $firstStart->diffInMinutes($effectiveEnd));
         if ($elapsedFromSessionStart >= $limitTime) {
             return [
                 'minutes' => $roundedMinutes,
@@ -998,7 +1000,7 @@ class CloseSessionInvoiceAction
             ];
         }
 
-        $beforeMinutes = (int) max(0, $firstDetailWithStart->start_time->diffInMinutes($latestDetail->start_time));
+        $beforeMinutes = (int) $details->filter(static fn (mixed $d): bool => $d instanceof PlaySessionDetail && $d->id < $latestDetail->id)->sum('period');
         if ($details->count() <= 1) {
             return [
                 'minutes' => $limitTime,

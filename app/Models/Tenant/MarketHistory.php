@@ -42,6 +42,21 @@ class MarketHistory extends Model
         return $this->belongsTo(CatalogItem::class, 'catalog_item_id');
     }
 
+    public function catalogItem(): BelongsTo
+    {
+        return $this->belongsTo(CatalogItem::class, 'catalog_item_id');
+    }
+
+    public function getPriceAttribute(): mixed
+    {
+        return $this->unit_price;
+    }
+
+    public function getTotalAttribute(): mixed
+    {
+        return $this->total_amount;
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');

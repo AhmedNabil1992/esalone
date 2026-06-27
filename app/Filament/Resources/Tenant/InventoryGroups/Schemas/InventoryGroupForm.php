@@ -2,9 +2,13 @@
 
 namespace App\Filament\Resources\Tenant\InventoryGroups\Schemas;
 
+use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
+use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Str;
@@ -21,6 +25,15 @@ class InventoryGroupForm
                 TextInput::make('description')
                     ->label('الوصف')
                     ->helperText('وصف المجموعة (اختياري)'),
+                Select::make('printer_name')
+                    ->label('طابعة الأوردرات : ')
+                    ->searchable()
+                    ->options(fn () => self::getPrintersOptions())
+                    ->suffixAction(
+                        Action::make('fetchOrderPrinters')
+                            ->icon('heroicon-m-arrow-path')
+                            ->action(fn () => self::refreshPrintersList())
+                    ),
                 FileUpload::make('picture')
                     ->label('صورة مجموعة الصنف')
                     ->image()
@@ -45,5 +58,37 @@ class InventoryGroupForm
                     ->imageEditor()
                     ->columnSpanFull(),
             ]);
+    }
+
+    public static function refreshPrintersList(): void
+    {
+        try {
+            app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
+
+            Notification::make()
+                ->title('تم تحديث قائمة الطابعات بنجاح')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('فشل الاتصال بالـ Bridge')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public static function getPrintersOptions(): array
+    {
+        try {
+            $printers = app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
+            if (is_array($printers) && $printers !== []) {
+                return array_combine($printers, $printers);
+            }
+        } catch (\Throwable) {
+            // Gracefully handle bridge offline or connection errors
+        }
+
+        return [];
     }
 }

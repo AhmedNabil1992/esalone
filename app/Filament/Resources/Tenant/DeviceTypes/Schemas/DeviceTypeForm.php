@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Tenant\DeviceTypes\Schemas;
 
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -29,6 +30,18 @@ class DeviceTypeForm
                     ->columnSpanFull()
                     ->placeholder('وصف مختصر لنوع الجهاز')
                     ->helperText('يمكنك إضافة وصف مختصر لنوع الجهاز لا يتجاوز 50 حرفًا.'),
+                TagsInput::make('fixed_times')
+                    ->label('الأوقات الثابتة السريعة (بالدقائق)')
+                    ->placeholder('أضف دقيقة واضغط Enter')
+                    ->helperText('الأوقات السريعة المتاحة لبدء اللعب أو تحديد الوقت للجهاز')
+                    ->nestedRecursiveRules([
+                        'integer',
+                        'min:1',
+                    ])
+                    ->extraInputAttributes([
+                        'onkeypress' => 'return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 13 || event.charCode === 0',
+                        'type' => 'tel',
+                    ]),
                 FileUpload::make('picture')
                     ->label('صورة نوع الجهاز')
                     ->image()

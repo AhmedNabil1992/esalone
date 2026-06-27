@@ -29,7 +29,7 @@
             max-width: 75mm;
             font-family: "Tahoma", "Arial", sans-serif;
             font-size: 13px;
-            color: #111;
+            color: #000;
             line-height: 1.5;
             direction: rtl;
             text-align: right;
@@ -63,12 +63,12 @@
         }
 
         .muted {
-            color: #4b5563;
+            color: #000;
             font-size: 11px;
         }
 
         .line {
-            border-top: 1px dashed #777;
+            border-top: 1px dashed #000;
             margin: 6px 0;
         }
 
@@ -164,10 +164,12 @@
             <th>التاريخ</th>
             <td class="value">{{ $invoice->issued_at?->format('Y-m-d h:i A') ?? '-' }}</td>
         </tr>
+        @if($invoice->device)
         <tr>
             <th>الجهاز</th>
-            <td>{{ $invoice->device?->name ?? '-' }}</td>
+            <td>{{ $invoice->device->name }}</td>
         </tr>
+        @endif
         <tr>
             <th>العميل</th>
             <td>{{ $invoice->customer?->name ?? '-' }}</td>
@@ -182,47 +184,43 @@
         </tr>
     </table>
 
-    <div class="line"></div>
+    @if($invoice->playSessionDetails->isNotEmpty())
+        <div class="section-title">تفاصيل اللعب</div>
+        <table>
+            @foreach ($invoice->playSessionDetails as $detail)
+                <tr>
+                    <td style="width:64%;">
+                        {{ $detail->play_type ?: 'لعب' }} {{ $detail->play_category ? '(' . $detail->play_category . ')' : '' }}
+                        <br>
+                        <span class="muted">المدة: {{ (int) ($detail->period ?? 0) }} د |  {{ $detail->device?->name ?? $invoice->device?->name ?? '-' }}</span>
+                    </td>
+                    <td class="value">{{ number_format((float) ($detail->cost ?? 0), 2) }}</td>
+                </tr>
+            @endforeach
+        </table>
+        <div class="line"></div>
+    @endif
 
-    <div class="section-title">تفاصيل اللعب</div>
-    <table>
-        @forelse ($invoice->playSessionDetails as $detail)
-            <tr>
-                <td style="width:64%;">
-                    {{ $detail->play_type ?: 'لعب' }} {{ $detail->play_category ? '(' . $detail->play_category . ')' : '' }}
-                    <br>
-                    <span class="muted">المدة: {{ (int) ($detail->period ?? 0) }} د | الروم: {{ $detail->device?->name ?? $invoice->device?->name ?? '-' }}</span>
-                </td>
-                <td class="value">{{ number_format((float) ($detail->cost ?? 0), 2) }}</td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="2" class="muted">لا توجد بنود لعب</td>
-            </tr>
-        @endforelse
-    </table>
-
-    <div class="line"></div>
-
-    <div class="section-title">تفاصيل الطلبات</div>
-    <table>
-        @forelse ($invoice->orderSessionDetails as $order)
-            <tr>
-                <td style="width:64%;">{{ $order->catalogItem?->name ?? 'صنف' }} x{{ (int) ($order->quantity ?? 0) }}</td>
-                <td class="value">{{ number_format((float) ($order->total ?? 0), 2) }}</td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="2" class="muted">لا توجد طلبات</td>
-            </tr>
-        @endforelse
-    </table>
-
-    <div class="line"></div>
+    @if($invoice->orderSessionDetails->isNotEmpty())
+        <div class="section-title">تفاصيل الطلبات</div>
+        <table>
+            @foreach ($invoice->orderSessionDetails as $order)
+                <tr>
+                    <td style="width:64%;">{{ $order->catalogItem?->name ?? 'صنف' }} x{{ (int) ($order->quantity ?? 0) }}</td>
+                    <td class="value">{{ number_format((float) ($order->total ?? 0), 2) }}</td>
+                </tr>
+            @endforeach
+        </table>
+        <div class="line"></div>
+    @endif
 
     <table class="summary">
-        <tr><td>إجمالي اللعب</td><td class="value">{{ number_format((float) $invoice->play_amount, 2) }}</td></tr>
-        <tr><td>إجمالي الطلبات</td><td class="value">{{ number_format((float) $invoice->order_amount, 2) }}</td></tr>
+        @if((float) $invoice->play_amount > 0)
+            <tr><td>إجمالي اللعب</td><td class="value">{{ number_format((float) $invoice->play_amount, 2) }}</td></tr>
+        @endif
+        @if((float) $invoice->order_amount > 0)
+            <tr><td>إجمالي الطلبات</td><td class="value">{{ number_format((float) $invoice->order_amount, 2) }}</td></tr>
+        @endif
         <tr><td>الإجمالي قبل الخصم</td><td class="value">{{ number_format((float) $invoice->subtotal, 2) }}</td></tr>
         @if ($discountAmount > 0)
             <tr><td>الخصم</td><td class="value">{{ number_format($discountAmount, 2) }}</td></tr>
@@ -251,14 +249,75 @@
     window.addEventListener('load', function () {
         const params = new URLSearchParams(window.location.search);
         const silentMode = params.get('silent') === '1';
+        const isFallback = params.get('fallback') === '1';
 
         if (silentMode) {
             // Silent mode is handled by the extension/bridge only.
             return;
         }
 
+        if (isFallback) {
+            const receiptEl = document.querySelector('.receipt');
+            if (!receiptEl) return;
+
+            // Force receipt container overflow to visible for capturing
+            receiptEl.style.overflow = 'visible';
+
+            setTimeout(() => {
+                html2canvas(receiptEl, {
+                    scale: 3, // High scale for clear printing
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: document.documentElement.offsetWidth,
+                    windowHeight: document.documentElement.offsetHeight
+                }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // Create print container
+                    const printContainer = document.createElement('div');
+                    printContainer.style.width = '75mm';
+                    printContainer.style.margin = '0';
+                    printContainer.style.padding = '0';
+                    printContainer.style.background = '#fff';
+
+                    const printImg = document.createElement('img');
+                    printImg.src = imgData;
+                    printImg.style.width = '71mm';
+                    printImg.style.display = 'block';
+                    printImg.style.margin = '0 auto';
+                    
+                    printContainer.appendChild(printImg);
+
+                    // Set HTML/Body to LTR and overflow visible for the image display
+                    document.documentElement.dir = 'ltr';
+                    document.documentElement.style.overflow = 'visible';
+                    document.documentElement.style.height = 'auto';
+                    
+                    document.body.innerHTML = '';
+                    document.body.dir = 'ltr';
+                    document.body.style.margin = '0';
+                    document.body.style.padding = '0';
+                    document.body.style.overflow = 'visible';
+                    document.body.style.height = 'auto';
+                    document.body.style.background = '#fff';
+                    
+                    document.body.appendChild(printContainer);
+                    
+                    // Trigger print
+                    window.print();
+                });
+            }, 300);
+            return;
+        }
+
         window.print();
     });
 </script>
+@if(request()->has('fallback'))
+<script src="{{ asset('js/html2canvas.min.js') }}"></script>
+@endif
 </body>
 </html>

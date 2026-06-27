@@ -6,6 +6,7 @@ namespace App\Filament\Pages;
 
 use App\Actions\Tenant\AddSessionTimeAction;
 use App\Actions\Tenant\CloseSessionInvoiceAction;
+use App\Actions\Tenant\DispatchDeviceControlCommandAction;
 use App\Actions\Tenant\LimitSessionTimeAction;
 use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Actions\Tenant\StartSessionAction;
@@ -95,6 +96,8 @@ class DeviceControl extends Page
     public ?int $selectedCatalogItemId = null;
 
     public $orderItemQuantity = 1;
+
+    public $orderItemNotes = null;
 
     public $selectedCustomerId = null;
 
@@ -193,7 +196,7 @@ class DeviceControl extends Page
         return Devices::query()
             ->where('devices_type_id', $this->selectedTypeId)
             ->where('is_active', true)
-            ->with(['type', 'playPrices.playType', 'playTypes', 'activeSession.latestDetail'])
+            ->with(['type', 'playPrices.playType', 'playTypes', 'activeSession.latestDetail', 'activeSession.details', 'activeSession.customer'])
             ->orderBy('name', 'asc')
             ->get();
     }
@@ -335,6 +338,13 @@ class DeviceControl extends Page
         $this->selectedSwitchDeviceId = null;
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
+        $this->orderItemNotes = null;
+
+        if (in_array($actionLabel, ['تقفيل الحساب', 'بيانات الجهاز'], true)) {
+            $busySessionCustomer = $this->selectedBusyDevice?->activeSession?->customer;
+            $this->busyActionCustomerId = $busySessionCustomer?->id;
+            $this->busyActionCustomerSearch = $busySessionCustomer?->name ?? '';
+        }
 
         if ($actionLabel === 'إضافة طلبات') {
             $firstGroup = InventoryGroup::query()
@@ -354,31 +364,113 @@ class DeviceControl extends Page
         }
 
         if ($actionLabel === 'تقفيل الحساب') {
-            $busySessionCustomer = $this->selectedBusyDevice?->activeSession?->customer;
-            $this->busyActionDiscountAmount = 0;
-            $this->busyActionDiscountReason = null;
-            $this->busyActionCustomerId = $busySessionCustomer?->id;
-            $this->busyActionCustomerSearch = $busySessionCustomer?->name ?? '';
-            $basePreview = $this->buildBusyClosePreview(0.0);
-            $this->busyClosePreview = $basePreview;
+            try {
+                $busySessionCustomer = $this->selectedBusyDevice?->activeSession?->customer;
+                $this->busyActionDiscountAmount = 0;
+                $this->busyActionDiscountReason = null;
+                $this->busyActionCustomerId = $busySessionCustomer?->id;
+                $this->busyActionCustomerSearch = $busySessionCustomer?->name ?? '';
+                $basePreview = $this->buildBusyClosePreview(0.0);
+                $this->busyClosePreview = $basePreview;
 
-            $this->busyActionPaidAmount = (float) ($basePreview['final_amount'] ?? 0);
-            $defaultCashBoxId = data_get($basePreview, 'cash_box.id');
-            $this->busyActionPayments = [
-                [
-                    'cash_box_id' => is_numeric($defaultCashBoxId) ? (int) $defaultCashBoxId : null,
-                    'amount' => (float) ($this->busyActionPaidAmount ?? 0),
-                ],
-            ];
-            $this->busyClosePreview = $this->buildBusyClosePreview((float) ($this->busyActionPaidAmount ?? 0));
+                $this->busyActionPaidAmount = (float) ($basePreview['final_amount'] ?? 0);
+                $defaultCashBoxId = data_get($basePreview, 'cash_box.id');
+                $this->busyActionPayments = [
+                    [
+                        'cash_box_id' => is_numeric($defaultCashBoxId) ? (int) $defaultCashBoxId : null,
+                        'amount' => (float) ($this->busyActionPaidAmount ?? 0),
+                    ],
+                ];
+                $this->busyClosePreview = $this->buildBusyClosePreview((float) ($this->busyActionPaidAmount ?? 0));
+            } catch (RuntimeException $e) {
+                Notification::make()
+                    ->title('تنبيه وقت السماح')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->persistent()
+                    ->send();
+
+                $this->showBusyActionsModal = false;
+                $this->showBusyActionDetailsModal = false;
+                $this->selectedBusyDeviceId = null;
+                $this->selectedBusyActionLabel = null;
+
+                return;
+            }
         }
 
         $this->showBusyActionsModal = false;
         $this->showBusyActionDetailsModal = true;
     }
 
+    public function printUnprintedOrders(): void
+    {
+        if (! $this->selectedBusyDeviceId) {
+            return;
+        }
+
+        /** @var PlaySessions|null $session */
+        $session = PlaySessions::query()
+            ->where('device_id', $this->selectedBusyDeviceId)
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        if (! $session) {
+            return;
+        }
+
+        $unprintedDetails = OrderSessionDetail::query()
+            ->where('play_session_id', $session->id)
+            ->where('printed', false)
+            ->with('catalogItem.inventoryGroup')
+            ->get();
+
+        if ($unprintedDetails->isEmpty()) {
+            return;
+        }
+
+        $printActive = in_array((string) SystemConfig::get('print_active', '0'), ['1', 'true', 'on', 'yes'], true);
+        $printOrderPrepare = in_array((string) SystemConfig::get('print_order_prepare', '0'), ['1', 'true', 'on', 'yes'], true);
+
+        if ($printActive && $printOrderPrepare) {
+            $defaultOrderPrinter = (string) SystemConfig::get('sys_order_printer', '');
+            $multiPrinters = in_array((string) SystemConfig::get('print_multi_printers', '0'), ['1', 'true', 'on', 'yes'], true);
+
+            if ($multiPrinters) {
+                $grouped = $unprintedDetails->groupBy(function (OrderSessionDetail $detail) use ($defaultOrderPrinter) {
+                    $printerName = trim((string) ($detail->catalogItem?->inventoryGroup?->printer_name ?? ''));
+
+                    return $printerName !== '' ? $printerName : $defaultOrderPrinter;
+                });
+
+                foreach ($grouped as $printerName => $details) {
+                    $idsCsv = $details->pluck('id')->implode(',');
+                    $this->dispatch('open-print-window', url: route('tenant.order-prepares.print', [
+                        'ids' => $idsCsv,
+                        'printer' => $printerName,
+                        'silent' => 1,
+                    ]));
+                }
+            } else {
+                $idsCsv = $unprintedDetails->pluck('id')->implode(',');
+                $this->dispatch('open-print-window', url: route('tenant.order-prepares.print', [
+                    'ids' => $idsCsv,
+                    'printer' => $defaultOrderPrinter,
+                    'silent' => 1,
+                ]));
+            }
+        }
+
+        OrderSessionDetail::whereIn('id', $unprintedDetails->pluck('id'))->update(['printed' => true]);
+    }
+
     public function closeBusyActionDetailsModal(): void
     {
+        if ($this->selectedBusyActionLabel === 'إضافة طلبات') {
+            $this->printUnprintedOrders();
+        }
+
         $this->showBusyActionDetailsModal = false;
         $this->selectedBusyActionLabel = null;
         $this->busyActionAmount = null;
@@ -397,6 +489,7 @@ class DeviceControl extends Page
         $this->selectedOrderGroupId = null;
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
+        $this->orderItemNotes = null;
     }
 
     public function selectSwitchPlayPrice(int $playPriceId): void
@@ -636,6 +729,20 @@ class DeviceControl extends Page
         $this->busyActionCustomerId = $customer->id;
         $this->busyActionCustomerSearch = $customer->name;
         $this->syncBusyCloseDepositToggle();
+
+        $session = $this->selectedBusyDevice?->activeSession;
+        if ($session) {
+            $session->update(['customer_id' => $customer->id]);
+            unset($this->selectedBusyDevice);
+
+            Notification::make()
+                ->title('تم تعيين العميل للجلسة')
+                ->body('تم تعيين العميل '.$customer->name.' للجلسة بنجاح.')
+                ->success()
+                ->send();
+
+            $this->broadcastDeviceControlRefresh('customer_assigned');
+        }
     }
 
     public function clearBusyActionCustomer(): void
@@ -643,6 +750,20 @@ class DeviceControl extends Page
         $this->busyActionCustomerId = null;
         $this->busyActionCustomerSearch = '';
         $this->busyCloseDepositRemainderToCustomerBalance = false;
+
+        $session = $this->selectedBusyDevice?->activeSession;
+        if ($session) {
+            $session->update(['customer_id' => null]);
+            unset($this->selectedBusyDevice);
+
+            Notification::make()
+                ->title('تم إلغاء تعيين العميل')
+                ->body('تم إزالة العميل من الجلسة.')
+                ->success()
+                ->send();
+
+            $this->broadcastDeviceControlRefresh('customer_unassigned');
+        }
     }
 
     /** @return Collection<int, InventoryGroup> */
@@ -691,6 +812,7 @@ class DeviceControl extends Page
         $this->selectedOrderGroupId = $groupId;
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
+        $this->orderItemNotes = null;
     }
 
     public function openOrderItemQuantityModal(int $catalogItemId): void
@@ -715,12 +837,14 @@ class DeviceControl extends Page
 
         $this->selectedCatalogItemId = $catalogItemId;
         $this->orderItemQuantity = 1;
+        $this->orderItemNotes = null;
     }
 
     public function closeOrderItemQuantityModal(): void
     {
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
+        $this->orderItemNotes = null;
     }
 
     public function addOrderItemToBusySession(): void
@@ -788,12 +912,12 @@ class DeviceControl extends Page
             'status' => 'pending',
             'order_by' => $user->name,
             'user_id' => $user->id,
-            'notes' => null,
+            'notes' => $this->orderItemNotes,
         ]);
 
         Notification::make()
             ->title('تمت إضافة الصنف إلى الطلبات')
-            ->body($item->name.' x '.$quantity)
+            ->body($item->name.' x '.$quantity.($this->orderItemNotes ? ' - ملاحظات : '.$this->orderItemNotes : ''))
             ->success()
             ->send();
 
@@ -1333,6 +1457,48 @@ class DeviceControl extends Page
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        }
+    }
+
+    public function turnOffDeviceViaBridge(int $deviceId): void
+    {
+        $device = Devices::find($deviceId);
+        if ($device && $device->status === 'busy') {
+            $isControlActive = in_array(
+                (string) SystemConfig::get('sys_control_active', '0'),
+                ['1', 'true', 'on', 'yes'],
+                true
+            );
+            $ipAddress = trim((string) ($device->ip_address ?? ''));
+            $isRealBridgeDevice = $isControlActive && $device->is_time && $ipAddress !== '' && $ipAddress !== '127.0.0.1';
+
+            try {
+                app(DispatchDeviceControlCommandAction::class)->execute(
+                    $device,
+                    Auth::user(),
+                    'OFF',
+                    'Time Finished (Auto)'
+                );
+
+                if ($isRealBridgeDevice) {
+                    Notification::make()
+                        ->title('تم إيقاف تشغيل الجهاز تلقائياً')
+                        ->body('انتهى الوقت المحدد لجهاز: '.$device->name)
+                        ->success()
+                        ->send();
+                }
+
+                $this->broadcastDeviceControlRefresh('Turn Off Device (Auto)');
+            } catch (\Throwable $e) {
+                if ($isRealBridgeDevice) {
+                    Notification::make()
+                        ->title('خطأ: الجهاز غير متصل على الشبكة')
+                        ->body('جهاز "'.$device->name.'" غير متصل على الشبكة. يرجى التأكد من توصيله بالكهرباء والشبكة.')
+                        ->danger()
+                        ->persistent()
+                        ->send();
+                }
+            }
         }
     }
 

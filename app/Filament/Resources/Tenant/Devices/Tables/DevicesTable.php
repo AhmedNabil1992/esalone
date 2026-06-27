@@ -25,10 +25,10 @@ class DevicesTable
                 TextColumn::make('ip_address')
                     ->label('عنوان IP')
                     ->searchable(),
-                TextColumn::make('mac_address')
-                    ->label('عنوان MAC')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
+                // TextColumn::make('mac_address')
+                //     ->label('عنوان MAC')
+                //     ->toggleable(isToggledHiddenByDefault: true)
+                //     ->searchable(),
                 TextColumn::make('limit_time')
                     ->label('الوقت المحدد')
                     ->searchable(),

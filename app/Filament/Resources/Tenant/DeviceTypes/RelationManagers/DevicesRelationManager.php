@@ -52,7 +52,7 @@ class DevicesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()->label('أضافة جهاز'),
             ])
             ->recordActions([
                 EditAction::make(),

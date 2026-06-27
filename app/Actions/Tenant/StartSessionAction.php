@@ -25,6 +25,12 @@ class StartSessionAction
     {
         return DB::transaction(function () use ($deviceId, $playPriceId, $actor, $durationMinutes, $customerId): PlaySessions {
 
+            $limit_time = Devices::where('id', $deviceId)->first()->limit_time;
+
+            if ($durationMinutes !== null && $durationMinutes < $limit_time) {
+                throw new RuntimeException('مدة اللعب يجب أن تكون أكبر من أقل وقت محدد لتشغيل الجهاز.');
+            }
+
             if ($durationMinutes !== null && $durationMinutes <= 0) {
                 throw new RuntimeException('مدة اللعب يجب أن تكون أكبر من صفر دقيقة.');
             }
