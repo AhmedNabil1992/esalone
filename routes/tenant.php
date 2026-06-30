@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\LandingPageController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Models\Tenant\Shift;
@@ -28,6 +29,9 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
+    Route::get('/', [LandingPageController::class, 'index'])
+        ->name('tenant.landing');
+
     Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
         ->name('tenant.invoices.print');
 

@@ -44,9 +44,13 @@ class SystemConfig extends Page
         foreach ($savedSettings as $key => $value) {
             if ($value === '1') {
                 $savedSettings[$key] = true;
-            }
-            if ($value === '0') {
+            } elseif ($value === '0') {
                 $savedSettings[$key] = false;
+            } elseif (is_string($value) && (str_starts_with($value, '[') || str_starts_with($value, '{'))) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $savedSettings[$key] = $decoded;
+                }
             }
         }
         $this->form->fill($savedSettings);
@@ -305,6 +309,65 @@ class SystemConfig extends Page
                                 //     ])->verticallyAlignEnd(),
                                 // ]),
                             ]),
+
+                        // 5. تاب إعدادات صفحة الهبوط
+                        Tabs\Tab::make('إعدادات صفحة الهبوط')
+                            ->icon('heroicon-o-globe-alt')
+                            ->schema([
+                                Grid::make(2)->schema([
+                                    Section::make('معلومات التواصل والعنوان')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            TextInput::make('landing_title')
+                                                ->label('عنوان صفحة الهبوط الرئيسي :')
+                                                ->placeholder('أهلاً بكم في صالة بلاي ستيشن'),
+                                            TextInput::make('landing_description')
+                                                ->label('الوصف الفرعي لصفحة الهبوط :'),
+                                            TextInput::make('landing_phone')
+                                                ->label('رقم الهاتف للتواصل :'),
+                                            TextInput::make('landing_whatsapp')
+                                                ->label('رقم الواتساب (مسبوق بمفتاح الدولة بدون أصفار، مثلاً: 201200000000) :'),
+                                            TextInput::make('landing_address')
+                                                ->label('العنوان بالتفصيل :'),
+                                            TextInput::make('landing_facebook')
+                                                ->label('رابط الفيس بوك (Facebook URL) :'),
+                                            TextInput::make('landing_instagram')
+                                                ->label('رابط انستجرام (Instagram URL) :'),
+                                        ]),
+
+                                    Section::make('النبذة ومعرض الصور')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            TextInput::make('landing_about')
+                                                ->label('نبذة عن الصالة :')
+                                                ->helperText('اكتب فقرة تعريفية قصيرة تصف المميزات والمكان.'),
+                                            FileUpload::make('landing_gallery')
+                                                ->label('معرض صور الصالة :')
+                                                ->multiple()
+                                                ->image()
+                                                ->disk('public')
+                                                ->directory('landing-gallery')
+                                                ->visibility('public')
+                                                ->getUploadedFileUsing(static function (FileUpload $component, string $file, string|array|null $storedFileNames): ?array {
+                                                    /** @var FilesystemAdapter $storage */
+                                                    $storage = $component->getDisk();
+
+                                                    if (! $storage->exists($file)) {
+                                                        return null;
+                                                    }
+
+                                                    return [
+                                                        'name' => (is_array($storedFileNames) ? ($storedFileNames[$file] ?? null) : $storedFileNames) ?? basename($file),
+                                                        'size' => $storage->size($file),
+                                                        'type' => $storage->mimeType($file),
+                                                        'url' => tenant_asset($file),
+                                                    ];
+                                                })
+                                                ->imageEditor()
+                                                ->columnSpanFull(),
+                                        ]),
+                                ]),
+                            ]),
                     ]),
             ])
             ->statePath('data');
@@ -318,6 +381,10 @@ class SystemConfig extends Page
             // تحويل قيم الـ Boolean لـ "1" أو "0" للنظافة في الحفظ جوه الـ DB
             if (is_bool($value)) {
                 $value = $value ? '1' : '0';
+            }
+            // تحويل المصفوفات (مثل معرض الصور) إلى نصوص JSON للحفظ السليم
+            if (is_array($value)) {
+                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
             }
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
