@@ -18,6 +18,11 @@ class Reservation extends Model
         'duration_minutes',
     ];
 
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+    ];
+
     public function device()
     {
         return $this->belongsTo(Devices::class);
@@ -31,5 +36,28 @@ class Reservation extends Model
     public function playPrice()
     {
         return $this->belongsTo(PlayPrice::class);
+    }
+
+    public static function checkOverlap(int|string $deviceId, string $startTime, string $endTime, int|string|null $excludeId = null): bool
+    {
+        return self::query()
+            ->where('device_id', $deviceId)
+            ->when($excludeId, fn ($query) => $query->where('id', '!=', $excludeId))
+            ->where('status', 'active')
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->where(function ($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '>=', $startTime)
+                        ->where('start_time', '<', $endTime);
+                })
+                    ->orWhere(function ($q) use ($startTime, $endTime) {
+                        $q->where('end_time', '>', $startTime)
+                            ->where('end_time', '<=', $endTime);
+                    })
+                    ->orWhere(function ($q) use ($startTime, $endTime) {
+                        $q->where('start_time', '<=', $startTime)
+                            ->where('end_time', '>=', $endTime);
+                    });
+            })
+            ->exists();
     }
 }

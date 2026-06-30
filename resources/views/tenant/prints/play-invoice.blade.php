@@ -27,7 +27,9 @@
             padding: 0;
             width: 75mm;
             max-width: 75mm;
-            font-family: "Tahoma", "Arial", sans-serif;
+            /* font-family: "Tahoma", "Arial", sans-serif;
+             */
+            
             font-size: 13px;
             color: #000;
             line-height: 1.5;

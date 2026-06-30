@@ -1455,7 +1455,8 @@
         @if ($showStartSessionModal)
             @php
                 $selectedDevice = $this->selectedDevice;
-                $hasReservationToday = $this->hasReservationToday();
+                $todayReservations = $this->getTodayReservations();
+                $hasReservationToday = $todayReservations->isNotEmpty();
             @endphp
 
             <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;" wire:click="closeStartSessionModal">
@@ -1470,11 +1471,27 @@
                         </button>
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:{{ $hasReservationToday ? '#fef2f2' : '#f0fdf4' }};border:1px solid {{ $hasReservationToday ? '#fecaca' : '#bbf7d0' }};margin-bottom:14px;">
-                        <span style="width:8px;height:8px;border-radius:9999px;background:{{ $hasReservationToday ? '#ef4444' : '#16a34a' }};display:inline-block;"></span>
-                        <span style="font-size:.78rem;font-weight:700;color:#374151;">
-                            حالة الحجز اليوم: {{ $hasReservationToday ? 'يوجد حجز' : 'لا يوجد حجز' }}
-                        </span>
+                    <div style="padding:10px 14px;border-radius:12px;background:{{ $hasReservationToday ? '#fef2f2' : '#f0fdf4' }};border:1px solid {{ $hasReservationToday ? '#fecaca' : '#bbf7d0' }};margin-bottom:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:{{ $hasReservationToday ? '8px' : '0' }};">
+                            <span style="width:8px;height:8px;border-radius:9999px;background:{{ $hasReservationToday ? '#ef4444' : '#16a34a' }};display:inline-block;"></span>
+                            <span style="font-size:.78rem;font-weight:700;color:#374151;">
+                                حالة الحجز اليوم: {{ $hasReservationToday ? 'يوجد حجز' : 'لا يوجد حجز' }}
+                            </span>
+                        </div>
+                        @if($hasReservationToday)
+                            <div style="display:grid;gap:6px;padding-right:16px;border-top:1px dashed #fca5a5;padding-top:8px;">
+                                @foreach($todayReservations as $res)
+                                    @php
+                                        $startTime = \Carbon\Carbon::parse($res->start_time)->format('h:i A');
+                                        $endTime = \Carbon\Carbon::parse($res->end_time)->format('h:i A');
+                                    @endphp
+                                    <div style="font-size:.74rem;color:#7f1d1d;font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                                        <span>• من {{ $startTime }} إلى {{ $endTime }}</span>
+                                        <span>العميل: {{ $res->customer?->name ?? 'بدون اسم' }} ({{ $res->playPrice?->playType?->name }})</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <div style="display:grid;gap:10px;margin-bottom:14px;">

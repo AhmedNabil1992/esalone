@@ -7,20 +7,30 @@ use App\Filament\Resources\Tenant\Reservations\Pages\EditReservations;
 use App\Filament\Resources\Tenant\Reservations\Pages\ListReservations;
 use App\Filament\Resources\Tenant\Reservations\Schemas\ReservationsForm;
 use App\Filament\Resources\Tenant\Reservations\Tables\ReservationsTable;
-use App\Models\Reservations;
+use App\Models\Tenant\Reservation;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ReservationsResource extends Resource
 {
-    protected static ?string $model = Reservations::class;
+    protected static ?string $model = Reservation::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
 
-    protected static ?string $recordTitleAttribute = 'Reservation';
+    protected static string|UnitEnum|null $navigationGroup = 'اللعب';
+
+    protected static ?string $navigationLabel = 'الحجوزات';
+
+    protected static ?int $navigationSort = 5;
+
+    protected static ?string $modelLabel = 'حجز';
+
+    protected static ?string $pluralModelLabel = 'الحجوزات';
+
+    protected static ?string $recordTitleAttribute = 'id';
 
     public static function form(Schema $schema): Schema
     {

@@ -21,7 +21,6 @@ use App\Models\Tenant\DevicesType;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\OrderSessionDetail;
 use App\Models\Tenant\PlayPrice;
-use App\Models\Tenant\PlaySessionDetail;
 use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
@@ -1360,20 +1359,28 @@ class DeviceControl extends Page
             return false;
         }
 
-        // return PlaySessionDetail::query()
-        //     ->where('device_id', $this->selectedDeviceId)
-        //     ->where('start_time', '>=', Carbon::today())
-        //     ->where('start_time', '<=', Carbon::today()->endOfDay())
-        //     ->where(function ($query): void {
-        //         $query->where('status', 'محجوز')
-        //             ->orWhere('play_category', 'حجز');
-        //     })
-        //     ->exists();
         return Reservation::query()
             ->where('device_id', $this->selectedDeviceId)
             ->where('start_time', '>=', Carbon::today())
             ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->where('status', 'active')
             ->exists();
+    }
+
+    public function getTodayReservations(): Collection
+    {
+        if (! $this->selectedDeviceId) {
+            return collect();
+        }
+
+        return Reservation::query()
+            ->where('device_id', $this->selectedDeviceId)
+            ->where('start_time', '>=', Carbon::today())
+            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->where('status', 'active')
+            ->with(['customer', 'playPrice.playType'])
+            ->orderBy('start_time')
+            ->get();
     }
 
     public function startSessionFromModal(int $playPriceId): void
