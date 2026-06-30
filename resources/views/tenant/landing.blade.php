@@ -10,18 +10,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     
+    <!-- Alpine.js لسرعة التفاعل والأنيميشن -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(17, 24, 39, 0.7);
+            --bg-color: #080c14;
+            --card-bg: rgba(13, 20, 35, 0.75);
             --primary: #8b5cf6;
             --primary-glow: rgba(139, 92, 246, 0.4);
             --secondary: #3b82f6;
             --secondary-glow: rgba(59, 130, 246, 0.4);
             --accent: #10b981;
+            --gold: #f59e0b;
+            --gold-glow: rgba(245, 158, 11, 0.3);
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
-            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color: rgba(255, 255, 255, 0.06);
         }
 
         * {
@@ -37,8 +42,8 @@
             color: var(--text-main);
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 40%);
+                radial-gradient(circle at 5% 15%, rgba(139, 92, 246, 0.18) 0%, transparent 45%),
+                radial-gradient(circle at 95% 85%, rgba(59, 130, 246, 0.18) 0%, transparent 45%);
             background-attachment: fixed;
         }
 
@@ -51,9 +56,9 @@
 
         /* الهيدر */
         header {
-            padding: 20px 0;
-            backdrop-filter: blur(12px);
-            background-color: rgba(11, 15, 25, 0.8);
+            padding: 16px 0;
+            backdrop-filter: blur(16px);
+            background-color: rgba(8, 12, 20, 0.85);
             border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
@@ -67,15 +72,14 @@
         }
 
         .logo {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 900;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .logo-dot {
@@ -96,7 +100,7 @@
         nav a {
             color: var(--text-main);
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 700;
             transition: color 0.2s;
         }
@@ -105,50 +109,75 @@
             color: var(--primary);
         }
 
+        .auth-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .btn {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: #fff;
-            padding: 10px 24px;
+            padding: 8px 20px;
             border-radius: 12px;
             text-decoration: none;
             font-weight: 800;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px var(--primary-glow);
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px var(--primary-glow);
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--text-muted);
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border-radius: 8px;
         }
 
         /* الهيرو سكشن */
         .hero {
-            padding: 100px 0 80px;
+            padding: 90px 0 60px;
             text-align: center;
             position: relative;
         }
 
         .hero-title {
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             font-weight: 900;
-            line-height: 1.2;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #fff 40%, #e2e8f0 70%, var(--primary));
+            line-height: 1.25;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, #fff 40%, #cbd5e1 75%, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .hero-desc {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             color: var(--text-muted);
-            max-width: 700px;
-            margin: 0 auto 35px;
+            max-width: 680px;
+            margin: 0 auto 30px;
             line-height: 1.8;
             font-weight: 500;
         }
@@ -156,50 +185,192 @@
         .hero-btns {
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.05);
+        /* الإشعارات العائمة (Toasts) */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            right: 24px;
+            max-width: 420px;
+            z-index: 200;
+        }
+
+        .toast {
+            background: rgba(13, 20, 35, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid var(--border-color);
-            color: var(--text-main);
-            box-shadow: none;
+            animation: slideIn 0.3s ease-out;
         }
 
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--text-muted);
-            box-shadow: none;
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        /* سكشن المميزات والأجهزة */
+        .toast-success { border-right: 4px solid var(--accent); }
+        .toast-error { border-right: 4px solid #ef4444; }
+
+        /* لوحة العميل الشخصية (Customer Dashboard) */
+        .dashboard-section {
+            padding: 40px 0;
+        }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .dashboard-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .user-meta h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .user-meta p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon-blue { background: rgba(59, 130, 246, 0.1); color: var(--secondary); border: 1px solid rgba(59, 130, 246, 0.2); }
+        .stat-icon-gold { background: rgba(245, 158, 11, 0.1); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.2); }
+
+        .stat-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .stat-info h4 {
+            font-size: 1.6rem;
+            font-weight: 900;
+            margin-top: 4px;
+        }
+
+        .convert-action-box {
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px dashed rgba(139, 92, 246, 0.3);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .convert-text h4 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .convert-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* سكشن المميزات */
         .features {
-            padding: 80px 0;
-            position: relative;
+            padding: 60px 0;
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 40px;
         }
 
         .section-title {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 800;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .section-subtitle {
             color: var(--text-muted);
-            font-size: 1.05rem;
-            font-weight: 500;
+            font-size: 1rem;
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
         }
 
         .feature-card {
@@ -207,63 +378,62 @@
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 30px;
+            padding: 24px;
             transition: all 0.3s ease;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
             border-color: var(--primary);
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
+            box-shadow: 0 10px 24px rgba(139, 92, 246, 0.08);
         }
 
         .feature-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--primary);
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
         }
 
         .feature-card h3 {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .feature-card p {
             color: var(--text-muted);
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             line-height: 1.6;
         }
 
         /* سكشن العروض */
         .offers {
-            padding: 80px 0;
-            background-color: rgba(17, 24, 39, 0.3);
+            padding: 60px 0;
+            background-color: rgba(13, 20, 35, 0.3);
             border-top: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
         }
 
         .offers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
         }
 
         .offer-card {
             background-color: var(--card-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border-color);
-            border-radius: 24px;
+            border-radius: 22px;
             overflow: hidden;
-            position: relative;
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -271,100 +441,92 @@
         }
 
         .offer-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
             border-color: var(--secondary);
-            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.12);
         }
 
         .offer-header {
-            padding: 24px;
+            padding: 20px;
             border-bottom: 1px solid var(--border-color);
         }
 
         .offer-badge {
             background: linear-gradient(135deg, #10b981, #059669);
             color: #fff;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-size: 0.72rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 800;
             display: inline-block;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .offer-title {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 800;
             color: #fff;
-            margin-bottom: 8px;
         }
 
         .offer-price {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 900;
             color: var(--accent);
             display: flex;
             align-items: baseline;
             gap: 4px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .offer-price span {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-muted);
         }
 
         .offer-body {
-            padding: 24px;
+            padding: 20px;
             flex-grow: 1;
         }
 
         .offer-info-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-            font-size: 0.9rem;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
             color: var(--text-main);
         }
 
-        .offer-info-icon {
-            color: var(--secondary);
-            width: 18px;
-            height: 18px;
-        }
-
         .offer-remark {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 0.8rem;
             color: var(--text-muted);
             border: 1px solid var(--border-color);
-            margin-top: 15px;
+            margin-top: 12px;
         }
 
         .offer-footer {
-            padding: 24px;
+            padding: 20px;
             border-top: 1px solid var(--border-color);
-            background: rgba(255, 255, 255, 0.01);
         }
 
         /* سكشن معرض الصور */
         .gallery {
-            padding: 80px 0;
+            padding: 60px 0;
         }
 
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
         }
 
         .gallery-item {
-            height: 220px;
-            border-radius: 20px;
+            height: 200px;
+            border-radius: 18px;
             overflow: hidden;
             border: 1px solid var(--border-color);
             position: relative;
@@ -373,7 +535,7 @@
         }
 
         .gallery-item:hover {
-            transform: scale(1.03);
+            transform: scale(1.02);
             border-color: var(--primary);
         }
 
@@ -383,28 +545,125 @@
             object-fit: cover;
         }
 
+        /* المودالز (Modals) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: #0d1423;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            width: min(480px, 100%);
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .modal-switch {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .modal-switch a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
         /* سكشن التواصل والفوتر */
         footer {
-            background-color: #060911;
-            padding: 60px 0 30px;
+            background-color: #04060b;
+            padding: 50px 0 24px;
             border-top: 1px solid var(--border-color);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
         }
 
         .footer-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
         }
 
         .footer-col h4 {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 800;
             color: #fff;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             position: relative;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .footer-col h4::after {
@@ -412,7 +671,7 @@
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 40px;
+            width: 30px;
             height: 2px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
         }
@@ -420,19 +679,19 @@
         .footer-about p {
             color: var(--text-muted);
             line-height: 1.8;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .social-links {
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
 
         .social-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.05);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
@@ -455,38 +714,76 @@
         .contact-info-list li {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 14px;
+            gap: 10px;
+            margin-bottom: 12px;
             color: var(--text-muted);
-        }
-
-        .contact-icon {
-            color: var(--primary);
         }
 
         .footer-copyright {
             text-align: center;
-            padding-top: 30px;
+            padding-top: 24px;
             border-top: 1px solid var(--border-color);
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
         }
 
-        /* استجابة الشاشات الصغيرة */
+        /* استجابة الشاشات الصغيرة للموبايل */
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 2.3rem;
+                font-size: 2.1rem;
             }
             .hero {
-                padding: 60px 0 50px;
+                padding: 50px 0 40px;
             }
             nav {
-                display: none; /* إخفاء المنيو على الشاشات الصغيرة للتبسيط */
+                display: none;
+            }
+            .header-content {
+                gap: 12px;
+            }
+            .convert-action-box {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .convert-action-box button {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
 </head>
-<body>
+<body x-data="{ showLogin: false, showRegister: false }">
+
+    <!-- حاوية الإشعارات العائمة -->
+    <div class="toast-container">
+        @if(session('success'))
+            <div class="toast toast-success" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+                <span>✔️</span>
+                <div>{{ session('success') }}</div>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="toast toast-error" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+                <span>⚠️</span>
+                <div>{{ session('error') }}</div>
+            </div>
+        @endif
+
+        @if($errors->has('login_error') || $errors->any())
+            <div class="toast toast-error" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)">
+                <span>⚠️</span>
+                <div>
+                    @if($errors->has('login_error'))
+                        {{ $errors->first('login_error') }}
+                    @else
+                        يوجد خطأ في البيانات المدخلة. يرجى التحقق وإعادة المحاولة.
+                    @endif
+                </div>
+            </div>
+        @endif
+    </div>
 
     <!-- الهيدر -->
     <header>
@@ -495,6 +792,7 @@
                 <span class="logo-dot"></span>
                 {{ $title }}
             </div>
+            
             <nav>
                 <ul>
                     <li><a href="#features">الخدمات</a></li>
@@ -503,15 +801,22 @@
                     <li><a href="#contact">اتصل بنا</a></li>
                 </ul>
             </nav>
-            <div>
-                @if($whatsapp)
-                    <a href="https://wa.me/{{ $whatsapp }}" target="_blank" class="btn">
-                        تواصل معنا
-                    </a>
-                @elseif($phone)
-                    <a href="tel:{{ $phone }}" class="btn">
-                        تواصل معنا
-                    </a>
+
+            <div class="auth-actions">
+                @if(Auth::guard('customer')->check())
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:0.8rem; font-weight:700; color:var(--gold); background:rgba(245,158,11,0.08); padding:4px 10px; border-radius:8px; border:1px solid rgba(245,158,11,0.2)">
+                            {{ Auth::guard('customer')->user()->points }} نقطة
+                        </span>
+                        
+                        <form action="{{ route('tenant.customer.logout') }}" method="POST" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="btn btn-outline btn-sm">خروج</button>
+                        </form>
+                    </div>
+                @else
+                    <button type="button" @click="showLogin = true" class="btn btn-outline btn-sm">تسجيل دخول</button>
+                    <button type="button" @click="showRegister = true" class="btn btn-sm">إنشاء حساب</button>
                 @endif
             </div>
         </div>
@@ -523,40 +828,111 @@
             <h1 class="hero-title">{{ $title }}</h1>
             <p class="hero-desc">{{ $description }}</p>
             <div class="hero-btns">
-                <a href="#offers" class="btn">اكتشف العروض القوية</a>
-                <a href="#contact" class="btn btn-outline">تواصل معنا واحجز الآن</a>
+                <a href="#offers" class="btn">اكتشف عروضنا القوية</a>
+                @if(!Auth::guard('customer')->check())
+                    <button type="button" @click="showRegister = true" class="btn btn-outline">سجل معنا واكسب نقاطاً</button>
+                @else
+                    <a href="#dashboard" class="btn btn-outline">لوحة حسابك والنقاط</a>
+                @endif
             </div>
         </div>
     </section>
+
+    <!-- لوحة بيانات العميل (Customer Dashboard) - تظهر فقط للأعضاء المسجلين -->
+    @if(Auth::guard('customer')->check())
+        @php $loggedCustomer = Auth::guard('customer')->user(); @endphp
+        <section id="dashboard" class="dashboard-section">
+            <div class="container">
+                <div class="dashboard-card">
+                    
+                    <div class="dashboard-header">
+                        <div class="dashboard-user">
+                            <div class="user-avatar">
+                                {{ mb_substr($loggedCustomer->name, 0, 1) }}
+                            </div>
+                            <div class="user-meta">
+                                <h3>أهلاً بك، {{ $loggedCustomer->name }} 👋</h3>
+                                <p>عضوية مسجلة برقم هاتف: {{ $loggedCustomer->phone }}</p>
+                            </div>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">
+                            تاريخ الانضمام: {{ $loggedCustomer->created_at ? $loggedCustomer->created_at->format('Y-m-d') : 'اليوم' }}
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-blue">💵</div>
+                            <div class="stat-info">
+                                <p>رصيد المحفظة المتاح</p>
+                                <h4>{{ number_format($loggedCustomer->balance, 2) }} <span style="font-size:0.9rem; font-weight:500;">ج.م</span></h4>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon stat-icon-gold">⭐</div>
+                            <div class="stat-info">
+                                <p>نقاط الولاء المجمعة</p>
+                                <h4>{{ number_format($loggedCustomer->points, 0) }} <span style="font-size:0.9rem; font-weight:500;">نقطة</span></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="convert-action-box">
+                        <div class="convert-text">
+                            <h4>استبدال النقاط بمبالغ نقدية في محفظتك</h4>
+                            <p>كل <strong>{{ $pointsRate }} نقاط</strong> تساوي <strong>1 جنيه</strong> رصيد في محفظتك. يمكنك استخدامه للعب أو شراء الطلبات لاحقاً!</p>
+                        </div>
+                        
+                        <div>
+                            @if($loggedCustomer->points > 0)
+                                <form action="{{ route('tenant.customer.convert-points') }}" method="POST" style="margin:0;">
+                                    @csrf
+                                    <button type="submit" class="btn" style="background:linear-gradient(135deg, var(--gold), #d97706); box-shadow:0 4px 14px var(--gold-glow)">
+                                        تحويل النقاط إلى رصيد (تحصل على {{ round($loggedCustomer->points / $pointsRate, 2) }} ج.م)
+                                    </button>
+                                </form>
+                            @else
+                                <button type="button" disabled style="background:#4b5563; color:#9ca3af; cursor:not-allowed;" class="btn">
+                                    لا توجد نقاط كافية للتحويل حالياً
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    @endif
 
     <!-- سكشن المميزات والخدمات -->
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">خدمات الصالة وتجهيزاتها</h2>
-                <p class="section-subtitle">نوفر لك أرقى تجربة لعب غامرة وتجهيزات على أعلى مستوى</p>
+                <h2 class="section-title">نظام المكافآت والخدمات</h2>
+                <p class="section-subtitle">نوفر لك أرقى تجربة لعب ونكافئك على كل دقيقة تقضيها معنا!</p>
             </div>
             
             <div class="features-grid">
                 <div class="feature-card">
+                    <div class="feature-icon">🎁</div>
+                    <h3>نقاط مكافآت مع كل زيارة</h3>
+                    <p>قم بتسجيل حسابك برقم الهاتف، وكلما لعبت أو طلبت مشروباً يتم إضافة نقاط تلقائياً لحسابك.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>استبدال النقاط بفلوس</h3>
+                    <p>حول نقاطك المجمعة من لوحة حسابك مباشرة إلى رصيد مالي حقيقي لتلعب به أو تشتري به أي طلبات.</p>
+                </div>
+                <div class="feature-card">
                     <div class="feature-icon">🎮</div>
-                    <h3>أجهزة الجيل الجديد</h3>
-                    <p>أجهزة PlayStation 5 حديثة بالكامل مع أحدث الألعاب الحصرية وإمكانية اللعب الفردي والجماعي.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📺</div>
-                    <h3>شاشات فائقة الدقة 4K</h3>
-                    <p>شاشات عملاقة تدعم تقنية HDR ومعدل تحديث عالي لضمان تجربة بصرية سلسلة وسريعة الاستجابة.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🛋️</div>
-                    <h3>مقاعد مخصصة ومريحة</h3>
-                    <p>مقاعد مريحة للغاية ومسافات كافية بين الغرف لضمان راحتك وخصوصيتك أثناء اللعب لساعات طويلة.</p>
+                    <h3>أحدث الأجهزة والشاشات</h3>
+                    <p>أجهزة PlayStation 5 جديدة مع شاشات 4K فائقة الدقة ومقاعد ألعاب مريحة لخصوصية تامة ومتعة قصوى.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🍹</div>
-                    <h3>مشروبات ووجبات خفيفة</h3>
-                    <p>قائمة مميزة من المشروبات الساخنة والباردة والوجبات الخفيفة التي تقدم لك مباشرة أثناء اللعب.</p>
+                    <h3>بوفيه مشروبات متكامل</h3>
+                    <p>مجموعة واسعة من المشروبات الساخنة والباردة والمأكولات الخفيفة تقدم لك مباشرة في صالتك.</p>
                 </div>
             </div>
         </div>
@@ -584,18 +960,18 @@
                         <div class="offer-body">
                             <div class="offer-info-item">
                                 ⏱️ 
-                                <span>مدة العرض: <strong>{{ $offer->period }} دقيقة</strong></span>
+                                <span style="margin-right:6px;">مدة العرض: <strong>{{ $offer->period }} دقيقة</strong></span>
                             </div>
                             @if($offer->time_from && $offer->time_to)
                                 <div class="offer-info-item">
                                     🕒 
-                                    <span>متاح من: <strong>{{ \Carbon\Carbon::parse($offer->time_from)->format('h:i A') }}</strong> إلى: <strong>{{ \Carbon\Carbon::parse($offer->time_to)->format('h:i A') }}</strong></span>
+                                    <span style="margin-right:6px;">متاح من: <strong>{{ \Carbon\Carbon::parse($offer->time_from)->format('h:i A') }}</strong> إلى: <strong>{{ \Carbon\Carbon::parse($offer->time_to)->format('h:i A') }}</strong></span>
                                 </div>
                             @endif
                             @if($offer->devices)
                                 <div class="offer-info-item">
                                     🎮 
-                                    <span>الأجهزة المشمولة: {{ $offer->devices }}</span>
+                                    <span style="margin-right:6px;">الأجهزة المشمولة: {{ $offer->devices }}</span>
                                 </div>
                             @endif
                             @if($offer->remark)
@@ -640,7 +1016,7 @@
                         <img src="{{ tenant_asset($img) }}" alt="صورة الصالة">
                     </div>
                 @empty
-                    <!-- صور افتراضية ممتازة في حال عدم رفع صور بعد -->
+                    <!-- صور افتراضية في حال عدم رفع صور بعد -->
                     <div class="gallery-item">
                         <img src="https://images.unsplash.com/photo-1600861195091-690c92f1d2cc?auto=format&fit=crop&w=800&q=80" alt="قاعة اللعب">
                     </div>
@@ -654,6 +1030,87 @@
             </div>
         </div>
     </section>
+
+    <!-- مودال تسجيل الدخول (Login Modal) -->
+    <div class="modal-overlay" x-show="showLogin" x-cloak style="display:none;">
+        <div class="modal-content" @click.away="showLogin = false">
+            <button class="modal-close" @click="showLogin = false">✕</button>
+            <h2 class="modal-title">تسجيل الدخول</h2>
+            
+            <form action="{{ route('tenant.customer.login') }}" method="POST">
+                @csrf
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="text" name="phone" required class="form-control" placeholder="مثال: 01000000000" value="{{ old('phone') }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" name="password" required class="form-control" placeholder="••••••••">
+                </div>
+
+                <div class="form-group" style="flex-direction:row; align-items:center; gap:8px; margin-top:8px;">
+                    <input type="checkbox" name="remember" id="remember" style="accent-color:var(--primary);">
+                    <label for="remember" style="cursor:pointer;">تذكرني</label>
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; margin-top:14px; justify-content:center;">تسجيل الدخول</button>
+            </form>
+
+            <div class="modal-switch">
+                ليس لديك حساب؟ 
+                <a href="#" @click="showLogin = false; showRegister = true">أنشئ حساباً جديداً</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال إنشاء الحساب (Register Modal) -->
+    <div class="modal-overlay" x-show="showRegister" x-cloak style="display:none;">
+        <div class="modal-content" @click.away="showRegister = false">
+            <button class="modal-close" @click="showRegister = false">✕</button>
+            <h2 class="modal-title">إنشاء حساب جديد</h2>
+            
+            <form action="{{ route('tenant.customer.register') }}" method="POST">
+                @csrf
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" name="name" required class="form-control" placeholder="مثال: أحمد محمد" value="{{ old('name') }}">
+                </div>
+
+                <div class="form-group">
+                    <label>رقم الهاتف (الاسم المعرف للحساب)</label>
+                    <input type="text" name="phone" required class="form-control" placeholder="مثال: 01000000000" value="{{ old('phone') }}">
+                </div>
+
+                <div class="form-group">
+                    <label>العنوان (اختياري)</label>
+                    <input type="text" name="address" class="form-control" placeholder="مثال: وسط البلد، القاهرة" value="{{ old('address') }}">
+                </div>
+
+                <div class="form-group">
+                    <label>البريد الإلكتروني (اختياري)</label>
+                    <input type="email" name="email" class="form-control" placeholder="name@example.com" value="{{ old('email') }}">
+                </div>
+
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="password" name="password" required class="form-control" placeholder="••••••••">
+                </div>
+
+                <div class="form-group">
+                    <label>تأكيد كلمة المرور</label>
+                    <input type="password" name="password_confirmation" required class="form-control" placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="btn" style="width:100%; margin-top:14px; justify-content:center;">تأكيد التسجيل</button>
+            </form>
+
+            <div class="modal-switch">
+                لديك حساب بالفعل؟ 
+                <a href="#" @click="showRegister = false; showLogin = true">سجل دخولك هنا</a>
+            </div>
+        </div>
+    </div>
 
     <!-- سكشن التواصل والفوتر -->
     <footer id="contact">

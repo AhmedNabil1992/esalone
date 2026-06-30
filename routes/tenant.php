@@ -32,6 +32,15 @@ Route::middleware([
     Route::get('/', [LandingPageController::class, 'index'])
         ->name('tenant.landing');
 
+    Route::post('/login', [LandingPageController::class, 'login'])
+        ->name('tenant.customer.login');
+    Route::post('/register', [LandingPageController::class, 'register'])
+        ->name('tenant.customer.register');
+    Route::post('/logout', [LandingPageController::class, 'logout'])
+        ->name('tenant.customer.logout');
+    Route::post('/convert-points', [LandingPageController::class, 'convertPoints'])
+        ->name('tenant.customer.convert-points');
+
     Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
         ->name('tenant.invoices.print');
 

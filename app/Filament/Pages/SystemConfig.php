@@ -311,7 +311,7 @@ class SystemConfig extends Page
                             ]),
 
                         // 5. تاب إعدادات صفحة الهبوط
-                        Tabs\Tab::make('إعدادات صفحة الهبوط')
+                        Tabs\Tab::make('إعدادات الصفحة الرئيسية')
                             ->icon('heroicon-o-globe-alt')
                             ->schema([
                                 Grid::make(2)->schema([
@@ -319,10 +319,10 @@ class SystemConfig extends Page
                                         ->columnSpan(1)
                                         ->schema([
                                             TextInput::make('landing_title')
-                                                ->label('عنوان صفحة الهبوط الرئيسي :')
+                                                ->label('عنوان الصفحة الرئيسية :')
                                                 ->placeholder('أهلاً بكم في صالة بلاي ستيشن'),
                                             TextInput::make('landing_description')
-                                                ->label('الوصف الفرعي لصفحة الهبوط :'),
+                                                ->label('الوصف الفرعي للصفحة الرئيسية :'),
                                             TextInput::make('landing_phone')
                                                 ->label('رقم الهاتف للتواصل :'),
                                             TextInput::make('landing_whatsapp')
