@@ -80,8 +80,27 @@ class CreateDirectSaleAction
             }
 
             $subtotal = round($subtotal, 2);
-            $discountAmount = round(min($discountAmount, $subtotal), 2);
-            $afterDiscount = round($subtotal - $discountAmount, 2);
+
+            $autoDiscount = 0.0;
+            $autoDiscountReason = null;
+            if ($customerId) {
+                $customer = Customer::with('level')->find($customerId);
+                if ($customer && $customer->level && $customer->level->is_active) {
+                    $discountPercent = (float) $customer->level->discount_percent;
+                    if ($customer->level->applies_to === 'all' && $discountPercent > 0) {
+                        $autoDiscount = round(($subtotal * $discountPercent) / 100, 2);
+                        $autoDiscountReason = 'خصم فئة العملاء: '.$customer->level->name.' ('.number_format($discountPercent, 0).'%)';
+                    }
+                }
+            }
+
+            $totalDiscount = $discountAmount + $autoDiscount;
+            if ($totalDiscount > $subtotal) {
+                $totalDiscount = $subtotal;
+            }
+
+            $totalDiscount = round(max(0, $totalDiscount));
+            $afterDiscount = round($subtotal - $totalDiscount, 2);
 
             $servicePercent = (float) SystemConfig::get('sys_service_percent', 0);
             $taxPercent = (float) SystemConfig::get('sys_tax_percent', 0);
@@ -130,8 +149,8 @@ class CreateDirectSaleAction
                 'play_amount' => 0,
                 'order_amount' => $subtotal,
                 'subtotal' => $subtotal,
-                'discount_amount' => $discountAmount,
-                'discount_reason' => $discountAmount > 0 ? 'خصم مبيعات مباشرة' : null,
+                'discount_amount' => $totalDiscount,
+                'discount_reason' => $totalDiscount > 0 ? ($discountAmount > 0 ? 'خصم مبيعات مباشرة'.($autoDiscountReason ? ' + '.$autoDiscountReason : '') : $autoDiscountReason) : null,
                 'service_amount' => $serviceAmount,
                 'tax_amount' => $taxAmount,
                 'deposit_amount' => 0,

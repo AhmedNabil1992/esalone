@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\Customers\Schemas;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -34,6 +35,14 @@ class CustomerForm
             Toggle::make('is_active')
                 ->label('مفعّل')
                 ->default(true),
+
+            Select::make('customer_level_id')
+                ->label('فئة العميل (المستوى)')
+                ->relationship('level', 'name')
+                ->placeholder('بدون فئة (عميل عادي)')
+                ->nullable()
+                ->searchable()
+                ->preload(),
         ]);
     }
 }

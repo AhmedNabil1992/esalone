@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\Shifts\Shifts\Schemas;
 
+use App\Models\Tenant\CashBox;
 use App\Models\Tenant\Shift;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -35,7 +36,7 @@ class ShiftForm
                 TextInput::make('start_amount')
                     ->label('رصيد البداية')
                     ->numeric()
-                    ->default(0)
+                    ->default(fn (): float => (float) CashBox::where('is_active', true)->sum('current_balance'))
                     ->required(),
                 TextInput::make('actual_amount')
                     ->label('الرصيد الفعلي')

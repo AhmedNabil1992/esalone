@@ -183,6 +183,13 @@ class CloseSessionInvoiceAction
                 $resolvedCustomerId = $customerId;
             }
 
+            $finalDiscountReason = trim((string) $discountReason);
+            if (! empty($preview['auto_discount_reason'])) {
+                $finalDiscountReason = $finalDiscountReason !== ''
+                    ? $finalDiscountReason.' + '.$preview['auto_discount_reason']
+                    : $preview['auto_discount_reason'];
+            }
+
             if ($discountAmount > 0 && trim((string) $discountReason) === '') {
                 throw new RuntimeException('يرجى إدخال سبب الخصم.');
             }
@@ -223,7 +230,7 @@ class CloseSessionInvoiceAction
                 'order_amount' => $preview['order_amount'],
                 'subtotal' => $preview['subtotal'],
                 'discount_amount' => $preview['discount_amount'],
-                'discount_reason' => $discountAmount > 0 ? trim((string) $discountReason) : null,
+                'discount_reason' => $preview['discount_amount'] > 0 ? $finalDiscountReason : null,
                 'service_amount' => $preview['service_amount'],
                 'tax_amount' => $preview['tax_amount'],
                 'deposit_amount' => $preview['deposit_amount'],
@@ -308,7 +315,7 @@ class CloseSessionInvoiceAction
                     'invoice_id' => $invoice->id,
                     'invoice_no' => $invoice->invoice_no,
                     'amount' => $preview['discount_amount'],
-                    'reason' => trim((string) $discountReason),
+                    'reason' => $finalDiscountReason,
                     'shift_id' => $shiftId,
                     'user_id' => $actor->id,
                     'ledger_entry_id' => $breakdownLedgerEntries['discount'] ?? null,
@@ -384,12 +391,28 @@ class CloseSessionInvoiceAction
         $orderAmount = round((float) $orderRows->sum('total'), 2);
         $subtotal = round($playAmount + $orderAmount, 2);
 
-        if ($discountAmount > $subtotal) {
-            throw new RuntimeException('لا يمكن أن يتجاوز الخصم إجمالي الحساب.');
+        $customer = $session->customer_id ? Customer::with('level')->find($session->customer_id) : null;
+        $autoDiscount = 0.0;
+        $autoDiscountReason = null;
+        if ($customer && $customer->level && $customer->level->is_active) {
+            $discountPercent = (float) $customer->level->discount_percent;
+            if ($discountPercent > 0) {
+                if ($customer->level->applies_to === 'play_only') {
+                    $autoDiscount = round(($playAmount * $discountPercent) / 100, 2);
+                } else {
+                    $autoDiscount = round(($subtotal * $discountPercent) / 100, 2);
+                }
+                $autoDiscountReason = 'خصم فئة العملاء: '.$customer->level->name.' ('.number_format($discountPercent, 0).'%)';
+            }
         }
 
-        $discountAmount = round(max(0, $discountAmount), 2);
-        $afterDiscount = round($subtotal - $discountAmount, 2);
+        $totalDiscount = $discountAmount + $autoDiscount;
+        if ($totalDiscount > $subtotal) {
+            $totalDiscount = $subtotal;
+        }
+
+        $totalDiscount = round(max(0, $totalDiscount));
+        $afterDiscount = round($subtotal - $totalDiscount, 2);
 
         $servicePercent = (float) SystemConfig::get('sys_service_percent', 0);
         $taxPercent = (float) SystemConfig::get('sys_tax_percent', 0);
@@ -421,7 +444,9 @@ class CloseSessionInvoiceAction
             'play_amount' => $playAmount,
             'order_amount' => $orderAmount,
             'subtotal' => $subtotal,
-            'discount_amount' => $discountAmount,
+            'discount_amount' => $totalDiscount,
+            'auto_discount_amount' => $autoDiscount,
+            'auto_discount_reason' => $autoDiscountReason,
             'service_amount' => $serviceAmount,
             'tax_amount' => $taxAmount,
             'deposit_amount' => $depositAmount,

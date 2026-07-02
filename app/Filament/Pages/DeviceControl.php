@@ -50,6 +50,12 @@ class DeviceControl extends Page
 
     public bool $showStartSessionModal = false;
 
+    public bool $showReservationAlertModal = false;
+
+    public ?int $pendingStartDeviceId = null;
+
+    public ?int $pendingStartPlayPriceId = null;
+
     public bool $showBusyActionsModal = false;
 
     public bool $showBusyActionDetailsModal = false;
@@ -1355,12 +1361,13 @@ class DeviceControl extends Page
 
     public function hasReservationToday(): bool
     {
-        if (! $this->selectedDeviceId) {
+        $deviceId = $this->selectedDeviceId ?: $this->pendingStartDeviceId;
+        if (! $deviceId) {
             return false;
         }
 
         return Reservation::query()
-            ->where('device_id', $this->selectedDeviceId)
+            ->where('device_id', $deviceId)
             ->where('start_time', '>=', Carbon::today())
             ->where('start_time', '<=', Carbon::today()->endOfDay())
             ->where('status', 'active')
@@ -1369,18 +1376,52 @@ class DeviceControl extends Page
 
     public function getTodayReservations(): Collection
     {
-        if (! $this->selectedDeviceId) {
+        $deviceId = $this->selectedDeviceId ?: $this->pendingStartDeviceId;
+        if (! $deviceId) {
             return collect();
         }
 
         return Reservation::query()
-            ->where('device_id', $this->selectedDeviceId)
+            ->where('device_id', $deviceId)
             ->where('start_time', '>=', Carbon::today())
             ->where('start_time', '<=', Carbon::today()->endOfDay())
             ->where('status', 'active')
             ->with(['customer', 'playPrice.playType'])
             ->orderBy('start_time')
             ->get();
+    }
+
+    public function checkReservationBeforeStart(int $deviceId, int $playPriceId): void
+    {
+        $hasReservation = Reservation::query()
+            ->where('device_id', $deviceId)
+            ->where('start_time', '>=', Carbon::today())
+            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->where('status', 'active')
+            ->exists();
+
+        if ($hasReservation) {
+            $this->pendingStartDeviceId = $deviceId;
+            $this->pendingStartPlayPriceId = $playPriceId;
+            $this->showReservationAlertModal = true;
+        } else {
+            $this->startSession($deviceId, $playPriceId);
+        }
+    }
+
+    public function confirmPendingStartSession(): void
+    {
+        if ($this->pendingStartDeviceId && $this->pendingStartPlayPriceId) {
+            $this->startSession($this->pendingStartDeviceId, $this->pendingStartPlayPriceId);
+        }
+        $this->closeReservationAlertModal();
+    }
+
+    public function closeReservationAlertModal(): void
+    {
+        $this->showReservationAlertModal = false;
+        $this->pendingStartDeviceId = null;
+        $this->pendingStartPlayPriceId = null;
     }
 
     public function startSessionFromModal(int $playPriceId): void

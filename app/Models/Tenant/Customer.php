@@ -5,6 +5,7 @@ namespace App\Models\Tenant;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,6 +21,7 @@ class Customer extends Authenticatable implements FilamentUser
         'address',
         'balance',
         'points',
+        'customer_level_id',
         'is_active',
         'password',
     ];
@@ -32,6 +34,7 @@ class Customer extends Authenticatable implements FilamentUser
     protected $casts = [
         'balance' => 'decimal:2',
         'points' => 'decimal:2',
+        'customer_level_id' => 'integer',
         'is_active' => 'boolean',
         'password' => 'hashed',
     ];
@@ -39,6 +42,11 @@ class Customer extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return (bool) $this->is_active;
+    }
+
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(CustomerLevel::class, 'customer_level_id');
     }
 
     public function credits(): HasMany

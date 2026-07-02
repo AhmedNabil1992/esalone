@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tenant\Shifts\Shifts\Pages;
 
 use App\Filament\Resources\Tenant\Shifts\Shifts\ShiftResource;
+use App\Mail\ShiftClosedMail;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\ExpenseHistory;
@@ -10,10 +11,13 @@ use App\Models\Tenant\Invoice;
 use App\Models\Tenant\InvoicePayment;
 use App\Models\Tenant\Purchase;
 use App\Models\Tenant\Shift;
+use App\Models\Tenant\SystemConfig;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class CloseShift extends Page
 {
@@ -215,6 +219,16 @@ class CloseShift extends Page
             'shift_to' => now(),
             'closed_by_user_id' => Auth::id(),
         ]);
+
+        $notifyActive = (bool) SystemConfig::get('notify_active', '0');
+        $ownerEmail = SystemConfig::get('notify_email', '');
+        if ($notifyActive && ! empty($ownerEmail)) {
+            try {
+                Mail::to($ownerEmail)->send(new ShiftClosedMail($this->record->fresh(['opener', 'closer'])));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send shift close email: '.$e->getMessage());
+            }
+        }
 
         Notification::make()->title('تم تقفيل الشيفت وحفظ البيانات بنجاح')->success()->send();
 

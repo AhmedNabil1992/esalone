@@ -33,6 +33,13 @@ class CustomersTable
                     ->label('الهاتف')
                     ->searchable(),
 
+                TextColumn::make('level.name')
+                    ->label('المستوى / الفئة')
+                    ->placeholder('عميل عادي')
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
+
                 TextColumn::make('email')
                     ->label('البريد')
                     ->searchable()
