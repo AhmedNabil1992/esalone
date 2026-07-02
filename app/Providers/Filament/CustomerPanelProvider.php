@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Customer\Pages\Auth\CustomRegister;
+use App\Http\Middleware\SetTenantTimezone;
 use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -19,6 +21,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -44,7 +47,17 @@ class CustomerPanelProvider extends PanelProvider
             ->path('customer')
             ->login()
             ->brandName(fn (): string => $this->resolveTenantBrandName())
-            ->registration()
+            ->favicon(asset('apple-touch-icon.png'))
+            ->brandLogo(fn (): HtmlString => new HtmlString('
+                <div style="display: flex; align-items: center; gap: 12px; white-space: nowrap;">
+                    <img src="'.asset('images/favicon.svg').'" style="height: 2.5rem; width: auto; flex-shrink: 0;" alt="Logo">
+                    <span style="font-size: 1.25rem; font-weight: bold; line-height: 1;" class="text-gray-950 dark:text-white">
+                        '.$this->resolveTenantBrandName().'
+                    </span>
+                </div>
+            '))
+            ->brandLogoHeight('2.5rem')
+            ->registration(CustomRegister::class)
             ->colors([
                 'primary' => Color::Emerald,
             ])
@@ -60,6 +73,7 @@ class CustomerPanelProvider extends PanelProvider
             ->middleware([
                 InitializeTenancyByDomain::class,
                 PreventAccessFromCentralDomains::class,
+                SetTenantTimezone::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

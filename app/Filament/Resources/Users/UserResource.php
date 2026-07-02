@@ -45,6 +45,13 @@ class UserResource extends Resource
         return UsersTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('name', '!=', 'System Admin')
+            ->with(['roles', 'permissions']);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -60,11 +67,5 @@ class UserResource extends Resource
             'view' => ViewUser::route('/{record}'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->with(['roles', 'permissions']);
     }
 }

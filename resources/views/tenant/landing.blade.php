@@ -9,9 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <!-- Alpine.js لسرعة التفاعل والأنيميشن -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
         :root {
@@ -210,12 +207,6 @@
             gap: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid var(--border-color);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
 
         .toast-success { border-right: 4px solid var(--accent); }
@@ -545,103 +536,6 @@
             object-fit: cover;
         }
 
-        /* المودالز (Modals) */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            z-index: 150;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .modal-content {
-            background: #0d1423;
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            width: min(480px, 100%);
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 28px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            position: relative;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: #ef4444;
-            color: #fff;
-        }
-
-        .modal-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-muted);
-        }
-
-        .form-control {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 10px 14px;
-            color: #fff;
-            font-size: 0.9rem;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary);
-            background: rgba(255,255,255,0.05);
-        }
-
-        .modal-switch {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .modal-switch a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 700;
-        }
-
         /* سكشن التواصل والفوتر */
         footer {
             background-color: #04060b;
@@ -753,35 +647,34 @@
         }
     </style>
 </head>
-<body x-data="{ showLogin: false, showRegister: false }">
+<body>
 
     <!-- حاوية الإشعارات العائمة -->
     <div class="toast-container">
         @if(session('success'))
-            <div class="toast toast-success" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+            <div class="toast toast-success" id="toast-success">
                 <span>✔️</span>
                 <div>{{ session('success') }}</div>
             </div>
+            <script>
+                setTimeout(() => {
+                    const el = document.getElementById('toast-success');
+                    if (el) el.style.display = 'none';
+                }, 5000);
+            </script>
         @endif
 
         @if(session('error'))
-            <div class="toast toast-error" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+            <div class="toast toast-error" id="toast-error">
                 <span>⚠️</span>
                 <div>{{ session('error') }}</div>
             </div>
-        @endif
-
-        @if($errors->has('login_error') || $errors->any())
-            <div class="toast toast-error" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)">
-                <span>⚠️</span>
-                <div>
-                    @if($errors->has('login_error'))
-                        {{ $errors->first('login_error') }}
-                    @else
-                        يوجد خطأ في البيانات المدخلة. يرجى التحقق وإعادة المحاولة.
-                    @endif
-                </div>
-            </div>
+            <script>
+                setTimeout(() => {
+                    const el = document.getElementById('toast-error');
+                    if (el) el.style.display = 'none';
+                }, 5000);
+            </script>
         @endif
     </div>
 
@@ -809,14 +702,16 @@
                             {{ Auth::guard('customer')->user()->points }} نقطة
                         </span>
                         
-                        <form action="{{ route('tenant.customer.logout') }}" method="POST" style="margin: 0;">
+                        <a href="/customer" class="btn btn-sm btn-outline">لوحة الحساب</a>
+
+                        <form action="/customer/logout" method="POST" style="margin: 0;">
                             @csrf
                             <button type="submit" class="btn btn-outline btn-sm">خروج</button>
                         </form>
                     </div>
                 @else
-                    <button type="button" @click="showLogin = true" class="btn btn-outline btn-sm">تسجيل دخول</button>
-                    <button type="button" @click="showRegister = true" class="btn btn-sm">إنشاء حساب</button>
+                    <a href="/customer/login" class="btn btn-outline btn-sm">تسجيل دخول</a>
+                    <a href="/customer/register" class="btn btn-sm">إنشاء حساب</a>
                 @endif
             </div>
         </div>
@@ -830,7 +725,7 @@
             <div class="hero-btns">
                 <a href="#offers" class="btn">اكتشف عروضنا القوية</a>
                 @if(!Auth::guard('customer')->check())
-                    <button type="button" @click="showRegister = true" class="btn btn-outline">سجل معنا واكسب نقاطاً</button>
+                    <a href="/customer/register" class="btn btn-outline">سجل معنا واكسب نقاطاً</a>
                 @else
                     <a href="#dashboard" class="btn btn-outline">لوحة حسابك والنقاط</a>
                 @endif
@@ -884,12 +779,18 @@
                             <p>كل <strong>{{ $pointsRate }} نقاط</strong> تساوي <strong>1 جنيه</strong> رصيد في محفظتك. يمكنك استخدامه للعب أو شراء الطلبات لاحقاً!</p>
                         </div>
                         
-                        <div>
+                        <div style="width: 100%;">
                             @if($loggedCustomer->points > 0)
-                                <form action="{{ route('tenant.customer.convert-points') }}" method="POST" style="margin:0;">
+                                <form action="{{ route('tenant.customer.convert-points') }}" method="POST" style="margin:0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px;">
                                     @csrf
-                                    <button type="submit" class="btn" style="background:linear-gradient(135deg, var(--gold), #d97706); box-shadow:0 4px 14px var(--gold-glow)">
-                                        تحويل النقاط إلى رصيد (تحصل على {{ round($loggedCustomer->points / $pointsRate, 2) }} ج.م)
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <label style="font-size:0.85rem; font-weight:700; color:var(--text-muted); white-space:nowrap;">النقاط المراد استبدالها:</label>
+                                        <input type="number" name="points" min="1" max="{{ $loggedCustomer->points }}" value="{{ $loggedCustomer->points }}" required 
+                                            style="width:120px; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:8px 12px; font-weight:700; outline:none; text-align:center;"
+                                            oninput="document.getElementById('money-preview').innerText = (this.value > 0 ? (this.value / {{ $pointsRate }}).toFixed(2) : '0.00')">
+                                    </div>
+                                    <button type="submit" class="btn" style="background:linear-gradient(135deg, var(--gold), #d97706); box-shadow:0 4px 14px var(--gold-glow); font-weight:900;">
+                                        تحويل إلى رصيد (<span id="money-preview">{{ round($loggedCustomer->points / $pointsRate, 2) }}</span> ج.م)
                                     </button>
                                 </form>
                             @else
@@ -1030,87 +931,6 @@
             </div>
         </div>
     </section>
-
-    <!-- مودال تسجيل الدخول (Login Modal) -->
-    <div class="modal-overlay" x-show="showLogin" x-cloak style="display:none;">
-        <div class="modal-content" @click.away="showLogin = false">
-            <button class="modal-close" @click="showLogin = false">✕</button>
-            <h2 class="modal-title">تسجيل الدخول</h2>
-            
-            <form action="{{ route('tenant.customer.login') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label>رقم الهاتف</label>
-                    <input type="text" name="phone" required class="form-control" placeholder="مثال: 01000000000" value="{{ old('phone') }}">
-                </div>
-                
-                <div class="form-group">
-                    <label>كلمة المرور</label>
-                    <input type="password" name="password" required class="form-control" placeholder="••••••••">
-                </div>
-
-                <div class="form-group" style="flex-direction:row; align-items:center; gap:8px; margin-top:8px;">
-                    <input type="checkbox" name="remember" id="remember" style="accent-color:var(--primary);">
-                    <label for="remember" style="cursor:pointer;">تذكرني</label>
-                </div>
-
-                <button type="submit" class="btn" style="width:100%; margin-top:14px; justify-content:center;">تسجيل الدخول</button>
-            </form>
-
-            <div class="modal-switch">
-                ليس لديك حساب؟ 
-                <a href="#" @click="showLogin = false; showRegister = true">أنشئ حساباً جديداً</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- مودال إنشاء الحساب (Register Modal) -->
-    <div class="modal-overlay" x-show="showRegister" x-cloak style="display:none;">
-        <div class="modal-content" @click.away="showRegister = false">
-            <button class="modal-close" @click="showRegister = false">✕</button>
-            <h2 class="modal-title">إنشاء حساب جديد</h2>
-            
-            <form action="{{ route('tenant.customer.register') }}" method="POST">
-                @csrf
-                <div class="form-group">
-                    <label>الاسم الكامل</label>
-                    <input type="text" name="name" required class="form-control" placeholder="مثال: أحمد محمد" value="{{ old('name') }}">
-                </div>
-
-                <div class="form-group">
-                    <label>رقم الهاتف (الاسم المعرف للحساب)</label>
-                    <input type="text" name="phone" required class="form-control" placeholder="مثال: 01000000000" value="{{ old('phone') }}">
-                </div>
-
-                <div class="form-group">
-                    <label>العنوان (اختياري)</label>
-                    <input type="text" name="address" class="form-control" placeholder="مثال: وسط البلد، القاهرة" value="{{ old('address') }}">
-                </div>
-
-                <div class="form-group">
-                    <label>البريد الإلكتروني (اختياري)</label>
-                    <input type="email" name="email" class="form-control" placeholder="name@example.com" value="{{ old('email') }}">
-                </div>
-
-                <div class="form-group">
-                    <label>كلمة المرور</label>
-                    <input type="password" name="password" required class="form-control" placeholder="••••••••">
-                </div>
-
-                <div class="form-group">
-                    <label>تأكيد كلمة المرور</label>
-                    <input type="password" name="password_confirmation" required class="form-control" placeholder="••••••••">
-                </div>
-
-                <button type="submit" class="btn" style="width:100%; margin-top:14px; justify-content:center;">تأكيد التسجيل</button>
-            </form>
-
-            <div class="modal-switch">
-                لديك حساب بالفعل؟ 
-                <a href="#" @click="showRegister = false; showLogin = true">سجل دخولك هنا</a>
-            </div>
-        </div>
-    </div>
 
     <!-- سكشن التواصل والفوتر -->
     <footer id="contact">

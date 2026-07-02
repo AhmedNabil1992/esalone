@@ -33,6 +33,7 @@ class Shift extends Model
         'is_active',
         'status',
         'notify',
+        'notes',
     ];
 
     protected $casts = [

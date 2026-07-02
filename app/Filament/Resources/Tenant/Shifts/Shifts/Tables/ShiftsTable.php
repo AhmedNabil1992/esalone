@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Tenant\Shifts\Shifts\Tables;
 
+use App\Filament\Resources\Tenant\Shifts\Shifts\ShiftResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -47,6 +49,12 @@ class ShiftsTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('close')
+                    ->label('تقفيل الوردية')
+                    ->color('danger')
+                    ->icon('heroicon-o-lock-closed')
+                    ->url(fn ($record) => ShiftResource::getUrl('close', ['record' => $record]))
+                    ->visible(fn ($record) => $record->status === 'open' && $record->is_active),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

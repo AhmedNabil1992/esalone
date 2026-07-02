@@ -7,6 +7,7 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\Offer;
 use App\Models\Tenant\SystemConfig;
+use App\Models\Tenant\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class LandingPageController extends Controller
         $gallery = json_decode($galleryRaw, true) ?: [];
 
         // Points rate
-        $pointsRate = (float) SystemConfig::get('sys_customer_points_ratio', 10);
+        $pointsRate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', 10);
         if ($pointsRate <= 0) {
             $pointsRate = 10;
         }
@@ -53,63 +54,6 @@ class LandingPageController extends Controller
         ));
     }
 
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'phone' => 'required|string',
-            'password' => 'required|string',
-        ]);
-
-        if (Auth::guard('customer')->attempt($credentials, $request->has('remember'))) {
-            $request->session()->regenerate();
-
-            return redirect()->back()->with('success', 'تم تسجيل الدخول بنجاح!');
-        }
-
-        return redirect()->back()->withErrors([
-            'login_error' => 'رقم الهاتف أو كلمة المرور غير صحيحة.',
-        ])->withInput($request->only('phone'));
-    }
-
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|unique:customers,phone|max:20',
-            'password' => 'required|string|min:6|confirmed',
-            'address' => 'nullable|string|max:500',
-            'email' => 'nullable|email|max:255',
-        ], [
-            'phone.unique' => 'رقم الهاتف هذا مسجل بالفعل لدينا.',
-            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
-            'password.min' => 'كلمة المرور يجب ألا تقل عن 6 أحرف.',
-        ]);
-
-        $customer = Customer::create([
-            'name' => $data['name'],
-            'phone' => $data['phone'],
-            'email' => $data['email'] ?? null,
-            'address' => $data['address'] ?? null,
-            'password' => $data['password'],
-            'is_active' => true,
-            'balance' => 0,
-            'points' => 0,
-        ]);
-
-        Auth::guard('customer')->login($customer);
-
-        return redirect()->back()->with('success', 'تم إنشاء حسابك وتسجيل الدخول بنجاح!');
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::guard('customer')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->back()->with('success', 'تم تسجيل الخروج بنجاح.');
-    }
-
     public function convertPoints(Request $request)
     {
         $customer = Auth::guard('customer')->user();
@@ -117,39 +61,44 @@ class LandingPageController extends Controller
             return redirect()->back()->with('error', 'يجب عليك تسجيل الدخول أولاً.');
         }
 
-        $points = (float) $customer->points;
-        if ($points <= 0) {
-            return redirect()->back()->with('error', 'ليس لديك نقاط كافية للتحويل حالياً.');
-        }
+        $request->validate([
+            'points' => 'required|numeric|min:1|max:'.(float) $customer->points,
+        ], [
+            'points.max' => 'النقاط المدخلة أكبر من رصيد نقاطك المتاحة.',
+            'points.min' => 'يجب إدخال نقطة واحدة على الأقل.',
+            'points.required' => 'يرجى تحديد عدد النقاط المراد استبدالها.',
+        ]);
 
-        $rate = (float) SystemConfig::get('sys_customer_points_ratio', 10);
+        $pointsToRedeem = (float) $request->input('points');
+
+        $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', 10);
         if ($rate <= 0) {
             $rate = 10;
         }
 
-        $moneyToAdd = round($points / $rate, 2);
+        $moneyToAdd = round($pointsToRedeem / $rate, 2);
 
-        DB::transaction(function () use ($customer, $points, $moneyToAdd) {
+        DB::transaction(function () use ($customer, $pointsToRedeem, $moneyToAdd) {
             $balanceBefore = (float) $customer->balance;
             $balanceAfter = $balanceBefore + $moneyToAdd;
 
             // Update customer balance & points
-            $customer->points = 0;
+            $customer->points = (float) $customer->points - $pointsToRedeem;
             $customer->balance = $balanceAfter;
             $customer->save();
 
             // Record transaction history under customer credits
             CustomerCredit::create([
                 'customer_id' => $customer->id,
-                'user_id' => null,
-                'type' => 'deposit',
+                'user_id' => auth()->id() ?? User::first()?->id,
+                'type' => 'redeem',
                 'amount' => $moneyToAdd,
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
-                'description' => 'تحويل نقاط الولاء إلى رصيد ('.$points.' نقطة)',
+                'description' => 'تحويل نقاط الولاء إلى رصيد ('.$pointsToRedeem.' نقطة) عبر البوابة الإلكترونية',
             ]);
         });
 
-        return redirect()->back()->with('success', "تم تحويل {$points} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!");
+        return redirect()->back()->with('success', "تم تحويل {$pointsToRedeem} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!");
     }
 }

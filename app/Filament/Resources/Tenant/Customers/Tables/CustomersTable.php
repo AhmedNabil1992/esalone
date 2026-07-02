@@ -2,13 +2,21 @@
 
 namespace App\Filament\Resources\Tenant\Customers\Tables;
 
+use App\Models\Tenant\CustomerCredit;
+use App\Models\Tenant\SystemConfig;
+use App\Models\Tenant\User;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class CustomersTable
 {
@@ -54,8 +62,68 @@ class CustomersTable
             ->defaultSort('name', 'asc')
             ->filters([])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    Action::make('redeem_points')
+                        ->label('استبدال نقاط')
+                        ->icon('heroicon-o-gift')
+                        ->color('warning')
+                        ->form([
+                            TextInput::make('points_to_redeem')
+                                ->label('عدد النقاط المراد استبدالها')
+                                ->numeric()
+                                ->required()
+                                ->minValue(1)
+                                ->maxValue(fn ($record) => (float) $record->points)
+                                ->helperText(fn ($record) => 'النقاط المتاحة للعميل: '.number_format($record->points, 0)),
+                        ])
+                        ->action(function ($record, array $data): void {
+                            $pointsToRedeem = (float) $data['points_to_redeem'];
+                            if ($pointsToRedeem > (float) $record->points) {
+                                Notification::make()
+                                    ->title('فشل العملية')
+                                    ->body('عدد النقاط المدخل أكبر من نقاط العميل المتاحة.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', 10);
+                            if ($rate <= 0) {
+                                $rate = 10;
+                            }
+
+                            $moneyToAdd = round($pointsToRedeem / $rate, 2);
+
+                            DB::transaction(function () use ($record, $pointsToRedeem, $moneyToAdd): void {
+                                $balanceBefore = (float) $record->balance;
+                                $balanceAfter = $balanceBefore + $moneyToAdd;
+
+                                $record->points = (float) $record->points - $pointsToRedeem;
+                                $record->balance = $balanceAfter;
+                                $record->save();
+
+                                CustomerCredit::create([
+                                    'customer_id' => $record->id,
+                                    'user_id' => auth()->id() ?? User::first()?->id,
+                                    'type' => 'redeem',
+                                    'amount' => $moneyToAdd,
+                                    'balance_before' => $balanceBefore,
+                                    'balance_after' => $balanceAfter,
+                                    'description' => 'استبدال نقاط ولاء ('.$pointsToRedeem.' نقطة) بواسطة الإدارة',
+                                ]);
+                            });
+
+                            Notification::make()
+                                ->title('نجاح العملية')
+                                ->body("تم تحويل {$pointsToRedeem} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!")
+                                ->success()
+                                ->send();
+                        })
+                        ->visible(fn ($record) => (float) $record->points > 0),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -17,12 +17,19 @@ class CustomerCreditForm
         return $schema->schema([
             Select::make('customer_id')
                 ->label('العميل')
-                ->options(fn () => Customer::query()
-                    ->where('is_active', true)
-                    ->orderBy('name', 'asc')
-                    ->pluck('name', 'id')
-                    ->toArray())
                 ->searchable()
+                ->getSearchResultsUsing(fn (string $search): array => Customer::query()
+                    ->where('is_active', true)
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->limit(50)
+                    ->get()
+                    ->mapWithKeys(fn ($customer) => [$customer->id => "{$customer->name} ({$customer->phone})"])
+                    ->toArray()
+                )
+                ->getOptionLabelUsing(fn ($value): ?string => Customer::find($value) ? (Customer::find($value)->name.' ('.Customer::find($value)->phone.')') : null)
                 ->required(),
 
             Select::make('type')
@@ -30,6 +37,7 @@ class CustomerCreditForm
                 ->options([
                     'deposit' => 'إيداع (إضافة رصيد)',
                     'withdraw' => 'سحب (خصم رصيد)',
+                    'redeem' => 'تبديل نقاط',
                 ])
                 ->required(),
 

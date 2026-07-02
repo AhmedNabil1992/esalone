@@ -1,0 +1,228 @@
+<?php
+
+namespace App\Filament\Resources\Tenant\Shifts\Shifts\Pages;
+
+use App\Filament\Resources\Tenant\Shifts\Shifts\ShiftResource;
+use App\Models\Tenant\CashBox;
+use App\Models\Tenant\CashBoxLedgerEntry;
+use App\Models\Tenant\ExpenseHistory;
+use App\Models\Tenant\Invoice;
+use App\Models\Tenant\InvoicePayment;
+use App\Models\Tenant\Purchase;
+use App\Models\Tenant\Shift;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\Concerns\InteractsWithRecord;
+use Filament\Resources\Pages\Page;
+use Illuminate\Support\Facades\Auth;
+
+class CloseShift extends Page
+{
+    use InteractsWithRecord;
+
+    protected static string $resource = ShiftResource::class;
+
+    protected string $view = 'filament.resources.tenant.shifts.shifts.pages.close-shift';
+
+    public array $stats = [];
+
+    public ?float $actual_amount = null;
+
+    public string $notes = '';
+
+    public array $playInvoices = [];
+
+    public array $directSales = [];
+
+    public array $expenses = [];
+
+    public array $purchases = [];
+
+    public array $cashBoxSummaries = [];
+
+    public function mount($record): void
+    {
+        $this->record = $this->resolveRecord($record);
+
+        if ($this->record->status === 'close') {
+            $this->actual_amount = (float) $this->record->actual_amount;
+            $this->notes = (string) $this->record->notes;
+        }
+
+        $this->calculateStats();
+    }
+
+    public function calculateStats(): void
+    {
+        $shiftId = $this->record->id;
+
+        // 1. Fetch Invoices closed during this shift
+        $invoicesQuery = Invoice::query()->where('shift_id', $shiftId)->where('status', 'posted');
+        $invoices = $invoicesQuery->get();
+
+        $playInvoicesColl = $invoices->where('invoice_type', 'device_sale');
+        $directSalesColl = $invoices->where('invoice_type', 'direct_sale');
+
+        // Playstation gross play
+        $playstation_amount = (float) $playInvoicesColl->sum('play_amount');
+
+        // Store sales gross (orders + direct sales)
+        $sales_amount = (float) ($playInvoicesColl->sum('order_amount') + $directSalesColl->sum('subtotal'));
+
+        // Taxes, services, discounts, debts
+        $tax_amount = (float) $invoices->sum('tax_amount');
+        $service_amount = (float) $invoices->sum('service_amount');
+        $discount_amount = (float) $invoices->sum('discount_amount');
+        $credit_amount = (float) $invoices->sum('remain_amount'); // debt left on invoices
+
+        // Payments via customer balance
+        $customer_credit_amount = (float) InvoicePayment::query()
+            ->whereIn('invoice_id', $invoices->pluck('id'))
+            ->where('payment_method', 'customer_balance')
+            ->sum('amount');
+
+        // 2. Ledger cash movements during this shift
+        $ledgerEntries = CashBoxLedgerEntry::query()->where('shift_id', $shiftId)->get();
+
+        // Customer deposits & withdrawals
+        $customer_add_amount = (float) $ledgerEntries->where('operation', 'customer_credit_deposit')->sum('amount');
+        $customer_minus_amount = (float) $ledgerEntries->where('operation', 'customer_credit_withdraw')->sum('amount');
+
+        // Expenses & Purchases
+        $expenses_amount = (float) $ledgerEntries->where('operation', 'expense')->sum('amount');
+        $purchase_amount = (float) ($ledgerEntries->where('operation', 'purchase')->sum('amount') - $ledgerEntries->where('operation', 'purchase_reverse')->sum('amount'));
+
+        // Income history
+        $income_history_amount = 0.00;
+
+        // Start cash
+        $start_amount = (float) $this->record->start_amount;
+
+        // Expected Cash Formula
+        $expected_cash = $start_amount
+            + $playstation_amount
+            + $sales_amount
+            + $tax_amount
+            + $service_amount
+            + $customer_add_amount
+            + $income_history_amount
+            - $purchase_amount
+            - $expenses_amount
+            - $discount_amount
+            - $customer_credit_amount
+            - $customer_minus_amount
+            - $credit_amount;
+
+        $expected_cash = round($expected_cash, 2);
+
+        $this->stats = [
+            'start_amount' => $start_amount,
+            'playstation_amount' => $playstation_amount,
+            'sales_amount' => $sales_amount,
+            'tax_amount' => $tax_amount,
+            'service_amount' => $service_amount,
+            'discount_amount' => $discount_amount,
+            'credit_amount' => $credit_amount,
+            'customer_credit_amount' => $customer_credit_amount,
+            'customer_add_amount' => $customer_add_amount,
+            'customer_minus_amount' => $customer_minus_amount,
+            'expenses_amount' => $expenses_amount,
+            'purchase_amount' => $purchase_amount,
+            'income_history_amount' => $income_history_amount,
+            'expected_cash' => $expected_cash,
+        ];
+
+        // 3. Expected cash per cashbox
+        $cashBoxes = CashBox::query()->where('is_active', true)->get();
+        $this->cashBoxSummaries = [];
+        foreach ($cashBoxes as $box) {
+            $boxLedger = $ledgerEntries->where('cash_box_id', $box->id);
+            $inflow = (float) $boxLedger->where('direction', 'in')->sum('amount');
+            $outflow = (float) $boxLedger->where('direction', 'out')->sum('amount');
+            $netChange = $inflow - $outflow;
+
+            // Only show cashboxes that had movements in this shift
+            if ($netChange !== 0.0 || $boxLedger->isNotEmpty()) {
+                $this->cashBoxSummaries[] = [
+                    'name' => $box->name,
+                    'net_change' => $netChange,
+                    'current_balance' => (float) $box->current_balance,
+                ];
+            }
+        }
+
+        // 4. Load details lists for accordions
+        $this->playInvoices = Invoice::query()
+            ->where('shift_id', $shiftId)
+            ->where('invoice_type', 'device_sale')
+            ->where('status', 'posted')
+            ->with(['customer', 'device', 'payments'])
+            ->get()
+            ->toArray();
+
+        $this->directSales = Invoice::query()
+            ->where('shift_id', $shiftId)
+            ->where('invoice_type', 'direct_sale')
+            ->where('status', 'posted')
+            ->with(['customer', 'payments'])
+            ->get()
+            ->toArray();
+
+        $this->expenses = ExpenseHistory::query()
+            ->where('shift_id', $shiftId)
+            ->with(['cashBox', 'expenseType'])
+            ->get()
+            ->toArray();
+
+        $this->purchases = Purchase::query()
+            ->where('shift_id', $shiftId)
+            ->with(['cashBox', 'supplier'])
+            ->get()
+            ->toArray();
+    }
+
+    public function close(): void
+    {
+        if ($this->record->status !== 'open') {
+            Notification::make()->title('هذا الشيفت مغلق بالفعل')->warning()->send();
+
+            return;
+        }
+
+        if ($this->actual_amount === null || $this->actual_amount === '') {
+            Notification::make()->title('يرجى إدخال الرصيد الفعلي بالدرج')->warning()->send();
+
+            return;
+        }
+
+        // Save calculated columns and close
+        $this->record->update([
+            'playstation_amount' => $this->stats['playstation_amount'],
+            'sales_amount' => $this->stats['sales_amount'],
+            'tax_amount' => $this->stats['tax_amount'],
+            'service_amount' => $this->stats['service_amount'],
+            'discount_amount' => $this->stats['discount_amount'],
+            'credit_amount' => $this->stats['credit_amount'],
+            'customer_credit_amount' => $this->stats['customer_credit_amount'],
+            'customer_add_amount' => $this->stats['customer_add_amount'],
+            'customer_minus_amount' => $this->stats['customer_minus_amount'],
+            'expenses_amount' => $this->stats['expenses_amount'],
+            'purchase_amount' => $this->stats['purchase_amount'],
+            'income_history_amount' => $this->stats['income_history_amount'],
+            'actual_amount' => $this->actual_amount,
+            'notes' => $this->notes,
+            'status' => 'close',
+            'is_active' => false,
+            'shift_to' => now(),
+            'closed_by_user_id' => Auth::id(),
+        ]);
+
+        Notification::make()->title('تم تقفيل الشيفت وحفظ البيانات بنجاح')->success()->send();
+
+        $this->redirect(ShiftResource::getUrl('index'));
+    }
+
+    public function getTitle(): string
+    {
+        return 'تقفيل الشيفت رقم '.$this->record->shift_no;
+    }
+}

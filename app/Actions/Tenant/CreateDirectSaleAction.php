@@ -110,6 +110,11 @@ class CreateDirectSaleAction
             );
             $storedRemainAmount = $this->resolveStoredRemainAmount($finalAmount, $enteredPaidAmount, $customerBalanceDelta);
 
+            if ($customerBalanceDelta < 0) {
+                $appliedPaidAmount = round($appliedPaidAmount + abs($customerBalanceDelta), 2);
+                $storedRemainAmount = 0.00;
+            }
+
             // Create invoice
             $invoiceNo = $this->generateInvoiceNo();
 
@@ -119,7 +124,7 @@ class CreateDirectSaleAction
                 'invoice_type' => 'direct_sale',
                 'customer_id' => $customerId,
                 'shift_id' => $activeShift->id,
-                'cash_box_id' => $defaultCashBox->id,
+                'cash_box_id' => $enteredPaidAmount > 0 ? $defaultCashBox->id : null,
                 'created_by_user_id' => $actor->id,
                 'device_id' => null,
                 'play_amount' => 0,
@@ -189,9 +194,9 @@ class CreateDirectSaleAction
 
             // Update cash box balance and record ledger entry
             $cashBoxToUpdate = CashBox::query()->whereKey($defaultCashBox->id)->first();
-            if ($cashBoxToUpdate && $appliedPaidAmount > 0) {
+            if ($cashBoxToUpdate && $enteredPaidAmount > 0) {
                 $cashBoxToUpdate->update([
-                    'current_balance' => $cashBoxToUpdate->current_balance + $appliedPaidAmount,
+                    'current_balance' => $cashBoxToUpdate->current_balance + $enteredPaidAmount,
                 ]);
 
                 // Record cash box ledger entry
@@ -203,7 +208,7 @@ class CreateDirectSaleAction
                     'reference_id' => $invoice->id,
                     'direction' => 'in',
                     'operation' => 'direct_sale',
-                    'amount' => $appliedPaidAmount,
+                    'amount' => $enteredPaidAmount,
                     'description' => 'بيع مباشر - '.$invoiceNo,
                     'occurred_at' => now(),
                 ]);
@@ -213,8 +218,19 @@ class CreateDirectSaleAction
                     'cash_box_id' => $defaultCashBox->id,
                     'created_by_user_id' => $actor->id,
                     'payment_method' => 'cash',
-                    'amount' => $appliedPaidAmount,
+                    'amount' => $enteredPaidAmount,
                     'notes' => null,
+                ]);
+            }
+
+            if ($customerBalanceDelta < 0) {
+                InvoicePayment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_box_id' => $defaultCashBox->id,
+                    'created_by_user_id' => $actor->id,
+                    'payment_method' => 'customer_balance',
+                    'amount' => abs($customerBalanceDelta),
+                    'notes' => 'خصم من رصيد حساب العميل',
                 ]);
             }
 

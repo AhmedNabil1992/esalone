@@ -19,27 +19,33 @@ class CustomerCreditsTable
 
                 TextColumn::make('type')
                     ->label('العملية')
-                    ->formatStateUsing(fn ($state) => $state === 'deposit' ? 'إيداع' : 'سحب')
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'deposit' => 'إيداع',
+                        'withdraw' => 'سحب',
+                        'redeem' => 'تبديل نقاط',
+                        default => $state,
+                    })
                     ->badge()
-                    ->color(fn ($state) => $state === 'deposit' ? 'success' : 'danger'),
-
-                TextColumn::make('amount')
-                    ->label('المبلغ')
-                    ->money()
-                    ->sortable(),
+                    ->color(fn ($state) => match ($state) {
+                        'deposit' => 'success',
+                        'withdraw' => 'danger',
+                        'redeem' => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('balance_before')
                     ->label('الرصيد قبل')
                     ->money(),
-
+                TextColumn::make('amount')
+                    ->label('المبلغ')
+                    ->money()
+                    ->sortable(),
                 TextColumn::make('balance_after')
                     ->label('الرصيد بعد')
                     ->money(),
-
                 TextColumn::make('user.name')
                     ->label('بواسطة')
                     ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('description')
                     ->label('ملاحظة')
                     ->limit(30)

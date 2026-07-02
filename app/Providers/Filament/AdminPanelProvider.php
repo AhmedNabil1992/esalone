@@ -2,15 +2,26 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\Tenant\ExpenseHistories\ExpenseHistoryResource;
+use App\Filament\Widgets\AdminStatsOverview;
+use App\Filament\Widgets\CurrentCashBox;
+use App\Filament\Widgets\ExpensesTypeSum;
+use App\Filament\Widgets\LowStockAlertsWidget;
 use App\Filament\Widgets\PurchaseOverviewWidget;
+use App\Filament\Widgets\SalesChartWidget;
 use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantHasOpenShift;
+use App\Http\Middleware\SetTenantTimezone;
+use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
+use App\Tenancy\TenantBackgroundsProvider;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -28,17 +39,11 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use lockscreen\FilamentLockscreen\Lockscreen;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
-use Throwable;
-use Filament\Navigation\NavigationGroup;
-use App\Http\Middleware\SetTenantTimezone;
-use lockscreen\FilamentLockscreen\Lockscreen;
-use lockscreen\FilamentLockscreen\Http\Middleware\Locker;
-use lockscreen\FilamentLockscreen\Http\Middleware\LockerTimer;
 use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
-use Swis\Filament\Backgrounds\ImageProviders\MyImages;
-use App\Tenancy\TenantBackgroundsProvider;
+use Throwable;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -67,9 +72,9 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('apple-touch-icon.png'))
             ->brandLogo(fn (): HtmlString => new HtmlString('
                 <div style="display: flex; align-items: center; gap: 12px; white-space: nowrap;">
-                    <img src="' . asset('images/favicon.svg') . '" style="height: 2.5rem; width: auto; flex-shrink: 0;" alt="Logo">
+                    <img src="'.asset('images/favicon.svg').'" style="height: 2.5rem; width: auto; flex-shrink: 0;" alt="Logo">
                     <span style="font-size: 1.25rem; font-weight: bold; line-height: 1;" class="text-gray-950 dark:text-white">
-                        ' . $this->resolveTenantBrandName() . '
+                        '.$this->resolveTenantBrandName().'
                     </span>
                 </div>
             '))
@@ -89,62 +94,87 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
+                AdminStatsOverview::class,
+                CurrentCashBox::class,
+                ExpensesTypeSum::class,
                 PurchaseOverviewWidget::class,
+                SalesChartWidget::class,
+                LowStockAlertsWidget::class,
             ])
             ->navigationGroups([
                 // 1. العمليات اليومية
                 NavigationGroup::make()
                     ->label('اللعب')
-                    // ->icon('heroicon-o-play')
-                    ,
-                    
+                // ->icon('heroicon-o-play')
+                ,
+
                 NavigationGroup::make()
                     ->label('الشيفتات')
-                    // ->icon('heroicon-o-clock')
-                    ,
+                // ->icon('heroicon-o-clock')
+                ,
 
                 NavigationGroup::make()
                     ->label('العملاء')
-                    // ->icon('heroicon-o-user-group')
-                    ,
+                // ->icon('heroicon-o-user-group')
+                ,
 
                 // 2. الحسابات والمخازن
                 NavigationGroup::make()
                     ->label('الإدارة المالية')
-                    // ->icon('heroicon-o-banknotes')
-                    ,
+                // ->icon('heroicon-o-banknotes')
+                ,
 
                 NavigationGroup::make()
                     ->label('إدارة المخزون')
-                    // ->icon('heroicon-o-archive-box')
-                    ,
+                // ->icon('heroicon-o-archive-box')
+                ,
 
                 NavigationGroup::make()
                     ->label('المشتريات')
-                    // ->icon('heroicon-o-shopping-cart')
-                    ,
+                // ->icon('heroicon-o-shopping-cart')
+                ,
 
                 // 3. التقارير
                 NavigationGroup::make()
                     ->label('التقارير')
-                    // ->icon('heroicon-o-chart-pie')
-                    ,
+                // ->icon('heroicon-o-chart-pie')
+                ,
 
                 // 4. الإعدادات (في الأسفل)
                 NavigationGroup::make()
                     ->label('إدارة الأجهزة')
-                    // ->icon('heroicon-o-tv')
-                    ,
+                // ->icon('heroicon-o-tv')
+                ,
 
                 NavigationGroup::make()
                     ->label('إعدادات المستخدمين')
-                    // ->icon('heroicon-o-users')
-                    ,
+                // ->icon('heroicon-o-users')
+                ,
 
                 NavigationGroup::make()
                     ->label('إعدادات النظام')
-                    // ->icon('heroicon-o-cog-6-tooth')
-                    ,
+                // ->icon('heroicon-o-cog-6-tooth')
+                ,
+            ])
+            ->navigationItems([
+                NavigationItem::make('تسجيل مصروف')
+                    ->url(fn (): string => route('filament.admin.resources.tenant.expense-histories.create'))
+                    ->icon('heroicon-o-plus-circle')
+                    ->group('الإدارة المالية')
+                    ->sort(1)
+                    ->visible(fn (): bool => ExpenseHistoryResource::canCreate()),
+                NavigationItem::make('تقفيل الشيفت')
+                    ->url(function (): string {
+                        $activeShift = Shift::currentOpenShift();
+
+                        return $activeShift
+                            ? route('filament.admin.resources.tenant.shifts.shifts.close', ['record' => $activeShift])
+                            : '#';
+                    })
+                    ->icon('heroicon-o-banknotes')
+                    ->group('الشيفتات')
+                    ->sort(2)
+                    ->visible(fn (): bool => Shift::query()->open()->active()->exists()),
             ])
             ->plugins([
                 FilamentShieldPlugin::make()
@@ -167,21 +197,20 @@ class AdminPanelProvider extends PanelProvider
                         'default' => 1,
                         'sm' => 2,
                     ]),
-                    Lockscreen::make()
-                        // ->usingCustomTableColumns('email','password') // Use custom table columns. Default:  email, password.
-                        ->enableRateLimit() // Enable rate limit for the lockscreen. Default: Enable, 5 attempts in 1 minute.
-                        // ->setUrl() // Customize the lockscreen url.
-                        ->enableIdleTimeout() // Enable auto lock during idle time. Default: Enable, 30 minutes.
-                        ->disableDisplayName() // Display the name of the user based on the attribute supplied. Default: name
-                        // ->icon() // Customize the icon of the lockscreen.
-                        ->enablePlugin(), // Enable the plugin.
-                    FilamentBackgroundsPlugin::make()
-                        ->showAttribution(false)
-                        ->imageProvider(
-                            TenantBackgroundsProvider::make()
-                        )
-                        ,
-                    
+                Lockscreen::make()
+                    // ->usingCustomTableColumns('email','password') // Use custom table columns. Default:  email, password.
+                    ->enableRateLimit() // Enable rate limit for the lockscreen. Default: Enable, 5 attempts in 1 minute.
+                    // ->setUrl() // Customize the lockscreen url.
+                    ->enableIdleTimeout() // Enable auto lock during idle time. Default: Enable, 30 minutes.
+                    ->disableDisplayName() // Display the name of the user based on the attribute supplied. Default: name
+                    // ->icon() // Customize the icon of the lockscreen.
+                    ->enablePlugin(), // Enable the plugin.
+                FilamentBackgroundsPlugin::make()
+                    ->showAttribution(false)
+                    ->imageProvider(
+                        TenantBackgroundsProvider::make()
+                    ),
+
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_START,

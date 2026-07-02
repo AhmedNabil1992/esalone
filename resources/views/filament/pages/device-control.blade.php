@@ -692,8 +692,15 @@
                                             @click="open = !open"
                                             style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.84rem;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;"
                                         >
-                                            <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#111827;">
-                                                {{ $this->busySelectedCustomer?->name ? ($this->busySelectedCustomer->name . ' - ' . $this->busySelectedCustomer->phone) : 'بدون عميل' }}
+                                            <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#111827;display:flex;align-items:center;gap:6px;">
+                                                @if ($this->busySelectedCustomer)
+                                                    <span>{{ $this->busySelectedCustomer->name }} - {{ $this->busySelectedCustomer->phone }}</span>
+                                                    <span style="color: {{ $this->busySelectedCustomer->balance < 0 ? '#dc2626' : '#16a34a' }}; font-weight: bold; font-size: .78rem;">
+                                                        (الرصيد: {{ number_format($this->busySelectedCustomer->balance, 2) }} ج.م)
+                                                    </span>
+                                                @else
+                                                    بدون عميل
+                                                @endif
                                             </span>
                                             <svg style="width:14px;height:14px;color:#6b7280;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -728,9 +735,12 @@
                                                         type="button"
                                                         wire:click="selectBusyActionCustomer({{ $customer->id }})"
                                                         @click="open = false"
-                                                        style="text-align:right;border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#111827;cursor:pointer;"
+                                                        style="text-align:right;border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#111827;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;"
                                                     >
-                                                        {{ $customer->name }} - {{ $customer->phone }}
+                                                        <span>{{ $customer->name }} - {{ $customer->phone }}</span>
+                                                        <span style="color: {{ $customer->balance < 0 ? '#dc2626' : '#16a34a' }}; font-weight: bold; font-size: .78rem;">
+                                                            (الرصيد: {{ number_format($customer->balance, 2) }} ج.م)
+                                                        </span>
                                                     </button>
                                                 @empty
                                                     <div style="text-align:center;padding:8px;color:#6b7280;font-size:.78rem;">لا يوجد عميل مطابق للبحث</div>

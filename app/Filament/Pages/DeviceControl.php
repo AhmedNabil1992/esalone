@@ -689,11 +689,14 @@ class DeviceControl extends Page
             return;
         }
 
-        unset($this->busyActionPayments[$index]);
-        $this->busyActionPayments = array_values($this->busyActionPayments);
-
-        if ($this->busyActionPayments === []) {
-            $this->addBusyActionPaymentRow();
+        if (count($this->busyActionPayments) === 1) {
+            $this->busyActionPayments[0] = [
+                'cash_box_id' => null,
+                'amount' => 0.0,
+            ];
+        } else {
+            unset($this->busyActionPayments[$index]);
+            $this->busyActionPayments = array_values($this->busyActionPayments);
         }
 
         $this->syncSingleClosePaymentAmount();
@@ -1324,14 +1327,11 @@ class DeviceControl extends Page
 
         $finalAmount = (float) ($this->busyClosePreview['final_amount'] ?? 0);
         $normalizedFinalAmount = round(max(0, $finalAmount), 2);
-        $currentAmount = round((float) ($this->busyActionPayments[0]['amount'] ?? 0), 2);
 
-        if ($currentAmount > 0) {
-            return;
+        if ($this->busyActionPayments[0]['amount'] === null || $this->busyActionPayments[0]['amount'] === '') {
+            $this->busyActionPayments[0]['amount'] = $normalizedFinalAmount;
+            $this->busyActionPaidAmount = $normalizedFinalAmount;
         }
-
-        $this->busyActionPayments[0]['amount'] = $normalizedFinalAmount;
-        $this->busyActionPaidAmount = $normalizedFinalAmount;
     }
 
     private function syncBusyCloseDepositToggle(): void

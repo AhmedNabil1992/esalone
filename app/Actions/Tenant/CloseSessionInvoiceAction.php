@@ -160,6 +160,11 @@ class CloseSessionInvoiceAction
                 $customerBalanceDelta,
             );
 
+            if ($customerBalanceDelta < 0) {
+                $appliedPaidAmount = round($appliedPaidAmount + abs($customerBalanceDelta), 2);
+                $storedRemainAmount = 0.00;
+            }
+
             $resolvedCustomerId = is_numeric($session->customer_id)
                 ? (int) $session->customer_id
                 : null;
@@ -192,11 +197,14 @@ class CloseSessionInvoiceAction
             }
 
             $shiftNo = (int) (Shift::query()->whereKey($shiftId)->value('shift_no') ?? $shiftId);
-            $targetCashBox = count($resolvedAllocations) === 1
-                ? $resolvedAllocations[0]['cash_box']
-                : $this->resolveDefaultCashBox(true);
-            $targetCashBoxId = $targetCashBox?->id;
-            if (count($resolvedAllocations) > 1) {
+            if (count($resolvedAllocations) === 0) {
+                $targetCashBox = null;
+                $targetCashBoxId = null;
+            } elseif (count($resolvedAllocations) === 1) {
+                $targetCashBox = $resolvedAllocations[0]['cash_box'];
+                $targetCashBoxId = $targetCashBox?->id;
+            } else {
+                $targetCashBox = $this->resolveDefaultCashBox(true);
                 $targetCashBoxId = null;
             }
 
@@ -227,23 +235,46 @@ class CloseSessionInvoiceAction
             ]);
 
             if ($resolvedAllocations !== []) {
-                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $appliedPaidAmount);
+                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $tenderedPaidAmount);
                 $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $normalizedAllocations);
                 $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
                 $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
                 $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
+
+                if ($customerBalanceDelta < 0) {
+                    InvoicePayment::query()->create([
+                        'invoice_id' => $invoice->id,
+                        'cash_box_id' => $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id,
+                        'created_by_user_id' => $actor->id,
+                        'payment_method' => 'customer_balance',
+                        'amount' => abs($customerBalanceDelta),
+                        'notes' => 'خصم من رصيد حساب العميل',
+                    ]);
+                }
             } else {
-                $cashBoxId = $this->applyCashReceiptToCashBox($appliedPaidAmount, $targetCashBox);
-                if ($appliedPaidAmount > 0 && $cashBoxId) {
+                $cashBoxId = $this->applyCashReceiptToCashBox($tenderedPaidAmount, $targetCashBox);
+                if ($tenderedPaidAmount > 0 && $cashBoxId) {
                     $this->recordInvoicePaymentRows($invoice, $actor, [
                         [
                             'cash_box' => $targetCashBox,
                             'cash_box_id' => $cashBoxId,
-                            'amount' => $appliedPaidAmount,
+                            'amount' => $tenderedPaidAmount,
                             'payment_method' => 'cash',
                         ],
                     ]);
                 }
+
+                if ($customerBalanceDelta < 0) {
+                    InvoicePayment::query()->create([
+                        'invoice_id' => $invoice->id,
+                        'cash_box_id' => $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id,
+                        'created_by_user_id' => $actor->id,
+                        'payment_method' => 'customer_balance',
+                        'amount' => abs($customerBalanceDelta),
+                        'notes' => 'خصم من رصيد حساب العميل',
+                    ]);
+                }
+
                 $coreLedgerEntries = $this->recordInvoiceCoreLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
                 $breakdownLedgerEntries = $this->recordInvoiceBreakdownLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
             }

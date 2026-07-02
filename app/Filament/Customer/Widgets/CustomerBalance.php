@@ -9,16 +9,21 @@ use Illuminate\Support\Facades\Auth;
 class CustomerBalance extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
         $user = Auth::user(); // Get the currently authenticated user
+
         return [
             Stat::make('رصيدك الحالي', $user->balance ?? 0)
                 // ->description('الرصيد المتاح في حسابك')
                 ->descriptionIcon('heroicon-o-currency-dollar')
                 ->color('success')
-                ->icon('heroicon-o-currency-dollar')
-                ,
+                ->icon('heroicon-o-currency-dollar'),
+            Stat::make('نقاط الولاء', $user->points ?? 0)
+                // ->description('نقاط الولاء المجمعة')
+                ->color('primary')
+                ->icon('heroicon-o-star'),
         ];
     }
 }

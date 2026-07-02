@@ -216,7 +216,8 @@ class SystemConfig extends Page
                                         // جلب المخازن من قاعدة البيانات
                                         return Warehouse::pluck('name', 'id');
                                     })->searchable()->preload(),
-                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط :')->numeric(),
+                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
+                                    TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
                                     Select::make('sys_system_time_zone')->label('التوقيت المحلي للنظام')->options([
                                         'Africa/Cairo' => 'مصر - القاهرة',
                                         'Asia/Riyadh' => 'السعودية - الرياض',

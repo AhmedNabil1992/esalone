@@ -22,6 +22,10 @@ class StoreTenantRequest extends FormRequest
             'domain' => ['required', 'string', 'max:255', 'unique:domains,domain'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
+            'started_at' => ['required', 'date'],
+            'ended_at' => ['required', 'date'],
+            'user_id' => ['required', 'integer'],
+            'auto_renew' => ['required', 'boolean'],
         ];
     }
 }

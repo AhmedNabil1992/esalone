@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\Shifts\Shifts;
 
+use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CloseShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CreateShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\EditShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\ListShifts;
@@ -59,6 +60,7 @@ class ShiftResource extends Resource
             'index' => ListShifts::route('/'),
             'create' => CreateShift::route('/create'),
             'edit' => EditShift::route('/{record}/edit'),
+            'close' => CloseShift::route('/{record}/close'),
         ];
     }
 }
