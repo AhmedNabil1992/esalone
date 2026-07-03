@@ -139,6 +139,8 @@ class AdminPanelProvider extends PanelProvider
                     ->label('التقارير')
                 // ->icon('heroicon-o-chart-pie')
                 ,
+                NavigationGroup::make()
+                    ->label('الإحصائيات'),
 
                 // 4. الإعدادات (في الأسفل)
                 NavigationGroup::make()
@@ -206,10 +208,11 @@ class AdminPanelProvider extends PanelProvider
                     // ->icon() // Customize the icon of the lockscreen.
                     ->enablePlugin(), // Enable the plugin.
                 FilamentBackgroundsPlugin::make()
-                    ->showAttribution(false)
-                    ->imageProvider(
-                        TenantBackgroundsProvider::make()
-                    ),
+                // ->showAttribution(false)
+                // ->imageProvider(
+                //     TenantBackgroundsProvider::make()
+                // )
+                ,
 
             ])
             ->renderHook(

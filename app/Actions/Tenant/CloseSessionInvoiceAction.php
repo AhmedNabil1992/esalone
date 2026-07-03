@@ -411,7 +411,12 @@ class CloseSessionInvoiceAction
             $totalDiscount = $subtotal;
         }
 
-        $totalDiscount = round(max(0, $totalDiscount));
+        $roundActive = $this->toBool(SystemConfig::get('round_money_active', '0'));
+        if ($roundActive) {
+            $totalDiscount = round(max(0, $totalDiscount));
+        } else {
+            $totalDiscount = round(max(0, $totalDiscount), 2);
+        }
         $afterDiscount = round($subtotal - $totalDiscount, 2);
 
         $servicePercent = (float) SystemConfig::get('sys_service_percent', 0);

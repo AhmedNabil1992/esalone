@@ -32,6 +32,9 @@ Route::middleware([
     Route::get('/', [LandingPageController::class, 'index'])
         ->name('tenant.landing');
 
+    Route::get('/menu', [LandingPageController::class, 'menu'])
+        ->name('tenant.menu');
+
     Route::post('/convert-points', [LandingPageController::class, 'convertPoints'])
         ->name('tenant.customer.convert-points');
 

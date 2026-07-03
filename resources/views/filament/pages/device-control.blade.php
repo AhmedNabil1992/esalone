@@ -1,4 +1,11 @@
 <x-filament-panels::page>
+    <style>
+        @keyframes pulse-border {
+            0% { border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
     @php
         $allDevices = $this->devices;
         $alarmSoundActive = in_array(
@@ -23,6 +30,14 @@
                 }
             }
         }
+
+        $upcomingReservations = \App\Models\Tenant\Reservation::query()
+            ->where('status', 'active')
+            ->where('start_time', '>=', now())
+            ->where('start_time', '<=', now()->addMinutes(30))
+            ->with('customer')
+            ->get()
+            ->groupBy('device_id');
     @endphp
 
     <div
@@ -310,6 +325,24 @@
 
                     {{-- جسم الكارت --}}
                     <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:10px;">
+                        @php
+                            $soonReservation = isset($upcomingReservations[$device->id]) ? $upcomingReservations[$device->id]->first() : null;
+                        @endphp
+                        @if ($soonReservation)
+                            @php
+                                $resStartTime = \Carbon\Carbon::parse($soonReservation->start_time);
+                                $resMinutesLeft = max(1, now()->diffInMinutes($resStartTime));
+                            @endphp
+                            <div style="background: rgba(254, 242, 242, 0.95); border: 1.5px solid #ef4444; color: #991b1b; font-size: 0.72rem; padding: 6px 10px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 4px; animation: pulse-border 2s infinite;">
+                                <svg style="width: 14px; height: 14px; color: #ef4444; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span style="flex:1;text-align:right;">
+                                    حجز قادم بعد {{ $resMinutesLeft }} دقيقة
+                                    ({{ $resStartTime->format('h:i A') }})
+                                </span>
+                            </div>
+                        @endif
 
                         @if ($isBusy)
                             @php

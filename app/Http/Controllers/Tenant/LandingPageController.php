@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
+use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\Offer;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
@@ -52,6 +53,19 @@ class LandingPageController extends Controller
             'gallery',
             'pointsRate'
         ));
+    }
+
+    public function menu(): View
+    {
+        $groups = InventoryGroup::where('is_active', true)
+            ->with(['items' => function ($q) {
+                $q->where('is_active', true);
+            }])
+            ->get();
+
+        $title = SystemConfig::get('landing_title', SystemConfig::get('sys_shop_name', 'صالة ألعاب بلاي ستيشن'));
+
+        return view('tenant.menu', compact('groups', 'title'));
     }
 
     public function convertPoints(Request $request)

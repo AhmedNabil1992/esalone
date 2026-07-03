@@ -690,6 +690,7 @@
                 <ul>
                     <li><a href="#features">الخدمات</a></li>
                     <li><a href="#offers">العروض</a></li>
+                    <li><a href="{{ route('tenant.menu') }}">المنيو 📋</a></li>
                     <li><a href="#gallery">المعرض</a></li>
                     <li><a href="#contact">اتصل بنا</a></li>
                 </ul>

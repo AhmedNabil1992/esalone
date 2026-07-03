@@ -58,4 +58,9 @@ class Customer extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(PlaySessions::class, 'customer_id');
     }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'customer_id');
+    }
 }
