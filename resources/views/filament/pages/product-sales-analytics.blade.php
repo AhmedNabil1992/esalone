@@ -73,43 +73,44 @@
             <!-- Quantity Chart -->
             <div style="background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px;">
                 <h3 style="font-size: .94rem; font-weight: 700; color: #111827; margin-bottom: 16px;">أكثر الأصناف مبيعاً بالكمية (قطعة)</h3>
-                <div wire:ignore x-data="{
-                    chart: null,
-                    init() {
-                        const ctx = this.$refs.canvas.getContext('2d');
-                        this.chart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: {{ json_encode($labels) }},
-                                datasets: [{
-                                    label: 'الكمية المباعة',
-                                    data: {{ json_encode($qtyData) }},
-                                    backgroundColor: 'rgba(59, 130, 246, 0.75)',
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    borderWidth: 1,
-                                    borderRadius: 6
-                                }]
-                            },
-                            options: {
-                                indexAxis: 'y',
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    x: { beginAtZero: true }
+                <div wire:ignore x-data="(function() {
+                    let chartInstance = null;
+                    return {
+                        init() {
+                            const canvas = this.$refs.canvas;
+                            const ctx = canvas.getContext('2d');
+                            const initial = JSON.parse(this.$wire.chartDataSerialized || '{}');
+                            chartInstance = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: initial.labels || [],
+                                    datasets: [{
+                                        label: 'الكمية المباعة',
+                                        data: initial.qty || [],
+                                        backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                                        borderColor: 'rgb(59, 130, 246)',
+                                        borderWidth: 1,
+                                        borderRadius: 6
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: { x: { beginAtZero: true } }
                                 }
-                            }
-                        });
-
-                        this.$watch('$wire.chartDataSerialized', value => {
-                            if (value) {
-                                const data = JSON.parse(value);
-                                this.chart.data.labels = data.labels || [];
-                                this.chart.data.datasets[0].data = data.qty || [];
-                                this.chart.update();
-                            }
-                        });
-                    }
-                }" style="width: 100%; height: 320px;">
+                            });
+                            this.$wire.$watch('chartDataSerialized', value => {
+                                if (value && chartInstance) {
+                                    const data = JSON.parse(value);
+                                    chartInstance.data.labels = data.labels || [];
+                                    chartInstance.data.datasets[0].data = data.qty || [];
+                                    chartInstance.update();
+                                }
+                            });
+                        }
+                    };
+                })()" style="width: 100%; height: 320px;">
                     <canvas x-ref="canvas"></canvas>
                 </div>
             </div>
@@ -117,42 +118,43 @@
             <!-- Revenue Chart -->
             <div style="background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 20px;">
                 <h3 style="font-size: .94rem; font-weight: 700; color: #111827; margin-bottom: 16px;">إيرادات الأصناف الأكثر مبيعاً (ج.م)</h3>
-                <div wire:ignore x-data="{
-                    chart: null,
-                    init() {
-                        const ctx = this.$refs.canvas.getContext('2d');
-                        this.chart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: {{ json_encode($labels) }},
-                                datasets: [{
-                                    label: 'إجمالي الإيراد',
-                                    data: {{ json_encode($revData) }},
-                                    backgroundColor: 'rgba(245, 158, 11, 0.75)',
-                                    borderColor: 'rgb(245, 158, 11)',
-                                    borderWidth: 1,
-                                    borderRadius: 6
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: { beginAtZero: true }
+                <div wire:ignore x-data="(function() {
+                    let chartInstance = null;
+                    return {
+                        init() {
+                            const canvas = this.$refs.canvas;
+                            const ctx = canvas.getContext('2d');
+                            const initial = JSON.parse(this.$wire.chartDataSerialized || '{}');
+                            chartInstance = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: initial.labels || [],
+                                    datasets: [{
+                                        label: 'إجمالي الإيراد',
+                                        data: initial.rev || [],
+                                        backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                                        borderColor: 'rgb(245, 158, 11)',
+                                        borderWidth: 1,
+                                        borderRadius: 6
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: { y: { beginAtZero: true } }
                                 }
-                            }
-                        });
-
-                        this.$watch('$wire.chartDataSerialized', value => {
-                            if (value) {
-                                const data = JSON.parse(value);
-                                this.chart.data.labels = data.labels || [];
-                                this.chart.data.datasets[0].data = data.rev || [];
-                                this.chart.update();
-                            }
-                        });
-                    }
-                }" style="width: 100%; height: 320px;">
+                            });
+                            this.$wire.$watch('chartDataSerialized', value => {
+                                if (value && chartInstance) {
+                                    const data = JSON.parse(value);
+                                    chartInstance.data.labels = data.labels || [];
+                                    chartInstance.data.datasets[0].data = data.rev || [];
+                                    chartInstance.update();
+                                }
+                            });
+                        }
+                    };
+                })()" style="width: 100%; height: 320px;">
                     <canvas x-ref="canvas"></canvas>
                 </div>
             </div>
