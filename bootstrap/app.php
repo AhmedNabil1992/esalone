@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantProvisioningTokenIsValid;
 use App\Http\Middleware\InitializeTenancyByDomainIfExists;
+use App\Http\Middleware\InjectProductionSecurityGuard;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(InjectProductionSecurityGuard::class);
+
         $middleware->web(prepend: [
             InitializeTenancyByDomainIfExists::class,
         ]);

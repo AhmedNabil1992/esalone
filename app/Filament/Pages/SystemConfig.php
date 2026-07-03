@@ -201,6 +201,7 @@ class SystemConfig extends Page
                                 Grid::make(3)->schema([
                                     // TextInput::make('sys_font_size_inventory')->label('حجم الخط ( مجموعات الصنف , الأصناف ) :')->numeric(),
                                     TextInput::make('sys_lock_device_time')->label('وقت سماح لتقفيل الجهاز :')->numeric(),
+                                    TextInput::make('sys_cancel_order_time')->label('وقت سماح لإلغاء الأوردر :')->numeric(),
                                     Select::make('sys_locale_currency')->label('العملة المحلية :')->options([
                                         'EGP' => 'جنيه مصري',
                                         'USD' => 'دولار أمريكي',

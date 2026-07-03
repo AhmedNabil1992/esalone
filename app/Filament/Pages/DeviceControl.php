@@ -30,6 +30,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class DeviceControl extends Page
@@ -117,6 +118,8 @@ class DeviceControl extends Page
     public ?string $lastCloseInvoiceError = null;
 
     public ?string $lastCloseInvoiceDeviceName = null;
+
+    private ?int $cancelOrderAllowedMinutesCache = null;
 
     public function mount(): void
     {
@@ -952,29 +955,40 @@ class DeviceControl extends Page
             return;
         }
 
-        /** @var PlaySessions|null $session */
+        $amount = round((float) $this->busyActionAmount, 2);
+
+        try {
+            DB::transaction(function () use ($amount): void {
+                $session = PlaySessions::query()
+                    ->where('device_id', (int) $this->selectedBusyDeviceId)
+                    ->where('status', 'active')
+                    ->lockForUpdate()
+                    ->latest('id')
+                    ->first();
+
+                if (! $session instanceof PlaySessions) {
+                    throw new RuntimeException('لا توجد جلسة نشطة لهذا الجهاز.');
+                }
+
+                $session->update([
+                    'prepaid_amount' => round((float) ($session->prepaid_amount ?? 0) + $amount, 2),
+                ]);
+            });
+        } catch (RuntimeException $e) {
+            Notification::make()->title('فشل إضافة المبلغ')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
         $session = PlaySessions::query()
             ->where('device_id', $this->selectedBusyDeviceId)
             ->where('status', 'active')
             ->latest('id')
             ->first();
 
-        if (! $session) {
-            Notification::make()->title('لا توجد جلسة نشطة لهذا الجهاز')->danger()->send();
-
-            return;
-        }
-
-        $amount = round((float) $this->busyActionAmount, 2);
-        $currentPrepaid = (float) ($session->prepaid_amount ?? 0);
-
-        $session->update([
-            'prepaid_amount' => $currentPrepaid + $amount,
-        ]);
-
         Notification::make()
             ->title('تمت إضافة المبلغ بنجاح')
-            ->body('الرصيد المقدم الحالي: '.number_format((float) $session->fresh()->prepaid_amount, 2))
+            ->body('الرصيد المقدم الحالي: '.number_format((float) ($session?->prepaid_amount ?? 0), 2))
             ->success()
             ->send();
 
@@ -1249,6 +1263,180 @@ class DeviceControl extends Page
                 ->danger()
                 ->send();
         }
+    }
+
+    public function cancelBusySessionOrder(): void
+    {
+        if ($this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return;
+        }
+
+        if (! $this->selectedBusyDeviceId) {
+            Notification::make()->title('لا يوجد جهاز محدد')->warning()->send();
+
+            return;
+        }
+
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن إلغاء الأوردر بدون Bridge.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! $this->canCancelBusySessionOrder) {
+            Notification::make()
+                ->title('انتهى وقت السماح')
+                ->body('لا يمكن إلغاء الأوردر بعد تجاوز وقت السماح المحدد من بداية الجلسة.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($user): void {
+                /** @var Devices $device */
+                $device = Devices::query()
+                    ->whereKey((int) $this->selectedBusyDeviceId)
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (! $device instanceof Devices) {
+                    throw new RuntimeException('تعذر تحميل بيانات الجهاز.');
+                }
+
+                if ($device->status !== 'busy') {
+                    throw new RuntimeException('الجهاز غير مشغول حالياً.');
+                }
+
+                /** @var PlaySessions|null $session */
+                $session = PlaySessions::query()
+                    ->where('device_id', $device->id)
+                    ->where('status', 'active')
+                    ->with(['details' => fn ($query) => $query->orderBy('id', 'asc')])
+                    ->lockForUpdate()
+                    ->latest('id')
+                    ->first();
+
+                if (! $session instanceof PlaySessions) {
+                    throw new RuntimeException('لا توجد جلسة نشطة لهذا الجهاز.');
+                }
+
+                $startTime = $session->getOriginalStartTime();
+                if (! $startTime) {
+                    throw new RuntimeException('لا يمكن تحديد وقت بداية الجلسة.');
+                }
+
+                $cancelWindowMinutes = $this->getCancelOrderAllowedMinutes();
+                if ($cancelWindowMinutes <= 0) {
+                    throw new RuntimeException('إلغاء الأوردر غير مفعل حالياً.');
+                }
+
+                $elapsedMinutes = (int) max(0, $startTime->diffInMinutes(now()));
+                if ($elapsedMinutes > $cancelWindowMinutes) {
+                    throw new RuntimeException('لقد تجاوزت وقت السماح لإلغاء الأوردر.');
+                }
+
+                app(DispatchDeviceControlCommandAction::class)->execute($device, $user, 'OFF', 'Cancel Session Order');
+
+                $device->update(['status' => 'active']);
+
+                OrderSessionDetail::query()
+                    ->where('play_session_id', $session->id)
+                    ->update(['status' => 'cancelled']);
+
+                PlaySessions::query()->whereKey($session->id)->delete();
+            });
+
+            Notification::make()
+                ->title('تم إلغاء الأوردر والجلسة بنجاح')
+                ->success()
+                ->send();
+
+            $this->broadcastDeviceControlRefresh('order_cancelled');
+            $this->closeBusyActionDetailsModal();
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->title('فشل إلغاء الأوردر')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function getCanCancelBusySessionOrderProperty(): bool
+    {
+        if (! $this->selectedBusyDeviceId || $this->selectedBusyActionLabel !== 'تقفيل الحساب') {
+            return false;
+        }
+
+        $cancelWindowMinutes = $this->getCancelOrderAllowedMinutes();
+        if ($cancelWindowMinutes <= 0) {
+            return false;
+        }
+
+        $elapsedMinutes = $this->busySessionElapsedMinutes;
+        if ($elapsedMinutes === null) {
+            return false;
+        }
+
+        return $elapsedMinutes <= $cancelWindowMinutes;
+    }
+
+    public function getBusySessionElapsedMinutesProperty(): ?int
+    {
+        $session = $this->selectedBusyDevice?->activeSession;
+        if (! $session) {
+            return null;
+        }
+
+        $startTime = $session->getOriginalStartTime();
+        if (! $startTime) {
+            return null;
+        }
+
+        return (int) max(0, $startTime->diffInMinutes(now()));
+    }
+
+    public function getBusyCancelOrderRemainingMinutesProperty(): ?int
+    {
+        $cancelWindowMinutes = $this->getCancelOrderAllowedMinutes();
+        $elapsedMinutes = $this->busySessionElapsedMinutes;
+
+        if ($cancelWindowMinutes <= 0 || $elapsedMinutes === null) {
+            return null;
+        }
+
+        return max(0, $cancelWindowMinutes - $elapsedMinutes);
+    }
+
+    public function getCancelOrderAllowedMinutesProperty(): int
+    {
+        return $this->getCancelOrderAllowedMinutes();
+    }
+
+    private function getCancelOrderAllowedMinutes(): int
+    {
+        if ($this->cancelOrderAllowedMinutesCache !== null) {
+            return $this->cancelOrderAllowedMinutesCache;
+        }
+
+        $this->cancelOrderAllowedMinutesCache = max(0, (int) SystemConfig::get('sys_cancel_order_time', 0));
+
+        return $this->cancelOrderAllowedMinutesCache;
     }
 
     public function limitBusySessionTime(): void

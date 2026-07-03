@@ -627,6 +627,7 @@
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">الفئة</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">البداية</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">النهاية</th>
+                                                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">السعر</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">المدة</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">القيمة</th>
                                                 </tr>
@@ -638,6 +639,7 @@
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;">{{ $row['play_category'] ?: '—' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['start_time']) && $row['start_time'] ? \Illuminate\Support\Carbon::parse($row['start_time'])->format('h:i A') : '—' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['end_time']) && $row['end_time'] ? \Illuminate\Support\Carbon::parse($row['end_time'])->format('h:i A') : '—' }}</td>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['play_price'] ?? 0), 2) }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#111827;">{{ ($row['period'] ?? 0) > 0 ? ($row['period'] . ' د') : 'مفتوح' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#16a34a;font-weight:700;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['cost'] ?? 0), 2) }}</td>
                                                     </tr>
@@ -838,10 +840,31 @@
                                 </div>
                             </div>
 
+                            @php
+                                $canCancelOrder = $this->canCancelBusySessionOrder;
+                                $cancelOrderWindow = $this->cancelOrderAllowedMinutes;
+                                $cancelOrderRemaining = $this->busyCancelOrderRemainingMinutes;
+                            @endphp
+
                             <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
                                 <button type="button" wire:click="closeBusyActionDetailsModal" style="border:1px solid #d1d5db;background:#fff;color:#111827;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">إلغاء</button>
+                                @if ($canCancelOrder)
+                                    <button type="button" wire:click="cancelBusySessionOrder" style="border:1px solid #dc2626;background:#dc2626;color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">
+                                        إلغاء الأوردر
+                                    </button>
+                                @endif
                                 <button type="button" wire:click="closeBusySessionInvoice" style="border:1px solid #16a34a;background:#16a34a;color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">تقفيل الحساب</button>
                             </div>
+
+                            @if (! $canCancelOrder && $cancelOrderWindow > 0)
+                                <div style="margin-top:8px;font-size:.74rem;color:#b45309;">
+                                    تم تجاوز وقت السماح لإلغاء الأوردر. وقت السماح: {{ $cancelOrderWindow }} دقيقة.
+                                </div>
+                            @elseif ($canCancelOrder && $cancelOrderRemaining !== null)
+                                <div style="margin-top:8px;font-size:.74rem;color:#065f46;">
+                                    متاح إلغاء الأوردر خلال {{ $cancelOrderRemaining }} دقيقة متبقية.
+                                </div>
+                            @endif
 
                             @if ($lastCloseInvoiceError)
                                 <div style="margin-top:16px;padding:12px;border:1px solid #fca5a5;background:#fef2f2;border-radius:12px;display:flex;gap:10px;align-items:flex-start;">

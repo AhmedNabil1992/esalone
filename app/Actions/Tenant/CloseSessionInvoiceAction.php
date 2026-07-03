@@ -367,6 +367,7 @@ class CloseSessionInvoiceAction
                     'play_category' => (string) ($detail->play_category ?? ''),
                     'start_time' => $detail->start_time,
                     'end_time' => $detail->end_time,
+                    'play_price' => round((float) ($detail->play_price ?? 0), 2),
                     'period' => (int) ($detail->period ?? 0),
                     'cost' => $cost,
                 ];
