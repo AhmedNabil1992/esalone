@@ -248,7 +248,8 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 EnsureTenantHasOpenShift::class,
             ])
-            ->databaseNotifications();
+            ->databaseNotifications()
+            ->topNavigation();
     }
 
     protected function resolveTenantCurrency(): string
