@@ -26,9 +26,9 @@ class DevicesReport extends Page implements HasTable
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
+    protected static string|\UnitEnum|null $navigationGroup = 'تقارير إدارية';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.pages.devices-report';
 

@@ -29,7 +29,7 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationLabel = 'سجل الفواتير';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $modelLabel = 'فاتورة';
 

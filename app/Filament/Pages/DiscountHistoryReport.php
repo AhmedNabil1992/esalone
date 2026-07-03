@@ -19,15 +19,15 @@ class DiscountHistoryReport extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $title = 'تقرير سجل الخصومات';
+    protected static ?string $title = 'سجل الخصومات';
 
-    protected static ?string $navigationLabel = 'تقرير سجل الخصومات';
+    protected static ?string $navigationLabel = 'سجل الخصومات';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 4;
 
     protected string $view = 'filament.pages.discount-history-report';
 

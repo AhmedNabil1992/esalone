@@ -26,7 +26,7 @@ class ExpenseHistoryResource extends Resource
 
     protected static ?string $navigationLabel = 'سجل المصروفات';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'مصروف';
 

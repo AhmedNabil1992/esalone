@@ -23,15 +23,15 @@ class PlayHistoryReport extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $title = 'تقرير سجل اللعب';
+    protected static ?string $title = 'سجل اللعب';
 
-    protected static ?string $navigationLabel = 'تقرير سجل اللعب';
+    protected static ?string $navigationLabel = 'سجل اللعب';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.pages.play-history-report';
 

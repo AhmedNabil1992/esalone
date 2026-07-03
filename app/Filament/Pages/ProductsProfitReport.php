@@ -21,15 +21,15 @@ class ProductsProfitReport extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $title = 'تقرير أرباح ومبيعات المنتجات';
+    protected static ?string $title = 'أرباح ومبيعات المنتجات';
 
-    protected static ?string $navigationLabel = 'تقرير أرباح ومبيعات المنتجات';
+    protected static ?string $navigationLabel = 'أرباح ومبيعات المنتجات';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-gift';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
+    protected static string|\UnitEnum|null $navigationGroup = 'تقارير إدارية';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 3;
 
     protected string $view = 'filament.pages.products-profit-report';
 

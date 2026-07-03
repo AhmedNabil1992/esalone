@@ -141,6 +141,8 @@ class AdminPanelProvider extends PanelProvider
                 ,
                 NavigationGroup::make()
                     ->label('الإحصائيات'),
+                NavigationGroup::make()
+                    ->label('تقارير إدارية'),
 
                 // 4. الإعدادات (في الأسفل)
                 NavigationGroup::make()

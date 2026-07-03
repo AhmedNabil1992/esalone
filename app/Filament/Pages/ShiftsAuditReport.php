@@ -25,7 +25,7 @@ class ShiftsAuditReport extends Page implements HasTable
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shield-check';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
+    protected static string|\UnitEnum|null $navigationGroup = 'تقارير إدارية';
 
     protected static ?int $navigationSort = 3;
 

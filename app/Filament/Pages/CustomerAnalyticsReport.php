@@ -14,9 +14,9 @@ class CustomerAnalyticsReport extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
+    protected static string|\UnitEnum|null $navigationGroup = 'تقارير إدارية';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 7;
 
     protected string $view = 'filament.pages.customer-analytics-report';
 

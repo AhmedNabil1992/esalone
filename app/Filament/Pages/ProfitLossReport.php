@@ -11,15 +11,15 @@ use Illuminate\Support\Facades\DB;
 
 class ProfitLossReport extends Page
 {
-    protected static ?string $title = 'تقرير الأرباح والخسائر (P&L)';
+    protected static ?string $title = 'الأرباح والخسائر';
 
-    protected static ?string $navigationLabel = 'تقرير الأرباح والخسائر';
+    protected static ?string $navigationLabel = 'الأرباح والخسائر';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-presentation-chart-bar';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'التقارير';
+    protected static string|\UnitEnum|null $navigationGroup = 'تقارير إدارية';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     protected string $view = 'filament.pages.profit-loss-report';
 
