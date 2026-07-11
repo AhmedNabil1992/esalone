@@ -13,12 +13,15 @@ use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class SwitchDeviceAction
 {
+    public ?Carbon $customSwitchTime = null;
+
     /**
      * @throws RuntimeException
      */
@@ -88,7 +91,7 @@ class SwitchDeviceAction
                 throw new RuntimeException('وقت بداية الجلسة الحالية غير متاح.');
             }
 
-            $now = now();
+            $now = $this->customSwitchTime ?? now();
             $currentPlayType = trim((string) $currentDetail->play_type);
             if ($currentPlayType === '') {
                 throw new RuntimeException('نوع اللعب الحالي غير صالح.');

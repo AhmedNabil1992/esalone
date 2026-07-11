@@ -11,11 +11,14 @@ use App\Models\Tenant\PlaySessionDetail;
 use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class StartSessionAction
 {
+    public ?Carbon $customStartTime = null;
+
     /**
      * فتح جلسة لعب جديدة لجهاز على أساس سعر لعب محدد.
      *
@@ -71,7 +74,7 @@ class StartSessionAction
                 }
             }
 
-            $startTime = now();
+            $startTime = $this->customStartTime ?? now();
             $isTimedSession = $durationMinutes !== null;
             $endTime = $isTimedSession ? $startTime->copy()->addMinutes($durationMinutes) : null;
 

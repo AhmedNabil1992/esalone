@@ -29,6 +29,8 @@ use RuntimeException;
 
 class CloseSessionInvoiceAction
 {
+    public ?Carbon $customCloseTime = null;
+
     /**
      * @return array<string,mixed>
      */
@@ -838,7 +840,7 @@ class CloseSessionInvoiceAction
 
     private function resolveEffectiveCloseTime(Devices $device, PlaySessionDetail $latestDetail): Carbon
     {
-        $now = Carbon::instance(now()->toMutable());
+        $now = $this->customCloseTime ?? Carbon::instance(now()->toMutable());
         $playCategory = trim((string) ($latestDetail->play_category ?? ''));
         $detailEnd = $latestDetail->end_time;
 

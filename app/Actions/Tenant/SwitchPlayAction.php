@@ -10,12 +10,15 @@ use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class SwitchPlayAction
 {
+    public ?Carbon $customSwitchTime = null;
+
     /**
      * تبديل نوع اللعب داخل نفس الجلسة النشطة.
      *
@@ -75,7 +78,7 @@ class SwitchPlayAction
                 throw new RuntimeException('تم اختيار نفس نوع اللعب الحالي.');
             }
 
-            $now = now();
+            $now = $this->customSwitchTime ?? now();
             $oldEndTime = $currentDetail->end_time;
 
             if ($oldEndTime && $now->greaterThanOrEqualTo($oldEndTime)) {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\LandingPageController;
+use App\Http\Controllers\Tenant\OfflineSyncController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Models\Tenant\Shift;
@@ -69,4 +70,11 @@ Route::middleware([
 
         return redirect()->route('filament.admin.resources.tenant.purchases.create');
     })->name('tenant.shifts.quick-open');
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/tenant/offline/init', [OfflineSyncController::class, 'init'])
+            ->name('tenant.offline.init');
+        Route::post('/tenant/offline/sync', [OfflineSyncController::class, 'sync'])
+            ->name('tenant.offline.sync');
+    });
 });

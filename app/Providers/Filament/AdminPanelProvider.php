@@ -20,6 +20,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
@@ -83,6 +84,12 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->unsavedChangesAlerts()
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('تهيئة الأوفلاين')
+                    ->url('javascript:void(window.globalOfflineManagerInstance && window.globalOfflineManagerInstance.fetchInitialCloudState())')
+                    ->icon('heroicon-o-arrow-path'),
+            ])
             // ->topNavigation()
             ->sidebarFullyCollapsibleOnDesktop(true)
             ->maxContentWidth(Width::Full)
@@ -227,6 +234,12 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::BODY_START,
                 fn (): HtmlString => new HtmlString(
                     view('filament.banners.subscription-warning')->render()
+                ),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): HtmlString => new HtmlString(
+                    view('filament.pages.offline-script')->render()
                 ),
             )
             ->middleware([
