@@ -90,8 +90,8 @@ class AdminPanelProvider extends PanelProvider
                     ->url('javascript:void(window.globalOfflineManagerInstance && window.globalOfflineManagerInstance.fetchInitialCloudState())')
                     ->icon('heroicon-o-arrow-path'),
             ])
-            // ->topNavigation()
-            ->sidebarFullyCollapsibleOnDesktop(true)
+            ->topNavigation()
+            // ->sidebarFullyCollapsibleOnDesktop(true)
             ->maxContentWidth(Width::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverResources(in: app_path('Filament/Resources/Tenant'), for: 'App\Filament\Resources\Tenant')
@@ -112,60 +112,52 @@ class AdminPanelProvider extends PanelProvider
                 // 1. العمليات اليومية
                 NavigationGroup::make()
                     ->label('اللعب')
-                // ->icon('heroicon-o-play')
-                ,
+                    ->icon('heroicon-o-play'),
 
                 NavigationGroup::make()
                     ->label('الشيفتات')
-                // ->icon('heroicon-o-clock')
-                ,
+                    ->icon('heroicon-o-clock'),
 
                 NavigationGroup::make()
                     ->label('العملاء')
-                // ->icon('heroicon-o-user-group')
-                ,
+                    ->icon('heroicon-o-user-group'),
 
                 // 2. الحسابات والمخازن
                 NavigationGroup::make()
                     ->label('الإدارة المالية')
-                // ->icon('heroicon-o-banknotes')
-                ,
+                    ->icon('heroicon-o-banknotes'),
 
                 NavigationGroup::make()
                     ->label('إدارة المخزون')
-                // ->icon('heroicon-o-archive-box')
-                ,
+                    ->icon('heroicon-o-archive-box'),
 
                 NavigationGroup::make()
                     ->label('المشتريات')
-                // ->icon('heroicon-o-shopping-cart')
-                ,
+                    ->icon('heroicon-o-shopping-cart'),
 
                 // 3. التقارير
                 NavigationGroup::make()
                     ->label('التقارير')
-                // ->icon('heroicon-o-chart-pie')
-                ,
+                    ->icon('heroicon-o-chart-pie'),
                 NavigationGroup::make()
-                    ->label('الإحصائيات'),
+                    ->label('الإحصائيات')
+                    ->icon('heroicon-o-presentation-chart-line'),
                 NavigationGroup::make()
-                    ->label('تقارير إدارية'),
+                    ->label('تقارير إدارية')
+                    ->icon('heroicon-o-document-chart-bar'),
 
                 // 4. الإعدادات (في الأسفل)
                 NavigationGroup::make()
                     ->label('إدارة الأجهزة')
-                // ->icon('heroicon-o-tv')
-                ,
+                    ->icon('heroicon-o-tv'),
 
                 NavigationGroup::make()
                     ->label('إعدادات المستخدمين')
-                // ->icon('heroicon-o-users')
-                ,
+                    ->icon('heroicon-o-users'),
 
                 NavigationGroup::make()
                     ->label('إعدادات النظام')
-                // ->icon('heroicon-o-cog-6-tooth')
-                ,
+                    ->icon('heroicon-o-cog-6-tooth'),
             ])
             ->navigationItems([
                 NavigationItem::make('تسجيل مصروف')
