@@ -25,21 +25,10 @@
         ];
     @endphp
 
-    @if ($isAdminPanel)
-        <style>
-            .fi-main-sidebar {
-                display: none !important;
-            }
-            .fi-main {
-                padding-inline-start: 0 !important;
-            }
-        </style>
-    @endif
-
     <nav class="fi-topbar">
         {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::TOPBAR_START) }}
 
-        @if ($hasNavigation && ! $isAdminPanel)
+        @if ($hasNavigation)
             <x-filament::icon-button
                 color="gray"
                 :icon="\Filament\Support\Icons\Heroicon::OutlinedBars3"
@@ -65,9 +54,7 @@
                 x-show="$store.sidebar.isOpen"
                 class="fi-topbar-close-sidebar-btn"
             />
-        @endif
 
-        <div class="fi-topbar-start" style="margin-right: 0; display: flex; align-items: center; gap: 12px;">
             @if ($isAdminPanel)
                 <x-filament::dropdown placement="bottom-start" teleport width="md">
                     <x-slot name="trigger">
@@ -113,7 +100,9 @@
                     </div>
                 </x-filament::dropdown>
             @endif
+        @endif
 
+        <div class="fi-topbar-start" style="margin-right: 0; display: flex; align-items: center; gap: 12px;">
             @if ($isSidebarCollapsibleOnDesktop && ! $isAdminPanel)
                 <x-filament::icon-button
                     color="gray"
