@@ -45,6 +45,7 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Swis\Filament\Backgrounds\FilamentBackgroundsPlugin;
 use Throwable;
+use WallaceMartinss\FilamentEvolution\FilamentEvolutionPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -67,6 +68,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->profile()
             ->brandName(fn (): string => $this->resolveTenantBrandName()) // سيب دي عشان الـ Title بتاع المتصفح
@@ -207,6 +209,9 @@ class AdminPanelProvider extends PanelProvider
                 //     TenantBackgroundsProvider::make()
                 // )
                 ,
+                FilamentEvolutionPlugin::make()
+                    ->whatsappInstanceResource() // عشان يظهر شاشة ربط الأرقام
+                    ->viewMessageHistory(),
 
             ])
             ->renderHook(
