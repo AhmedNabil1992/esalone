@@ -312,7 +312,36 @@ class SystemConfig extends Page
                                 // ]),
                             ]),
 
-                        // 5. تاب إعدادات صفحة الهبوط
+                        // 5. إعدادات الواتساب والتنبيهات
+                        Tabs\Tab::make('الواتساب والتنبيهات')
+                            ->icon('heroicon-o-chat-bubble-left-right')
+                            ->schema([
+                                Section::make('إرسال الفواتير عبر الواتساب')
+                                    ->description('تفعيل إرسال فواتير المبيعات تلقائياً للعملاء عبر الواتساب')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Toggle::make('sys_whatsapp_enabled')
+                                                ->label('تفعيل إرسال الفواتير عبر الواتساب'),
+                                            TextInput::make('sys_country_code')
+                                                ->label('كود الدولة الافتراضي (مثال: 20 لمصر) :')
+                                                ->numeric()
+                                                ->placeholder('20'),
+                                        ]),
+                                    ]),
+                                Section::make('تنبيهات الحجوزات')
+                                    ->description('تحديد وقت إرسال التنبيهات التلقائية للعملاء قبل موعد بدء الحجز')
+                                    ->schema([
+                                        Grid::make(1)->schema([
+                                            TextInput::make('sys_booking_alert_time')
+                                                ->label('مدة التنبيه قبل بدء الحجز (بالدقائق) :')
+                                                ->numeric()
+                                                ->placeholder('30')
+                                                ->default(30),
+                                        ]),
+                                    ]),
+                            ]),
+
+                        // 6. تاب إعدادات صفحة الهبوط
                         Tabs\Tab::make('إعدادات الصفحة الرئيسية')
                             ->icon('heroicon-o-globe-alt')
                             ->schema([

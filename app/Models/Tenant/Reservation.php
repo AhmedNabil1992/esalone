@@ -16,11 +16,13 @@ class Reservation extends Model
         'end_time',
         'status',
         'duration_minutes',
+        'whatsapp_alert_sent',
     ];
 
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
+        'whatsapp_alert_sent' => 'boolean',
     ];
 
     public function device()

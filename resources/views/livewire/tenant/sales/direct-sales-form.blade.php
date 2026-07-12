@@ -189,6 +189,16 @@
                             <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
                         </label>
                     @endif
+
+                    <div>
+                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">رقم الواتساب لإرسال الفاتورة (اختياري)</div>
+                        <input
+                            type="text"
+                            wire:model="whatsapp_phone"
+                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                            placeholder="مثال: 01012345678"
+                        />
+                    </div>
                 </div>
 
                 <div style="margin-top:10px;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;display:grid;gap:6px;">

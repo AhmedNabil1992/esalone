@@ -148,8 +148,13 @@
     $taxAmount = (float) $invoice->tax_amount;
 @endphp
 <div class="receipt">
-    @if (filled($logoPath))
+    <!-- @if (filled($logoPath))
         <img src="{{ tenant_asset($logoPath) }}" alt="Logo" class="logo" />
+    @endif -->
+    @if(!empty($logoPath))
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="{{ $logoPath }}" alt="Logo" style="max-width: 150px; height: auto;">
+        </div>
     @endif
 
     <div class="center title">{{ $shopName !== '' ? $shopName : 'فاتورة مبيعات' }}</div>

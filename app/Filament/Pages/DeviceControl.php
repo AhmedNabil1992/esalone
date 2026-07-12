@@ -13,6 +13,7 @@ use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
 use App\Actions\Tenant\SwitchPlayAction;
 use App\Events\Tenant\DeviceControlUpdated;
+use App\Jobs\Tenant\SendInvoiceWhatsAppJob;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
@@ -31,6 +32,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class DeviceControl extends Page
@@ -118,6 +120,8 @@ class DeviceControl extends Page
     public ?string $lastCloseInvoiceError = null;
 
     public ?string $lastCloseInvoiceDeviceName = null;
+
+    public string $busyActionWhatsappPhone = '';
 
     private ?int $cancelOrderAllowedMinutesCache = null;
 
@@ -330,6 +334,8 @@ class DeviceControl extends Page
 
     public function openBusyActionDetails(string $actionLabel): void
     {
+        $this->lastCloseInvoiceError = null;
+        $this->lastCloseInvoiceDeviceName = null;
         $this->selectedBusyActionLabel = $actionLabel;
         $this->busyActionAmount = null;
         $this->busyActionMinutes = null;
@@ -498,6 +504,9 @@ class DeviceControl extends Page
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
         $this->orderItemNotes = null;
+        $this->busyActionWhatsappPhone = '';
+        $this->lastCloseInvoiceError = null;
+        $this->lastCloseInvoiceDeviceName = null;
     }
 
     public function selectSwitchPlayPrice(int $playPriceId): void
@@ -1250,6 +1259,14 @@ class DeviceControl extends Page
                 $this->dispatch('open-print-window', url: route('tenant.invoices.print', ['invoice' => $invoice->id, 'silent' => 1]));
             }
 
+            // Send WhatsApp invoice if enabled via Queue
+            SendInvoiceWhatsAppJob::dispatch(
+                tenant()->getTenantKey(),
+                (int) $invoice->id,
+                $this->busyActionWhatsappPhone ?: null
+            );
+            $this->busyActionWhatsappPhone = '';
+
             $this->broadcastDeviceControlRefresh('invoice_closed');
 
             $this->closeBusyActionDetailsModal();
@@ -1752,10 +1769,14 @@ class DeviceControl extends Page
 
     private function broadcastDeviceControlRefresh(string $action): void
     {
-        event(new DeviceControlUpdated(
-            tenantKey: $this->getTenantBroadcastKey(),
-            action: $action,
-        ));
+        try {
+            event(new DeviceControlUpdated(
+                tenantKey: $this->getTenantBroadcastKey(),
+                action: $action,
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('Reverb broadcasting failed: '.$e->getMessage());
+        }
     }
 
     private function getTenantBroadcastKey(): string

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Tenant\Sales;
 
 use App\Actions\Tenant\CreateDirectSaleAction;
+use App\Jobs\Tenant\SendInvoiceWhatsAppJob;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
@@ -36,6 +37,8 @@ class DirectSalesForm extends Component
     public float $paid_amount = 0;
 
     public bool $deposit_remainder_to_customer_balance = false;
+
+    public string $whatsapp_phone = '';
 
     /** @var array<int,array{catalog_item_id:int,quantity:int,unit_price:float,total_amount:float}> */
     public array $selectedItems = [];
@@ -336,6 +339,14 @@ class DirectSalesForm extends Component
             if ($printActive && $printDirectSale) {
                 $this->dispatch('open-print-window', url: route('tenant.invoices.print', ['invoice' => $result['invoice']->id, 'silent' => 1]));
             }
+
+            // Send WhatsApp invoice if enabled via Queue
+            SendInvoiceWhatsAppJob::dispatch(
+                tenant()->getTenantKey(),
+                (int) $result['invoice']->id,
+                $this->whatsapp_phone ?: null
+            );
+            $this->whatsapp_phone = '';
 
             $this->clearCart();
             $this->item_search = '';

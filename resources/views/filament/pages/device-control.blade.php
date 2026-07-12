@@ -331,7 +331,7 @@
                         @if ($soonReservation)
                             @php
                                 $resStartTime = \Carbon\Carbon::parse($soonReservation->start_time);
-                                $resMinutesLeft = max(1, now()->diffInMinutes($resStartTime));
+                                $resMinutesLeft = max(1, (int) now()->diffInMinutes($resStartTime));
                             @endphp
                             <div style="background: rgba(254, 242, 242, 0.95); border: 1.5px solid #ef4444; color: #991b1b; font-size: 0.72rem; padding: 6px 10px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 4px; animation: pulse-border 2s infinite;">
                                 <svg style="width: 14px; height: 14px; color: #ef4444; flex-shrink: 0;" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -830,6 +830,16 @@
                                             <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
                                         </label>
                                     @endif
+
+                                    <div style="margin-top:10px;">
+                                        <label style="display:block;font-size:.7rem;color:#6b7280;margin-bottom:3px;">رقم الواتساب لإرسال الفاتورة (اختياري)</label>
+                                        <input
+                                            type="text"
+                                            wire:model="busyActionWhatsappPhone"
+                                            placeholder="مثال: 01012345678"
+                                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                                        />
+                                    </div>
                                 </div>
                                 <div style="display:flex;align-items:flex-end;">
                                     <div style="font-size:.86rem;font-weight:800;color:#111827;">

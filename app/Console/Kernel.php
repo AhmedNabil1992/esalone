@@ -13,6 +13,12 @@ class Kernel extends ConsoleKernel
         // تشغيل تنظيف بيانات الـ tenants المنتهية يوميًا في الساعة 2 صباحًا
         $schedule->command(CleanupExpiredTenants::class)->dailyAt('02:00');
 
+        // إرسال تنبيهات حجوزات الواتساب للمشتركين كل 5 دقائق لجميع الـ tenants
+        $schedule->command('tenants:run tenants:send-booking-alerts')
+            ->everyMinute()
+            ->runInBackground()
+            ->withoutOverlapping();
+
         // اختياري: يمكن تشغيله كل ساعة للفحص الأكثر تكرارًا
         // $schedule->command(CleanupExpiredTenants::class)->hourly();
     }

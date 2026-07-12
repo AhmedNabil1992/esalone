@@ -123,6 +123,57 @@ app.post("/print", async (req, res) => {
     }
 });
 
+app.post("/screenshot", async (req, res) => {
+    if (!assertToken(req, res)) {
+        return;
+    }
+
+    const html = String(req.body?.html || "");
+
+    if (!html) {
+        res.status(400).json({ ok: false, error: "html is required" });
+        return;
+    }
+
+    let browser;
+    try {
+        browser = await chromium.launch({ headless: true });
+        const page = await browser.newPage({
+            viewport: { width: 380, height: 800 },
+        });
+        await page.setContent(html, { waitUntil: "networkidle" });
+        await page.waitForTimeout(300);
+
+        const contentHeightPx = await page.evaluate(() => {
+            return Math.max(
+                document.body?.scrollHeight || 0,
+                document.documentElement?.scrollHeight || 0,
+                document.body?.offsetHeight || 0
+            );
+        });
+
+        await page.setViewportSize({ width: 380, height: contentHeightPx + 10 });
+
+        const screenshotBuffer = await page.screenshot({
+            type: "png",
+            fullPage: true,
+        });
+
+        const base64 = screenshotBuffer.toString("base64");
+
+        res.json({ ok: true, screenshot: base64 });
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            error: String(error?.message || error),
+        });
+    } finally {
+        if (browser) {
+            await browser.close().catch(() => {});
+        }
+    }
+});
+
 app.post("/tcp-send", async (req, res) => {
     if (!assertToken(req, res)) {
         return;
