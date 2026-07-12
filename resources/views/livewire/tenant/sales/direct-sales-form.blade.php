@@ -1,6 +1,19 @@
 <div dir="rtl" style="--line:#e5e7eb;--ink:#111827;--muted:#6b7280;--brand:#16a34a;--brand-soft:#f0fdf4;--card:#ffffff;--bg:#f8fafc;padding:14px;background:var(--bg);border-radius:14px;">
+    <style>
+        .sales-grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+        @media (min-width: 1024px) {
+            .sales-grid-container {
+                grid-template-columns: minmax(0, 2.1fr) minmax(320px, 1fr);
+            }
+        }
+    </style>
     <div style="display:grid;grid-template-columns:1fr;gap:12px;">
-        <div style="display:grid;grid-template-columns:minmax(0,2.1fr) minmax(320px,1fr);gap:12px;align-items:start;">
+        <div class="sales-grid-container">
             <section style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(17,24,39,.04);">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
                     <div>
@@ -207,11 +220,11 @@
 
     <style>
         @media (max-width: 1200px) {
-            [dir="rtl"] > div > div {
+            .sales-grid-container {
                 grid-template-columns: 1fr !important;
             }
 
-            [dir="rtl"] aside {
+            .sales-grid-container aside {
                 position: static !important;
             }
         }

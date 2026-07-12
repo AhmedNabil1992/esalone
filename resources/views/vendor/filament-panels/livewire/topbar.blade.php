@@ -25,6 +25,35 @@
         ];
     @endphp
 
+    @if ($isAdminPanel)
+        <style>
+            @media (max-width: 640px) {
+                .brand-logo-text {
+                    display: none !important;
+                }
+                .fi-topbar {
+                    padding-left: 8px !important;
+                    padding-right: 8px !important;
+                    gap: 6px !important;
+                }
+                .fi-topbar-start {
+                    gap: 6px !important;
+                }
+                .fi-global-search {
+                    max-width: 140px !important;
+                }
+            }
+            @media (min-width: 1024px) {
+                .fi-main-sidebar {
+                    display: none !important;
+                }
+                .fi-main {
+                    padding-inline-start: 0 !important;
+                }
+            }
+        </style>
+    @endif
+
     <nav class="fi-topbar">
         {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::TOPBAR_START) }}
 

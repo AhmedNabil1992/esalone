@@ -74,7 +74,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn (): HtmlString => new HtmlString('
                 <div style="display: flex; align-items: center; gap: 12px; white-space: nowrap;">
                     <img src="'.asset('images/favicon.svg').'" style="height: 2.5rem; width: auto; flex-shrink: 0;" alt="Logo">
-                    <span style="font-size: 1.25rem; font-weight: bold; line-height: 1;" class="text-gray-950 dark:text-white">
+                    <span class="brand-logo-text text-gray-950 dark:text-white" style="font-size: 1.25rem; font-weight: bold; line-height: 1;">
                         '.$this->resolveTenantBrandName().'
                     </span>
                 </div>
