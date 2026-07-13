@@ -39,6 +39,9 @@ Route::middleware([
     Route::post('/convert-points', [LandingPageController::class, 'convertPoints'])
         ->name('tenant.customer.convert-points');
 
+    Route::get('/invoice/view/{invoice}/{token}', \App\Http\Controllers\Tenant\PublicInvoiceController::class)
+        ->name('tenant.invoices.public-view');
+
     Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
         ->name('tenant.invoices.print');
 

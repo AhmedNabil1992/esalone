@@ -49,6 +49,15 @@ class DeviceControl extends Page
 
     protected string $view = 'filament.pages.device-control';
 
+    public function getListeners(): array
+    {
+        $tenantKey = $this->getTenantBroadcastKey();
+
+        return [
+            "echo:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
+        ];
+    }
+
     public ?int $selectedTypeId = null;
 
     public bool $showStartSessionModal = false;

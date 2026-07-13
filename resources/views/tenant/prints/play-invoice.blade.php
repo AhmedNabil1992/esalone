@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="@if(isset($noPrint) && $noPrint) public-html @endif">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -136,6 +136,37 @@
                 padding: 2mm 1.5mm;
             }
         }
+
+        @media screen {
+            html.public-html {
+                width: 100%;
+                max-width: 100%;
+                background-color: #f3f4f6;
+                overflow: auto;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 20px 10px;
+                height: 100%;
+            }
+            html.public-html body {
+                background-color: #ffffff;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                border-radius: 12px;
+                padding: 20px;
+                width: 100%;
+                max-width: 420px;
+                margin: 0 auto;
+                overflow: auto;
+                height: auto;
+            }
+            html.public-html .receipt {
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -148,12 +179,15 @@
     $taxAmount = (float) $invoice->tax_amount;
 @endphp
 <div class="receipt">
-    <!-- @if (filled($logoPath))
-        <img src="{{ tenant_asset($logoPath) }}" alt="Logo" class="logo" />
-    @endif -->
-    @if(!empty($logoPath))
+    @php
+        $logoUrl = $logoPath;
+        if (filled($logoPath) && !str_starts_with($logoPath, 'data:') && !str_starts_with($logoPath, 'http://') && !str_starts_with($logoPath, 'https://')) {
+            $logoUrl = tenant_asset($logoPath);
+        }
+    @endphp
+    @if(!empty($logoUrl))
         <div style="text-align: center; margin-bottom: 10px;">
-            <img src="{{ $logoPath }}" alt="Logo" style="max-width: 150px; height: auto;">
+            <img src="{{ $logoUrl }}" alt="Logo" style="max-width: 150px; height: auto;">
         </div>
     @endif
 
@@ -252,6 +286,7 @@
     <div class="footer small">{{ now()->format('Y-m-d h:i:s A') }}</div>
 </div>
 
+@if(!isset($noPrint) || !$noPrint)
 <script>
     window.addEventListener('load', function () {
         const params = new URLSearchParams(window.location.search);
@@ -325,6 +360,7 @@
 </script>
 @if(request()->has('fallback'))
 <script src="{{ asset('js/html2canvas.min.js') }}"></script>
+@endif
 @endif
 </body>
 </html>

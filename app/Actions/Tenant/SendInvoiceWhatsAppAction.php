@@ -4,11 +4,11 @@ namespace App\Actions\Tenant;
 
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\SystemConfig;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use WallaceMartinss\FilamentEvolution\Services\EvolutionClient;
 use WallaceMartinss\FilamentEvolution\Services\WhatsappService;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class SendInvoiceWhatsAppAction
 {
@@ -56,83 +56,102 @@ class SendInvoiceWhatsAppAction
         $instance = $whatsappService->getConnectedInstances()->first();
         if (! $instance) {
             Log::warning('No connected WhatsApp instance found to send invoice.');
+
             return;
         }
 
-        // 5. Construct Invoice Message (Caption for the PDF)
+        // 5. Construct Invoice Message
         $shopName = SystemConfig::get('sys_shop_name', 'gameOver');
         $dateTimeString = now()->format('Y-m-d h:i A');
         $currency = SystemConfig::get('sys_locale_currency', 'EGP');
 
+        $token = substr(hash_hmac('sha256', (string) $invoice->id, (string) config('app.key')), 0, 16);
+        $domain = tenant('domains')?->first()?->domain;
+        $publicUrl = $domain
+            ? tenant_route($domain, 'tenant.invoices.public-view', ['invoice' => $invoice->id, 'token' => $token])
+            : route('tenant.invoices.public-view', ['invoice' => $invoice->id, 'token' => $token]);
+
         $message = "شكراً لزيارتكم صالة *{$shopName}*! ❤️\n\n";
-        $message .= "🧾 *تفاصيل الفاتورة مٌرفقة في الملف*\n";
+        $message .= "🧾 *تفاصيل الفاتورة مٌرفقة*\n";
         $message .= "• *رقم الفاتورة:* #{$invoice->invoice_no}\n";
-        $message .= "• *التاريخ:* {$dateTimeString}\n";
-        $message .= '• *الصافي المطلوب:* '.number_format((float) $invoice->final_amount, 2)." {$currency}\n";
-        $message .= "\nيسعدنا خدمتكم دائماً! 😊";
+        $message .= "• *التاريخ والوقت:* {$dateTimeString}\n";
+        $message .= '• *الصافي المطلوب:* '.number_format((float) $invoice->final_amount, 2)." {$currency}\n\n";
+        $message .= "🌐 *رابط عرض الفاتورة أونلاين:*\n{$publicUrl}\n\n";
+        $message .= 'يسعدنا خدمتكم دائماً! 😊';
 
-        // 6. Send via WhatsApp (Generating PDF dynamically)
+        // 6. Send via WhatsApp (Try Image first, fallback to PDF)
         try {
-            $pdfBase64 = $this->getInvoicePdfBase64($invoice);
-            
-            // جلب روابط السيرفر من قاعدة بياناتك (أو من ملف .env إذا كانت ثابتة)
-            $evolutionUrl = rtrim((string) SystemConfig::get('sys_evolution_api_url', 'http://127.0.0.1:8080'), '/'); 
-            $evolutionApiKey = (string) SystemConfig::get('sys_evolution_api_key', 'your_global_apikey'); 
+            $evolutionClient = app(EvolutionClient::class);
 
-            if ($pdfBase64) {
-                // إرسال مباشر لسيرفر Evolution (حل جراحي مضموم 100%)
-                $response = \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $evolutionApiKey,
-                    'Content-Type' => 'application/json',
-                ])->post("{$evolutionUrl}/message/sendMedia/{$instance->name}", [
-                    'number' => $phone,
-                    'options' => [
-                        'delay' => 1200, // تأخير بسيط ليظهر للعميل كأن أحد يكتب
-                        'presence' => 'composing'
-                    ],
-                    'mediaMessage' => [
-                        'mediatype' => 'document',
-                        'fileName' => "Invoice_{$invoice->invoice_no}.pdf",
-                        'caption' => $message,
-                        'media' => $pdfBase64 // نمرر الـ Base64 الصافي هنا
-                    ]
-                ]);
+            // Attempt Image Screenshot (User preferred format)
+            $imageBase64 = $this->getInvoiceImageBase64($invoice);
+            if ($imageBase64) {
+                try {
+                    $evolutionClient->sendImage(
+                        $instance->name,
+                        $phone,
+                        $imageBase64,
+                        $message,
+                        [
+                            'delay' => 1200,
+                            'presence' => 'composing',
+                        ]
+                    );
+                    Log::info("WhatsApp invoice image sent to {$phone} successfully via EvolutionClient.");
 
-                if ($response->successful()) {
-                    Log::info("WhatsApp invoice PDF sent to {$phone} successfully (Direct HTTP).");
-                } else {
-                    Log::error("Evolution API failed to send PDF: " . $response->body());
-                    // Fallback to text message if Media upload fails for any reason
-                    \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $evolutionApiKey,
-                        'Content-Type' => 'application/json',
-                    ])->post("{$evolutionUrl}/message/sendText/{$instance->name}", [
-                        'number' => $phone,
-                        'text' => $message
-                    ]);
+                    return;
+                } catch (\Exception $e) {
+                    Log::error('Evolution API failed to send Image: '.$e->getMessage());
                 }
-            } else {
-                Log::warning("PDF generation failed, falling back to text message.");
-                \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $evolutionApiKey,
-                    'Content-Type' => 'application/json',
-                ])->post("{$evolutionUrl}/message/sendText/{$instance->name}", [
-                    'number' => $phone,
-                    'text' => $message
-                ]);
             }
+
+            // Graceful fallback to PDF (Pure PHP DomPDF, works everywhere)
+            Log::info("Falling back to PDF format for invoice #{$invoice->invoice_no}");
+            $pdfBase64 = $this->getInvoicePdfBase64($invoice);
+            if ($pdfBase64) {
+                try {
+                    $evolutionClient->sendDocument(
+                        $instance->name,
+                        $phone,
+                        $pdfBase64,
+                        "Invoice_{$invoice->invoice_no}.pdf",
+                        $message,
+                        [
+                            'delay' => 1200,
+                            'presence' => 'composing',
+                        ]
+                    );
+                    Log::info("WhatsApp invoice PDF sent to {$phone} successfully via EvolutionClient fallback.");
+
+                    return;
+                } catch (\Exception $e) {
+                    Log::error('Evolution API failed to send PDF: '.$e->getMessage());
+                }
+            }
+
+            // Final fallback to text message
+            Log::warning('Both image and PDF generation failed, sending plain text message via EvolutionClient.');
+            $evolutionClient->sendText(
+                $instance->name,
+                $phone,
+                $message,
+                [
+                    'delay' => 1200,
+                    'presence' => 'composing',
+                ]
+            );
+
         } catch (\Exception $e) {
             Log::error('Failed to send WhatsApp invoice: '.$e->getMessage());
         }
     }
 
     /**
-     * Generate PDF from Blade view and return as Base64 string for WhatsApp API.
+     * Generate PNG image from Blade view using headless Chrome/Chromium and return as Base64 string.
      */
-    private function getInvoicePdfBase64(Invoice $invoice): ?string
+    private function getInvoiceImageBase64(Invoice $invoice): ?string
     {
         try {
-            // Load necessary relationships
             $invoice->load([
                 'device.type',
                 'customer',
@@ -151,39 +170,197 @@ class SendInvoiceWhatsAppAction
             // Embed logo as base64 securely and check file size
             if ($logoPath && Storage::disk('public')->exists($logoPath)) {
                 $fileSize = Storage::disk('public')->size($logoPath);
-                
-                // لو اللوجو حجمه أكبر من 500 كيلوبايت، هنتجاهل إرفاقه في الفاتورة عشان منبوظش الـ API
-                // (500 كيلوبايت = 512000 بايت)
                 if ($fileSize < 512000) {
                     $logoContent = Storage::disk('public')->get($logoPath);
                     $logoMime = mime_content_type(Storage::disk('public')->path($logoPath)) ?: 'image/png';
-                    $logoDataUri = 'data:' . $logoMime . ';base64,' . base64_encode($logoContent);
-                } else {
-                    Log::warning("Logo file size is too large ({$fileSize} bytes). Skipping logo in PDF to prevent payload errors.");
+                    $logoDataUri = 'data:'.$logoMime.';base64,'.base64_encode($logoContent);
+                }
+            }
+
+            $html = view('tenant.prints.play-invoice', [
+                'invoice' => $invoice,
+                'logoPath' => $logoDataUri,
+                'footerMessage' => (string) SystemConfig::get('print_footer_message', ''),
+                'shopName' => (string) SystemConfig::get('sys_shop_name', 'PS Web'),
+            ])->render();
+
+            // Strip scripts to prevent window.print() from firing
+            $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+
+            // Allow body to expand freely for full-page screenshot and fix RTL viewport alignment
+            $html = str_replace(
+                '</style>',
+                'html,body{overflow:visible!important;height:auto!important;direction:ltr!important;}div.receipt{direction:rtl!important;}</style>',
+                $html
+            );
+
+            // Locate installed Chrome/Chromium (works on Windows & Linux/Ubuntu)
+            $chromePaths = array_filter([
+                config('services.chrome.path'),
+                'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+                'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/usr/bin/chrome',
+            ]);
+
+            $chromePath = null;
+            foreach ($chromePaths as $path) {
+                if (file_exists($path)) {
+                    $chromePath = $path;
+                    break;
+                }
+            }
+
+            if (! $chromePath) {
+                Log::warning('Chrome/Chromium not found; skipping invoice screenshot.');
+
+                return null;
+            }
+
+            // Write rendered HTML to a temp file
+            $uniqueId = uniqid('inv_', true);
+            $tempDir = sys_get_temp_dir();
+            $htmlFile = $tempDir.DIRECTORY_SEPARATOR.$uniqueId.'.html';
+            $pngFile = $tempDir.DIRECTORY_SEPARATOR.$uniqueId.'.png';
+
+            file_put_contents($htmlFile, $html);
+
+            $fileUrl = 'file:///'.ltrim(str_replace('\\', '/', $htmlFile), '/');
+
+            // Headless screenshot command
+            $cmd = sprintf(
+                '"%s" --headless=new --no-sandbox --disable-gpu --disable-software-rasterizer --ignore-certificate-errors --hide-scrollbars --window-size=600,10000 --virtual-time-budget=5000 --screenshot="%s" "%s" 2>&1',
+                $chromePath,
+                $pngFile,
+                $fileUrl
+            );
+
+            exec($cmd, $cmdOutput, $exitCode);
+            @unlink($htmlFile);
+
+            if (file_exists($pngFile)) {
+                $imageData = $this->cropAndEncodeScreenshot($pngFile);
+                @unlink($pngFile);
+
+                return $imageData;
+            }
+
+            Log::warning('Chrome headless screenshot failed (exit '.$exitCode.'): '.implode(' | ', $cmdOutput));
+
+        } catch (\Exception $e) {
+            Log::warning('Failed to generate invoice screenshot: '.$e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Crop bottom whitespace from a PNG using GD and return base64-encoded result.
+     */
+    private function cropAndEncodeScreenshot(string $pngFile): ?string
+    {
+        if (! function_exists('imagecreatefrompng')) {
+            return base64_encode(file_get_contents($pngFile));
+        }
+
+        $image = @imagecreatefrompng($pngFile);
+        if (! $image) {
+            return base64_encode(file_get_contents($pngFile));
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        // Scan from bottom to find the last non-white row
+        $lastContentRow = 0;
+        for ($y = $height - 1; $y >= 0; $y--) {
+            $rowIsWhite = true;
+            for ($x = 0; $x < $width; $x++) {
+                $color = imagecolorat($image, $x, $y);
+                $r = ($color >> 16) & 0xFF;
+                $g = ($color >> 8) & 0xFF;
+                $b = $color & 0xFF;
+                if ($r < 248 || $g < 248 || $b < 248) {
+                    $rowIsWhite = false;
+                    break;
+                }
+            }
+            if (! $rowIsWhite) {
+                $lastContentRow = $y;
+                break;
+            }
+        }
+
+        // Add 20px bottom padding, cap at image height
+        $cropHeight = min($lastContentRow + 20, $height);
+        if ($cropHeight < 10) {
+            imagedestroy($image);
+
+            return base64_encode(file_get_contents($pngFile));
+        }
+
+        $cropped = imagecrop($image, ['x' => 0, 'y' => 0, 'width' => $width, 'height' => $cropHeight]);
+        imagedestroy($image);
+
+        if (! $cropped) {
+            return base64_encode(file_get_contents($pngFile));
+        }
+
+        ob_start();
+        imagepng($cropped);
+        $pngData = ob_get_clean();
+        imagedestroy($cropped);
+
+        return base64_encode($pngData);
+    }
+
+    /**
+     * Generate PDF from Blade view and return as Base64 string for WhatsApp API.
+     */
+    private function getInvoicePdfBase64(Invoice $invoice): ?string
+    {
+        try {
+            $invoice->load([
+                'device.type',
+                'customer',
+                'cashBox',
+                'shift',
+                'createdBy',
+                'playSessionDetails.device',
+                'orderSessionDetails.catalogItem',
+                'payments.cashBox',
+                'payments.createdBy',
+            ]);
+
+            $logoPath = (string) SystemConfig::get('print_logo_path', '');
+            $logoDataUri = '';
+
+            // Embed logo as base64 securely and check file size
+            if ($logoPath && Storage::disk('public')->exists($logoPath)) {
+                $fileSize = Storage::disk('public')->size($logoPath);
+                if ($fileSize < 512000) {
+                    $logoContent = Storage::disk('public')->get($logoPath);
+                    $logoMime = mime_content_type(Storage::disk('public')->path($logoPath)) ?: 'image/png';
+                    $logoDataUri = 'data:'.$logoMime.';base64,'.base64_encode($logoContent);
                 }
             }
 
             // Generate PDF using DomPDF
             $pdf = Pdf::loadView('tenant.prints.play-invoice', [
                 'invoice' => $invoice,
-                'logoPath' => $logoDataUri, // Send the Base64 image to Blade
+                'logoPath' => $logoDataUri,
                 'footerMessage' => (string) SystemConfig::get('print_footer_message', ''),
                 'shopName' => (string) SystemConfig::get('sys_shop_name', 'PS Web'),
             ]);
 
-            // Optimize PDF for A4 or Receipt size (Optional: Default is A4)
-            // If it's a thermal receipt, you can adjust the paper size:
-            // $pdf->setPaper([0, 0, 226.77, 800], 'portrait'); // Example for 80mm roll
-
-            // Output PDF content
             $pdfContent = $pdf->output();
-
-            // Return strictly formatted base64 with Data URI scheme required by Evolution API
-            // return 'data:application/pdf;base64,' . base64_encode($pdfContent);
 
             return base64_encode($pdfContent);
         } catch (\Exception $e) {
-            Log::warning('Failed to generate invoice PDF: ' . $e->getMessage());
+            Log::warning('Failed to generate invoice PDF: '.$e->getMessage());
+
             return null;
         }
     }

@@ -20,7 +20,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
@@ -281,15 +280,19 @@ class AdminPanelProvider extends PanelProvider
 
     protected function configureBroadcasting(): void
     {
-        $isSecure = (string) config('reverb.apps.apps.0.options.scheme', 'https') === 'https';
-        $host = (string) config('reverb.apps.apps.0.options.host', 'ps-web.test');
+        $isSecure = request()->secure() || (string) config('reverb.apps.apps.0.options.scheme', 'https') === 'https';
+        $host = request()->getHost() ?: (string) config('reverb.apps.apps.0.options.host', 'ps-web.test');
         $port = (int) config('reverb.apps.apps.0.options.port', 8080);
         $key = (string) config('broadcasting.connections.reverb.key', '');
 
+        // If the connection is secure (HTTPS), the browser must connect via the standard SSL port (443)
+        // because Laravel Herd proxies SSL traffic on port 443 to the local Reverb server port.
+        $clientPort = $isSecure ? 443 : $port;
+
         Config::set('filament.broadcasting.echo.key', $key);
         Config::set('filament.broadcasting.echo.wsHost', $host);
-        Config::set('filament.broadcasting.echo.wsPort', $port);
-        Config::set('filament.broadcasting.echo.wssPort', $port);
+        Config::set('filament.broadcasting.echo.wsPort', $clientPort);
+        Config::set('filament.broadcasting.echo.wssPort', $clientPort);
         Config::set('filament.broadcasting.echo.forceTLS', $isSecure);
         Config::set('filament.broadcasting.echo.encrypted', $isSecure);
         Config::set('filament.broadcasting.echo.enabledTransports', ['ws', 'wss']);
