@@ -6,8 +6,10 @@ use App\Http\Controllers\Tenant\LandingPageController;
 use App\Http\Controllers\Tenant\OfflineSyncController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
+use App\Http\Controllers\Tenant\PublicInvoiceController;
 use App\Models\Tenant\Shift;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -23,6 +25,7 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 |
 | Feel free to customize them however you want. Good luck!
 |
+|
 */
 
 Route::middleware([
@@ -30,6 +33,8 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
+    Broadcast::routes();
+
     Route::get('/', [LandingPageController::class, 'index'])
         ->name('tenant.landing');
 
@@ -39,7 +44,7 @@ Route::middleware([
     Route::post('/convert-points', [LandingPageController::class, 'convertPoints'])
         ->name('tenant.customer.convert-points');
 
-    Route::get('/invoice/view/{invoice}/{token}', \App\Http\Controllers\Tenant\PublicInvoiceController::class)
+    Route::get('/invoice/view/{invoice}/{token}', PublicInvoiceController::class)
         ->name('tenant.invoices.public-view');
 
     Route::middleware('auth')->get('/tenant/invoices/{invoice}/print', PrintPlayInvoiceController::class)
