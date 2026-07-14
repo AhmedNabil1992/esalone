@@ -174,12 +174,35 @@ class CreateDirectSaleAction
                 ->first();
 
             foreach ($catalogItems as $catalogItem) {
+                $averageCost = 0.0;
+                $warehouseStock = null;
+
+                if ($defaultWarehouse) {
+                    $warehouseStock = WarehouseStock::query()
+                        ->where('warehouse_id', $defaultWarehouse->id)
+                        ->where('catalog_item_id', $catalogItem['item']->id)
+                        ->first();
+
+                    if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
+                        $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
+                    } else {
+                        $averageCost = (float) $catalogItem['item']->purchase_price;
+                    }
+                } else {
+                    $averageCost = (float) $catalogItem['item']->purchase_price;
+                }
+
+                $qtySold = (float) $catalogItem['quantity'];
+                $totalCost = round($qtySold * $averageCost, 4);
+
                 MarketHistory::query()->create([
                     'customer_id' => $customerId,
                     'catalog_item_id' => $catalogItem['item']->id,
                     'subject_name' => $catalogItem['item']->name,
                     'unit_price' => $catalogItem['unit_price'],
                     'total_amount' => $catalogItem['total_amount'],
+                    'unit_cost' => $averageCost,
+                    'total_cost' => $totalCost,
                     'quantity' => $catalogItem['quantity'],
                     'transaction_date' => $now->toDateString(),
                     'transaction_time' => $now->toTimeString(),
@@ -190,13 +213,18 @@ class CreateDirectSaleAction
 
                 // Record stock movement and update warehouse stock
                 if ($defaultWarehouse) {
-                    $warehouseStock = WarehouseStock::query()
-                        ->where('warehouse_id', $defaultWarehouse->id)
-                        ->where('catalog_item_id', $catalogItem['item']->id)
-                        ->first();
-
                     if ($warehouseStock) {
-                        $warehouseStock->decrement('quantity', $catalogItem['quantity']);
+                        $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                        $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
+
+                        if ($newQty <= 0.0) {
+                            $newAmount = 0.0;
+                        }
+
+                        $warehouseStock->update([
+                            'quantity' => $newQty,
+                            'amount' => $newAmount,
+                        ]);
                     }
 
                     StockMovement::query()->create([
@@ -207,9 +235,9 @@ class CreateDirectSaleAction
                         'invoice_type' => 'direct_sale',
                         'created_by_user_id' => $actor->id,
                         'movement_type' => 'direct_sale',
-                        'quantity' => -$catalogItem['quantity'],
-                        'unit_cost' => (float) $catalogItem['item']->purchase_price,
-                        'total_cost' => round(-$catalogItem['quantity'] * (float) $catalogItem['item']->purchase_price, 2),
+                        'quantity' => -$qtySold,
+                        'unit_cost' => $averageCost,
+                        'total_cost' => -$totalCost,
                         'notes' => 'بيع مباشر - '.$invoiceNo,
                         'occurred_at' => $now,
                     ]);

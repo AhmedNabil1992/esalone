@@ -6,6 +6,7 @@ namespace App\Actions\Tenant;
 
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CashBoxLedgerEntry;
+use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\Devices;
@@ -19,9 +20,12 @@ use App\Models\Tenant\PlaySessionDetail;
 use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\ServiceHistory;
 use App\Models\Tenant\Shift;
+use App\Models\Tenant\StockMovement;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\TaxHistory;
 use App\Models\Tenant\User;
+use App\Models\Tenant\Warehouse;
+use App\Models\Tenant\WarehouseStock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -809,6 +813,10 @@ class CloseSessionInvoiceAction
                 return $itemId.'|'.$price;
             });
 
+        $defaultWarehouse = Warehouse::query()
+            ->where('is_active', true)
+            ->first();
+
         foreach ($groupedRows as $rows) {
             /** @var Collection<int,OrderSessionDetail> $rows */
             $first = $rows->first();
@@ -819,14 +827,42 @@ class CloseSessionInvoiceAction
 
             $quantity = (int) $rows->sum(static fn (OrderSessionDetail $row): int => (int) ($row->quantity ?? 0));
             $price = round((float) ($first->price ?? 0), 2);
+            $catalogItem = CatalogItem::find($first->catalog_item_id);
+
+            if (! $catalogItem) {
+                continue;
+            }
+
+            $averageCost = 0.0;
+            $warehouseStock = null;
+
+            if ($defaultWarehouse) {
+                $warehouseStock = WarehouseStock::query()
+                    ->where('warehouse_id', $defaultWarehouse->id)
+                    ->where('catalog_item_id', $catalogItem->id)
+                    ->first();
+
+                if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
+                    $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
+                } else {
+                    $averageCost = (float) $catalogItem->purchase_price;
+                }
+            } else {
+                $averageCost = (float) $catalogItem->purchase_price;
+            }
+
+            $qtySold = (float) $quantity;
+            $totalCost = round($qtySold * $averageCost, 4);
 
             MarketHistory::query()->create([
                 'customer_id' => $session->customer_id,
                 'device_id' => $device->id,
-                'catalog_item_id' => $first->catalog_item_id,
+                'catalog_item_id' => $catalogItem->id,
                 'subject_name' => $device->name,
                 'unit_price' => $price,
                 'total_amount' => round($quantity * $price, 2),
+                'unit_cost' => $averageCost,
+                'total_cost' => $totalCost,
                 'transaction_date' => $trxDate,
                 'transaction_time' => $trxTime,
                 'created_by' => $actor->name,
@@ -835,6 +871,38 @@ class CloseSessionInvoiceAction
                 'quantity' => $quantity,
                 'invoice_no' => $invoice->invoice_no,
             ]);
+
+            // Deduct stock and record movement
+            if ($defaultWarehouse) {
+                if ($warehouseStock) {
+                    $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                    $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
+
+                    if ($newQty <= 0.0) {
+                        $newAmount = 0.0;
+                    }
+
+                    $warehouseStock->update([
+                        'quantity' => $newQty,
+                        'amount' => $newAmount,
+                    ]);
+                }
+
+                StockMovement::query()->create([
+                    'warehouse_id' => $defaultWarehouse->id,
+                    'catalog_item_id' => $catalogItem->id,
+                    'invoice_id' => $invoice->id,
+                    'invoice_no' => $invoice->invoice_no,
+                    'invoice_type' => 'session_sale',
+                    'created_by_user_id' => $actor->id ?? null,
+                    'movement_type' => 'direct_sale', // reuse direct_sale movement type for reports
+                    'quantity' => -$qtySold,
+                    'unit_cost' => $averageCost,
+                    'total_cost' => -$totalCost,
+                    'notes' => 'بيع من جلسة - '.$invoice->invoice_no,
+                    'occurred_at' => $issuedAt,
+                ]);
+            }
         }
     }
 

@@ -118,11 +118,17 @@ class PostPurchaseAction
                         'warehouse_id' => $purchase->warehouse_id,
                         'catalog_item_id' => $catalogItem->id,
                         'quantity' => 0,
+                        'amount' => 0,
                     ]);
                 }
 
-                $stock->quantity = (float) $stock->quantity + $quantity;
+                $stock->quantity = round((float) $stock->quantity + $quantity, 3);
+                $stock->amount = round((float) $stock->amount + ($quantity * $unitCost), 4);
                 $stock->save();
+
+                // Update the catalog item's purchase price to the latest purchase unit cost
+                $catalogItem->purchase_price = $unitCost;
+                $catalogItem->save();
 
                 StockMovement::query()->create([
                     'warehouse_id' => $purchase->warehouse_id,

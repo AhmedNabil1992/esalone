@@ -71,7 +71,16 @@ class PurchaseForm
                                 ->all())
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (callable $set, $state) {
+                                if ($state) {
+                                    $item = CatalogItem::find($state);
+                                    if ($item) {
+                                        $set('unit_cost', $item->purchase_price);
+                                    }
+                                }
+                            }),
                         TextInput::make('quantity')
                             ->label('الكمية')
                             ->numeric()

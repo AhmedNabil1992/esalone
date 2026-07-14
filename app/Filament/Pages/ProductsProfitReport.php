@@ -38,7 +38,7 @@ class ProductsProfitReport extends Page implements HasTable
         return $table
             ->query(
                 CatalogItem::query()
-                    ->where('is_product', true)
+                    ->where(fn (Builder $q) => $q->where('is_product', true)->orWhere('is_component', false))
                     ->with(['inventoryGroup'])
             )
             ->columns([
@@ -149,9 +149,8 @@ class ProductsProfitReport extends Page implements HasTable
                         if ($until) {
                             $query->whereDate('transaction_date', '<=', $until);
                         }
-                        $qty = (int) $query->sum('quantity');
 
-                        return $qty * (float) $record->purchase_price;
+                        return (float) $query->sum('total_cost');
                     })
                     ->summarize(
                         Summarizer::make()
@@ -163,23 +162,43 @@ class ProductsProfitReport extends Page implements HasTable
                                 $from = $filterData['from'] ?? null;
                                 $until = $filterData['until'] ?? null;
 
-                                $items = CatalogItem::whereIn('id', $itemIds)->get();
-                                $totalCost = 0.0;
-                                foreach ($items as $item) {
-                                    $histQuery = MarketHistory::where('catalog_item_id', $item->id);
-                                    if ($from) {
-                                        $histQuery->whereDate('transaction_date', '>=', $from);
-                                    }
-                                    if ($until) {
-                                        $histQuery->whereDate('transaction_date', '<=', $until);
-                                    }
-                                    $qty = (int) $histQuery->sum('quantity');
-                                    $totalCost += $qty * (float) $item->purchase_price;
+                                $histQuery = MarketHistory::whereIn('catalog_item_id', $itemIds);
+                                if ($from) {
+                                    $histQuery->whereDate('transaction_date', '>=', $from);
+                                }
+                                if ($until) {
+                                    $histQuery->whereDate('transaction_date', '<=', $until);
                                 }
 
-                                return $totalCost;
+                                return (float) $histQuery->sum('total_cost');
                             })
                     ),
+                TextColumn::make('avg_cost')
+                    ->label('متوسط سعر التكلفة')
+                    ->money('EGP')
+                    ->state(function (CatalogItem $record): float {
+                        $filterData = $this->tableFilters['issued_at'] ?? [];
+                        $from = $filterData['from'] ?? null;
+                        $until = $filterData['until'] ?? null;
+
+                        $query = MarketHistory::where('catalog_item_id', $record->id);
+                        if ($from) {
+                            $query->whereDate('transaction_date', '>=', $from);
+                        }
+                        if ($until) {
+                            $query->whereDate('transaction_date', '<=', $until);
+                        }
+
+                        $qty = (float) $query->sum('quantity');
+                        if ($qty <= 0) {
+                            return (float) $record->purchase_price;
+                        }
+
+                        $cost = (float) $query->sum('total_cost');
+
+                        return round($cost / $qty, 2);
+                    })
+                    ->alignCenter(),
                 TextColumn::make('net_profit')
                     ->label('صافي الأرباح')
                     ->money('EGP')
@@ -196,8 +215,7 @@ class ProductsProfitReport extends Page implements HasTable
                             $query->whereDate('transaction_date', '<=', $until);
                         }
                         $revenue = (float) $query->sum('total_amount');
-                        $qty = (int) $query->sum('quantity');
-                        $cost = $qty * (float) $record->purchase_price;
+                        $cost = (float) $query->sum('total_cost');
 
                         return $revenue - $cost;
                     })
@@ -213,23 +231,17 @@ class ProductsProfitReport extends Page implements HasTable
                                 $from = $filterData['from'] ?? null;
                                 $until = $filterData['until'] ?? null;
 
-                                $items = CatalogItem::whereIn('id', $itemIds)->get();
-                                $totalProfit = 0.0;
-                                foreach ($items as $item) {
-                                    $histQuery = MarketHistory::where('catalog_item_id', $item->id);
-                                    if ($from) {
-                                        $histQuery->whereDate('transaction_date', '>=', $from);
-                                    }
-                                    if ($until) {
-                                        $histQuery->whereDate('transaction_date', '<=', $until);
-                                    }
-                                    $revenue = (float) $histQuery->sum('total_amount');
-                                    $qty = (int) $histQuery->sum('quantity');
-                                    $cost = $qty * (float) $item->purchase_price;
-                                    $totalProfit += ($revenue - $cost);
+                                $histQuery = MarketHistory::whereIn('catalog_item_id', $itemIds);
+                                if ($from) {
+                                    $histQuery->whereDate('transaction_date', '>=', $from);
                                 }
+                                if ($until) {
+                                    $histQuery->whereDate('transaction_date', '<=', $until);
+                                }
+                                $revenue = (float) $histQuery->sum('total_amount');
+                                $cost = (float) $histQuery->sum('total_cost');
 
-                                return $totalProfit;
+                                return $revenue - $cost;
                             })
                     )
                     ->sortable(),
@@ -251,8 +263,7 @@ class ProductsProfitReport extends Page implements HasTable
                         if ($revenue <= 0.0) {
                             return '-';
                         }
-                        $qty = (int) $query->sum('quantity');
-                        $cost = $qty * (float) $record->purchase_price;
+                        $cost = (float) $query->sum('total_cost');
                         $profit = $revenue - $cost;
                         $margin = ($profit / $revenue) * 100;
 

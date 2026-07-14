@@ -11,10 +11,12 @@ class WarehouseStock extends Model
         'warehouse_id',
         'catalog_item_id',
         'quantity',
+        'amount',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:3',
+        'amount' => 'decimal:4',
     ];
 
     public function warehouse(): BelongsTo

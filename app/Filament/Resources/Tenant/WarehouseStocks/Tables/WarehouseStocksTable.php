@@ -27,6 +27,9 @@ class WarehouseStocksTable
                 TextColumn::make('quantity')
                     ->label('الكمية')
                     ->sortable(),
+                TextColumn::make('amount')
+                    ->label('المبلغ')
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')
                     ->dateTime()
