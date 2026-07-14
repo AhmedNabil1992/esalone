@@ -30,6 +30,10 @@ class CatalogItemsTable
                 TextColumn::make('sale_price')
                     ->label('سعر البيع')
                     ->money(),
+                TextColumn::make('min_quantity')
+                    ->label('حد الأمان')
+                    ->numeric(decimalPlaces: 2)
+                    ->sortable(),
                 ToggleColumn::make('is_product')
                     ->label('هل هذا صنف منتج؟')
                     ->onColor('success')

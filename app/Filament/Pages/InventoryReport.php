@@ -36,6 +36,8 @@ class InventoryReport extends Page implements HasTable
         return $table
             ->query(
                 WarehouseStock::query()
+                    ->join('catalog_items', 'warehouse_stocks.catalog_item_id', '=', 'catalog_items.id')
+                    ->select('warehouse_stocks.*', 'catalog_items.min_quantity')
                     ->with(['item', 'warehouse'])
             )
             ->columns([
@@ -52,7 +54,7 @@ class InventoryReport extends Page implements HasTable
                     ->numeric(decimalPlaces: 2)
                     ->sortable()
                     ->alignCenter(),
-                TextColumn::make('min_quantity')
+                TextColumn::make('item.min_quantity')
                     ->label('الحد الأدنى للأمان')
                     ->numeric(decimalPlaces: 2)
                     ->alignCenter(),
@@ -61,7 +63,7 @@ class InventoryReport extends Page implements HasTable
                     ->badge()
                     ->state(function (WarehouseStock $record): string {
                         $qty = (float) $record->quantity;
-                        $min = (float) $record->min_quantity;
+                        $min = (float) ($record->item?->min_quantity ?? 0);
 
                         if ($qty <= 0.0) {
                             return 'out_of_stock';
@@ -129,13 +131,14 @@ class InventoryReport extends Page implements HasTable
                     ->query(function (Builder $query, array $data): Builder {
                         return $query->when($data['status'], function (Builder $query, $status) {
                             if ($status === 'out_of_stock') {
-                                return $query->where('quantity', '<=', 0);
+                                return $query->where('warehouse_stocks.quantity', '<=', 0);
                             }
                             if ($status === 'low_stock') {
-                                return $query->where('quantity', '>', 0)->whereColumn('quantity', '<=', 'min_quantity');
+                                return $query->where('warehouse_stocks.quantity', '>', 0)
+                                    ->whereColumn('warehouse_stocks.quantity', '<=', 'catalog_items.min_quantity');
                             }
                             if ($status === 'in_stock') {
-                                return $query->whereColumn('quantity', '>', 'min_quantity');
+                                return $query->whereColumn('warehouse_stocks.quantity', '>', 'catalog_items.min_quantity');
                             }
 
                             return $query;

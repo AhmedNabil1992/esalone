@@ -83,7 +83,6 @@ class CreateStockMovement extends CreateRecord
                         'warehouse_id' => $destinationWarehouseId,
                         'catalog_item_id' => $itemId,
                         'quantity' => 0,
-                        'min_quantity' => 0,
                     ]);
                 }
 

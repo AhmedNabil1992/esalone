@@ -118,7 +118,6 @@ class PostPurchaseAction
                         'warehouse_id' => $purchase->warehouse_id,
                         'catalog_item_id' => $catalogItem->id,
                         'quantity' => 0,
-                        'min_quantity' => 0,
                     ]);
                 }
 

@@ -22,6 +22,7 @@ class CatalogItem extends Model
         'is_product',
         'is_component',
         'is_active',
+        'min_quantity',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class CatalogItem extends Model
         'is_product' => 'boolean',
         'is_component' => 'boolean',
         'is_active' => 'boolean',
+        'min_quantity' => 'decimal:3',
     ];
 
     protected static function newFactory(): CatalogItemFactory

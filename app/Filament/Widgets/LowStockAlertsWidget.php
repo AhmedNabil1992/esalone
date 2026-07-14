@@ -18,9 +18,11 @@ class LowStockAlertsWidget extends BaseWidget
         return $table
             ->query(
                 WarehouseStock::query()
-                    ->whereColumn('quantity', '<=', 'min_quantity')
+                    ->join('catalog_items', 'warehouse_stocks.catalog_item_id', '=', 'catalog_items.id')
+                    ->whereColumn('warehouse_stocks.quantity', '<=', 'catalog_items.min_quantity')
+                    ->select('warehouse_stocks.*')
                     ->with(['item', 'warehouse'])
-                    ->latest('updated_at')
+                    ->latest('warehouse_stocks.updated_at')
             )
             ->columns([
                 TextColumn::make('item.name')
@@ -33,7 +35,7 @@ class LowStockAlertsWidget extends BaseWidget
                     ->numeric(decimalPlaces: 2)
                     ->color('danger')
                     ->weight('bold'),
-                TextColumn::make('min_quantity')
+                TextColumn::make('item.min_quantity')
                     ->label('حد الأمان')
                     ->numeric(decimalPlaces: 2),
             ]);

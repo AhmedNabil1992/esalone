@@ -38,6 +38,11 @@ class CatalogItemForm
                     ->label('سعر البيع')
                     ->numeric()
                     ->required(),
+                TextInput::make('min_quantity')
+                    ->label('حد الأمان (الحد الأدنى)')
+                    ->numeric()
+                    ->default(0)
+                    ->required(),
                 Toggle::make('is_product')
                     ->label('هل هذا صنف منتج؟')
                     ->helperText('حدد هذا الخيار إذا كان الصنف هو منتج نهائي يمكن بيعه للعملاء.'),

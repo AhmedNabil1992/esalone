@@ -54,7 +54,7 @@ class DeviceControl extends Page
         $tenantKey = $this->getTenantBroadcastKey();
 
         return [
-            "echo:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
+            "echo:public:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
         ];
     }
 
