@@ -32,12 +32,12 @@ class LowStockAlertsWidget extends BaseWidget
                     ->label('المخزن'),
                 TextColumn::make('quantity')
                     ->label('الكمية المتبقية')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => (float) $state)
                     ->color('danger')
                     ->weight('bold'),
                 TextColumn::make('item.min_quantity')
                     ->label('حد الأمان')
-                    ->numeric(decimalPlaces: 2),
+                    ->formatStateUsing(fn ($state) => (float) $state),
             ]);
     }
 }

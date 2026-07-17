@@ -32,7 +32,7 @@ class ShiftClosedMail extends Mailable
             - (float) $shift->discount_amount
             - (float) $shift->customer_credit_amount
             - (float) $shift->customer_minus_amount
-            - (float) $shift->credit_amount;
+            + (float) $shift->credit_amount;
 
         $this->discrepancy = (float) $shift->actual_amount - $this->expected_cash;
     }

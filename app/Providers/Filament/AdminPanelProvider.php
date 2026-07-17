@@ -20,6 +20,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
@@ -92,6 +93,22 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
+            ])
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('فتح وردية جديدة')
+                    ->url(fn (): string => route('filament.admin.resources.tenant.shifts.shifts.create'))
+                    ->icon('heroicon-o-lock-open')
+                    ->color('success')
+                    ->visible(fn (): bool => ! Shift::query()->where('status', 'open')->exists()),
+                MenuItem::make()
+                    ->label('غلق الوردية الحالية')
+                    ->url(fn (): string => route('filament.admin.resources.tenant.shifts.shifts.close', [
+                        'record' => Shift::query()->where('status', 'open')->latest()->value('id') ?? 0,
+                    ]))
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('danger')
+                    ->visible(fn (): bool => Shift::query()->where('status', 'open')->exists()),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

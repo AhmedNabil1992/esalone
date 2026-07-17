@@ -58,6 +58,7 @@ class LandingPageController extends Controller
     public function menu(): View
     {
         $groups = InventoryGroup::where('is_active', true)
+            ->where('name', '!=', 'مكونات')
             ->with(['items' => function ($q) {
                 $q->where('is_active', true);
             }])
@@ -90,14 +91,20 @@ class LandingPageController extends Controller
             $rate = 10;
         }
 
-        $moneyToAdd = round($pointsToRedeem / $rate, 2);
+        $convertiblePoints = floor($pointsToRedeem / $rate) * $rate;
 
-        DB::transaction(function () use ($customer, $pointsToRedeem, $moneyToAdd) {
+        if ($convertiblePoints <= 0) {
+            return redirect()->back()->with('error', "يجب استبدال عدد نقاط من مضاعفات الـ {$rate} (بحد أدنى {$rate} نقطة).");
+        }
+
+        $moneyToAdd = round($convertiblePoints / $rate, 2);
+
+        DB::transaction(function () use ($customer, $convertiblePoints, $moneyToAdd) {
             $balanceBefore = (float) $customer->balance;
             $balanceAfter = $balanceBefore + $moneyToAdd;
 
             // Update customer balance & points
-            $customer->points = (float) $customer->points - $pointsToRedeem;
+            $customer->points = (float) $customer->points - $convertiblePoints;
             $customer->balance = $balanceAfter;
             $customer->save();
 
@@ -109,10 +116,10 @@ class LandingPageController extends Controller
                 'amount' => $moneyToAdd,
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
-                'description' => 'تحويل نقاط الولاء إلى رصيد ('.$pointsToRedeem.' نقطة) عبر البوابة الإلكترونية',
+                'description' => 'تحويل نقاط الولاء إلى رصيد ('.$convertiblePoints.' نقطة) عبر البوابة الإلكترونية',
             ]);
         });
 
-        return redirect()->back()->with('success', "تم تحويل {$pointsToRedeem} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!");
+        return redirect()->back()->with('success', "تم تحويل {$convertiblePoints} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!");
     }
 }

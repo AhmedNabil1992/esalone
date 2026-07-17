@@ -217,8 +217,8 @@ class SystemConfig extends Page
                                         // جلب المخازن من قاعدة البيانات
                                         return Warehouse::pluck('name', 'id');
                                     })->searchable()->preload(),
-                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
-                                    TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
+                                    // TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
+                                    // TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
                                     Select::make('sys_system_time_zone')->label('التوقيت المحلي للنظام')->options([
                                         'Africa/Cairo' => 'مصر - القاهرة',
                                         'Asia/Riyadh' => 'السعودية - الرياض',
@@ -237,6 +237,19 @@ class SystemConfig extends Page
                                         'Africa/Casablanca' => 'المغرب - الدار البيضاء',
                                         'Africa/Khartoum' => 'السودان - الخرطوم',
                                     ])->searchable()->preload(),
+                                ]),
+                                Section::make('نقاط العملاء')->schema([
+                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
+                                    TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
+                                    Select::make('sys_customer_points_type')
+                                        ->label('نوع الفاتورة لاحتساب النقاط :')
+                                        ->options([
+                                            'all' => 'الكل (اللعب والمبيعات)',
+                                            'play' => 'اللعب فقط',
+                                            'sales' => 'المبيعات فقط',
+                                        ])
+                                        ->default('all')
+                                        ->required(),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')
@@ -323,9 +336,9 @@ class SystemConfig extends Page
                                             Toggle::make('sys_whatsapp_enabled')
                                                 ->label('تفعيل إرسال الفواتير عبر الواتساب'),
                                             TextInput::make('sys_country_code')
-                                                ->label('كود الدولة الافتراضي (مثال: 20 لمصر) :')
+                                                ->label('كود الدولة الافتراضي (مثال: 2 لمصر) :')
                                                 ->numeric()
-                                                ->placeholder('20'),
+                                                ->placeholder('2'),
                                         ]),
                                     ]),
                                 Section::make('تنبيهات الحجوزات')

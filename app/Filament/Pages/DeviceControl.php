@@ -800,6 +800,7 @@ class DeviceControl extends Page
     {
         return InventoryGroup::query()
             ->where('is_active', true)
+            ->where('name', '!=', 'مكونات')
             ->orderBy('name', 'asc')
             ->get();
     }

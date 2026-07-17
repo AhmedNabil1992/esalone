@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class CatalogItemsTable
@@ -32,7 +33,7 @@ class CatalogItemsTable
                     ->money(),
                 TextColumn::make('min_quantity')
                     ->label('حد الأمان')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => (float) $state)
                     ->sortable(),
                 ToggleColumn::make('is_product')
                     ->label('هل هذا صنف منتج؟')
@@ -58,7 +59,21 @@ class CatalogItemsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_product')
+                    ->label('فلترة بالمنتجات')
+                    ->placeholder('الكل')
+                    ->trueLabel('المنتجات فقط')
+                    ->falseLabel('غير المنتجات'),
+                TernaryFilter::make('is_component')
+                    ->label('فلترة بالمكونات')
+                    ->placeholder('الكل')
+                    ->trueLabel('المكونات فقط')
+                    ->falseLabel('غير المكونات'),
+                TernaryFilter::make('is_active')
+                    ->label('الحالة (نشط/غير نشط)')
+                    ->placeholder('الكل')
+                    ->trueLabel('نشط فقط')
+                    ->falseLabel('غير نشط فقط'),
             ])
             ->recordActions([
                 ViewAction::make(),

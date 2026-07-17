@@ -37,7 +37,6 @@ class CustomerCreditForm
                 ->options([
                     'deposit' => 'إيداع (إضافة رصيد)',
                     'withdraw' => 'سحب (خصم رصيد)',
-                    'redeem' => 'تبديل نقاط',
                 ])
                 ->required(),
 

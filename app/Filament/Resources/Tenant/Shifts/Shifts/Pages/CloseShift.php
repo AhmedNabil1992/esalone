@@ -31,6 +31,8 @@ class CloseShift extends Page
 
     public ?float $actual_amount = null;
 
+    public array $cashbox_actuals = [];
+
     public string $notes = '';
 
     public array $playInvoices = [];
@@ -50,9 +52,26 @@ class CloseShift extends Page
         if ($this->record->status === 'close') {
             $this->actual_amount = (float) $this->record->actual_amount;
             $this->notes = (string) $this->record->notes;
+            $this->cashbox_actuals = $this->record->cashbox_actual_amounts ?? [];
+        } else {
+            $this->cashbox_actuals = [];
+            foreach (CashBox::query()->where('is_active', true)->pluck('id') as $id) {
+                $this->cashbox_actuals[$id] = null;
+            }
         }
 
         $this->calculateStats();
+    }
+
+    public function updatedCashboxActuals(): void
+    {
+        $this->actual_amount = 0.0;
+        foreach ($this->cashbox_actuals as $val) {
+            if ($val !== '' && $val !== null) {
+                $this->actual_amount += (float) $val;
+            }
+        }
+        $this->actual_amount = round($this->actual_amount, 2);
     }
 
     public function calculateStats(): void
@@ -114,7 +133,7 @@ class CloseShift extends Page
             - $discount_amount
             - $customer_credit_amount
             - $customer_minus_amount
-            - $credit_amount;
+            + $credit_amount;
 
         $expected_cash = round($expected_cash, 2);
 
@@ -144,14 +163,12 @@ class CloseShift extends Page
             $outflow = (float) $boxLedger->where('direction', 'out')->sum('amount');
             $netChange = $inflow - $outflow;
 
-            // Only show cashboxes that had movements in this shift
-            if ($netChange !== 0.0 || $boxLedger->isNotEmpty()) {
-                $this->cashBoxSummaries[] = [
-                    'name' => $box->name,
-                    'net_change' => $netChange,
-                    'current_balance' => (float) $box->current_balance,
-                ];
-            }
+            $this->cashBoxSummaries[] = [
+                'id' => $box->id,
+                'name' => $box->name,
+                'net_change' => $netChange,
+                'current_balance' => (float) $box->current_balance,
+            ];
         }
 
         // 4. Load details lists for accordions
@@ -192,10 +209,14 @@ class CloseShift extends Page
             return;
         }
 
-        if ($this->actual_amount === null || $this->actual_amount === '') {
-            Notification::make()->title('يرجى إدخال الرصيد الفعلي بالدرج')->warning()->send();
+        // Validate each cashbox actual amount
+        foreach ($this->cashBoxSummaries as $box) {
+            $val = $this->cashbox_actuals[$box['id']] ?? null;
+            if ($val === null || $val === '') {
+                Notification::make()->title("يرجى إدخال الرصيد الفعلي لخزينة {$box['name']}")->warning()->send();
 
-            return;
+                return;
+            }
         }
 
         // Save calculated columns and close
@@ -213,6 +234,7 @@ class CloseShift extends Page
             'purchase_amount' => $this->stats['purchase_amount'],
             'income_history_amount' => $this->stats['income_history_amount'],
             'actual_amount' => $this->actual_amount,
+            'cashbox_actual_amounts' => $this->cashbox_actuals,
             'notes' => $this->notes,
             'status' => 'close',
             'is_active' => false,

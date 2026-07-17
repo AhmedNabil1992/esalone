@@ -108,7 +108,7 @@ class OfflineSyncController extends Controller
                 ->get(),
             'play_types' => PlayType::all(),
             'play_prices' => PlayPrice::all(),
-            'inventory_groups' => InventoryGroup::query()->where('is_active', true)->get(),
+            'inventory_groups' => InventoryGroup::query()->where('is_active', true)->where('name', '!=', 'مكونات')->get(),
             'catalog_items' => CatalogItem::query()->where('is_active', true)->get(),
             'product_components' => ProductComponent::all(),
             'warehouses' => Warehouse::all(),

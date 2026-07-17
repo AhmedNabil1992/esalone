@@ -34,6 +34,7 @@ class Shift extends Model
         'status',
         'notify',
         'notes',
+        'cashbox_actual_amounts',
     ];
 
     protected $casts = [
@@ -56,6 +57,7 @@ class Shift extends Model
         'actual_amount' => 'decimal:2',
         'is_active' => 'boolean',
         'notify' => 'boolean',
+        'cashbox_actual_amounts' => 'array',
     ];
 
     public function opener(): BelongsTo
@@ -122,7 +124,7 @@ class Shift extends Model
             - (float) $this->discount_amount
             - (float) $this->customer_credit_amount
             - (float) $this->customer_minus_amount
-            - (float) $this->credit_amount,
+            + (float) $this->credit_amount,
             2,
         );
     }

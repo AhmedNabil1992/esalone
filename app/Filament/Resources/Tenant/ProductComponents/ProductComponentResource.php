@@ -20,6 +20,8 @@ class ProductComponentResource extends Resource
 {
     protected static ?string $model = ProductComponent::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static string|UnitEnum|null $navigationGroup = 'إدارة المخزون';

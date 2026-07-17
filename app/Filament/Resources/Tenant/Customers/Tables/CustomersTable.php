@@ -102,13 +102,25 @@ class CustomersTable
                                 $rate = 10;
                             }
 
-                            $moneyToAdd = round($pointsToRedeem / $rate, 2);
+                            $convertiblePoints = floor($pointsToRedeem / $rate) * $rate;
 
-                            DB::transaction(function () use ($record, $pointsToRedeem, $moneyToAdd): void {
+                            if ($convertiblePoints <= 0) {
+                                Notification::make()
+                                    ->title('فشل العملية')
+                                    ->body("يجب استبدال عدد نقاط من مضاعفات الـ {$rate} (بحد أدنى {$rate} نقطة).")
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $moneyToAdd = round($convertiblePoints / $rate, 2);
+
+                            DB::transaction(function () use ($record, $convertiblePoints, $moneyToAdd): void {
                                 $balanceBefore = (float) $record->balance;
                                 $balanceAfter = $balanceBefore + $moneyToAdd;
 
-                                $record->points = (float) $record->points - $pointsToRedeem;
+                                $record->points = (float) $record->points - $convertiblePoints;
                                 $record->balance = $balanceAfter;
                                 $record->save();
 
@@ -119,13 +131,13 @@ class CustomersTable
                                     'amount' => $moneyToAdd,
                                     'balance_before' => $balanceBefore,
                                     'balance_after' => $balanceAfter,
-                                    'description' => 'استبدال نقاط ولاء ('.$pointsToRedeem.' نقطة) بواسطة الإدارة',
+                                    'description' => 'استبدال نقاط ولاء ('.$convertiblePoints.' نقطة) بواسطة الإدارة',
                                 ]);
                             });
 
                             Notification::make()
                                 ->title('نجاح العملية')
-                                ->body("تم تحويل {$pointsToRedeem} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!")
+                                ->body("تم تحويل {$convertiblePoints} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!")
                                 ->success()
                                 ->send();
                         })

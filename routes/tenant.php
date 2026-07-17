@@ -56,12 +56,18 @@ Route::middleware([
     Route::middleware('auth')->get('/tenant/shifts/quick-open', function () {
         if (! Shift::currentOpenShift()) {
             DB::transaction(function (): void {
+                $lastClosedShift = Shift::query()
+                    ->where('status', 'close')
+                    ->orderByDesc('shift_no')
+                    ->first();
+                $startAmount = $lastClosedShift ? (float) $lastClosedShift->actual_amount : 0.0;
+
                 Shift::query()->create([
                     'shift_no' => Shift::nextShiftNumber(),
                     'opened_by_user_id' => Auth::id(),
-                    'shift_date' => today()->toDateString(),
-                    'shift_from' => now()->toDateTimeString(),
-                    'start_amount' => 0,
+                    'shift_date' => now()->utc()->toDateString(),
+                    'shift_from' => now()->utc()->toDateTimeString(),
+                    'start_amount' => $startAmount,
                     'actual_amount' => 0,
                     'status' => 'open',
                     'is_active' => true,

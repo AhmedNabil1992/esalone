@@ -174,31 +174,141 @@ class CreateDirectSaleAction
                 ->first();
 
             foreach ($catalogItems as $catalogItem) {
+                $qtySold = (float) $catalogItem['quantity'];
+                $itemModel = $catalogItem['item'];
+
+                // Load product components (eager loaded relationship)
+                $components = $itemModel->components()->with('component')->get();
+
                 $averageCost = 0.0;
-                $warehouseStock = null;
+                $totalCost = 0.0;
 
-                if ($defaultWarehouse) {
-                    $warehouseStock = WarehouseStock::query()
-                        ->where('warehouse_id', $defaultWarehouse->id)
-                        ->where('catalog_item_id', $catalogItem['item']->id)
-                        ->first();
+                if ($components->isNotEmpty()) {
+                    // This is a composite product (BOM). Calculate total cost from components and deduct them from stock.
+                    $totalProductCost = 0.0;
+                    foreach ($components as $componentRelation) {
+                        $componentItem = $componentRelation->component;
+                        if (! $componentItem) {
+                            continue;
+                        }
 
-                    if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
-                        $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
-                    } else {
-                        $averageCost = (float) $catalogItem['item']->purchase_price;
+                        $componentQtyNeeded = (float) $componentRelation->quantity * $qtySold;
+
+                        $compStock = null;
+                        $compAverageCost = 0.0;
+                        if ($defaultWarehouse) {
+                            $compStock = WarehouseStock::query()
+                                ->where('warehouse_id', $defaultWarehouse->id)
+                                ->where('catalog_item_id', $componentRelation->component_id)
+                                ->first();
+
+                            if ($compStock && (float) $compStock->quantity > 0) {
+                                $compAverageCost = round((float) $compStock->amount / (float) $compStock->quantity, 4);
+                            } else {
+                                $compAverageCost = (float) $componentItem->purchase_price;
+                            }
+                        } else {
+                            $compAverageCost = (float) $componentItem->purchase_price;
+                        }
+
+                        $compTotalCost = round($componentQtyNeeded * $compAverageCost, 4);
+                        $totalProductCost += $compTotalCost;
+
+                        // Deduct component from stock
+                        if ($defaultWarehouse && $compStock) {
+                            $newQty = max(0.0, (float) $compStock->quantity - $componentQtyNeeded);
+                            $newAmount = max(0.0, (float) $compStock->amount - $compTotalCost);
+
+                            if ($newQty <= 0.0) {
+                                $newAmount = 0.0;
+                            }
+
+                            $compStock->update([
+                                'quantity' => $newQty,
+                                'amount' => $newAmount,
+                            ]);
+                        }
+
+                        // Create StockMovement for the component
+                        if ($defaultWarehouse) {
+                            StockMovement::query()->create([
+                                'warehouse_id' => $defaultWarehouse->id,
+                                'catalog_item_id' => $componentRelation->component_id,
+                                'invoice_id' => $invoice->id,
+                                'invoice_no' => $invoiceNo,
+                                'invoice_type' => 'direct_sale',
+                                'created_by_user_id' => $actor->id,
+                                'movement_type' => 'direct_sale',
+                                'quantity' => -$componentQtyNeeded,
+                                'unit_cost' => $compAverageCost,
+                                'total_cost' => -$compTotalCost,
+                                'notes' => 'خصم مكونات صنف: '.$itemModel->name.' - '.$invoiceNo,
+                                'occurred_at' => $now,
+                            ]);
+                        }
                     }
+
+                    $averageCost = round($totalProductCost / $qtySold, 4);
+                    $totalCost = $totalProductCost;
                 } else {
-                    $averageCost = (float) $catalogItem['item']->purchase_price;
+                    // Regular item. Deduct directly from stock.
+                    $warehouseStock = null;
+
+                    if ($defaultWarehouse) {
+                        $warehouseStock = WarehouseStock::query()
+                            ->where('warehouse_id', $defaultWarehouse->id)
+                            ->where('catalog_item_id', $itemModel->id)
+                            ->first();
+
+                        if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
+                            $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
+                        } else {
+                            $averageCost = (float) $itemModel->purchase_price;
+                        }
+                    } else {
+                        $averageCost = (float) $itemModel->purchase_price;
+                    }
+
+                    $totalCost = round($qtySold * $averageCost, 4);
+
+                    // Deduct from stock
+                    if ($defaultWarehouse) {
+                        if ($warehouseStock) {
+                            $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                            $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
+
+                            if ($newQty <= 0.0) {
+                                $newAmount = 0.0;
+                            }
+
+                            $warehouseStock->update([
+                                'quantity' => $newQty,
+                                'amount' => $newAmount,
+                            ]);
+                        }
+
+                        StockMovement::query()->create([
+                            'warehouse_id' => $defaultWarehouse->id,
+                            'catalog_item_id' => $itemModel->id,
+                            'invoice_id' => $invoice->id,
+                            'invoice_no' => $invoiceNo,
+                            'invoice_type' => 'direct_sale',
+                            'created_by_user_id' => $actor->id,
+                            'movement_type' => 'direct_sale',
+                            'quantity' => -$qtySold,
+                            'unit_cost' => $averageCost,
+                            'total_cost' => -$totalCost,
+                            'notes' => 'بيع مباشر - '.$invoiceNo,
+                            'occurred_at' => $now,
+                        ]);
+                    }
                 }
 
-                $qtySold = (float) $catalogItem['quantity'];
-                $totalCost = round($qtySold * $averageCost, 4);
-
+                // Create MarketHistory record for the sold item (using calculated cost)
                 MarketHistory::query()->create([
                     'customer_id' => $customerId,
-                    'catalog_item_id' => $catalogItem['item']->id,
-                    'subject_name' => $catalogItem['item']->name,
+                    'catalog_item_id' => $itemModel->id,
+                    'subject_name' => $itemModel->name,
                     'unit_price' => $catalogItem['unit_price'],
                     'total_amount' => $catalogItem['total_amount'],
                     'unit_cost' => $averageCost,
@@ -210,38 +320,6 @@ class CreateDirectSaleAction
                     'shift_no' => $shiftNo,
                     'invoice_no' => $invoiceNo,
                 ]);
-
-                // Record stock movement and update warehouse stock
-                if ($defaultWarehouse) {
-                    if ($warehouseStock) {
-                        $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
-                        $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
-
-                        if ($newQty <= 0.0) {
-                            $newAmount = 0.0;
-                        }
-
-                        $warehouseStock->update([
-                            'quantity' => $newQty,
-                            'amount' => $newAmount,
-                        ]);
-                    }
-
-                    StockMovement::query()->create([
-                        'warehouse_id' => $defaultWarehouse->id,
-                        'catalog_item_id' => $catalogItem['item']->id,
-                        'invoice_id' => $invoice->id,
-                        'invoice_no' => $invoiceNo,
-                        'invoice_type' => 'direct_sale',
-                        'created_by_user_id' => $actor->id,
-                        'movement_type' => 'direct_sale',
-                        'quantity' => -$qtySold,
-                        'unit_cost' => $averageCost,
-                        'total_cost' => -$totalCost,
-                        'notes' => 'بيع مباشر - '.$invoiceNo,
-                        'occurred_at' => $now,
-                    ]);
-                }
             }
 
             // Update cash box balance and record ledger entry
@@ -396,6 +474,34 @@ class CreateDirectSaleAction
             'balance_after' => $balanceAfter,
             'description' => 'فاتورة رقم '.$invoiceNo,
         ]);
+
+        if ($balanceDelta > 0) {
+            $invoice = Invoice::query()->where('invoice_no', $invoiceNo)->first();
+            if ($invoice) {
+                $cbId = $invoice->cash_box_id;
+                if (! $cbId) {
+                    $cbId = (int) SystemConfig::get('sys-default-cashbox', 0);
+                    if ($cbId <= 0) {
+                        $cbId = CashBox::query()->where('is_active', true)->orderBy('id', 'asc')->value('id');
+                    }
+                }
+                if ($cbId) {
+                    $activeShift = Shift::query()->where('status', 'open')->latest()->first() ?? Shift::latest()->first();
+                    CashBoxLedgerEntry::query()->create([
+                        'shift_id' => $activeShift->id ?? null,
+                        'cash_box_id' => $cbId,
+                        'created_by_user_id' => $actor->id,
+                        'reference_type' => Invoice::class,
+                        'reference_id' => $invoice->id,
+                        'direction' => 'in',
+                        'operation' => 'customer_credit_deposit',
+                        'amount' => abs($balanceDelta),
+                        'description' => 'إيداع باقي الفاتورة رقم '.$invoiceNo,
+                        'occurred_at' => now(),
+                    ]);
+                }
+            }
+        }
     }
 
     private function resolveAppliedPaidAmount(float $finalAmount, float $enteredPaidAmount): float
@@ -437,6 +543,11 @@ class CreateDirectSaleAction
     {
         $ratio = (float) SystemConfig::get('sys_customer_points_ratio', 0);
         if ($ratio <= 0 || $finalAmount <= 0) {
+            return 0.0;
+        }
+
+        $type = SystemConfig::get('sys_customer_points_type', 'all');
+        if ($type === 'play') {
             return 0.0;
         }
 

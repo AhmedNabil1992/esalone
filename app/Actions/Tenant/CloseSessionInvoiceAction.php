@@ -253,17 +253,6 @@ class CloseSessionInvoiceAction
                 $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
                 $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
                 $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
-
-                if ($customerBalanceDelta < 0) {
-                    InvoicePayment::query()->create([
-                        'invoice_id' => $invoice->id,
-                        'cash_box_id' => $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id,
-                        'created_by_user_id' => $actor->id,
-                        'payment_method' => 'customer_balance',
-                        'amount' => abs($customerBalanceDelta),
-                        'notes' => 'خصم من رصيد حساب العميل',
-                    ]);
-                }
             } else {
                 $cashBoxId = $this->applyCashReceiptToCashBox($tenderedPaidAmount, $targetCashBox);
                 if ($tenderedPaidAmount > 0 && $cashBoxId) {
@@ -277,19 +266,55 @@ class CloseSessionInvoiceAction
                     ]);
                 }
 
-                if ($customerBalanceDelta < 0) {
-                    InvoicePayment::query()->create([
-                        'invoice_id' => $invoice->id,
-                        'cash_box_id' => $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id,
-                        'created_by_user_id' => $actor->id,
-                        'payment_method' => 'customer_balance',
-                        'amount' => abs($customerBalanceDelta),
-                        'notes' => 'خصم من رصيد حساب العميل',
-                    ]);
-                }
-
                 $coreLedgerEntries = $this->recordInvoiceCoreLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
                 $breakdownLedgerEntries = $this->recordInvoiceBreakdownLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
+            }
+
+            // Create customer balance payment row and ledger entry (common)
+            if ($customerBalanceDelta < 0) {
+                $cbId = $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id;
+                InvoicePayment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_box_id' => $cbId,
+                    'created_by_user_id' => $actor->id,
+                    'payment_method' => 'customer_balance',
+                    'amount' => abs($customerBalanceDelta),
+                    'notes' => 'خصم من رصيد حساب العميل',
+                ]);
+
+                if ($cbId) {
+                    CashBoxLedgerEntry::query()->create([
+                        'shift_id' => $shiftId,
+                        'cash_box_id' => $cbId,
+                        'created_by_user_id' => $actor->id,
+                        'reference_type' => Invoice::class,
+                        'reference_id' => $invoice->id,
+                        'direction' => 'out',
+                        'operation' => 'customer_credit_payment',
+                        'amount' => abs($customerBalanceDelta),
+                        'description' => 'دفع برصيد المحفظة - فاتورة رقم '.$invoice->invoice_no,
+                        'occurred_at' => now(),
+                    ]);
+                }
+            }
+
+            // Create unpaid debt ledger entry (common)
+            if ($storedRemainAmount < 0) {
+                $cbId = $targetCashBoxId ?? $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id;
+                if ($cbId) {
+                    CashBoxLedgerEntry::query()->create([
+                        'shift_id' => $shiftId,
+                        'cash_box_id' => $cbId,
+                        'created_by_user_id' => $actor->id,
+                        'reference_type' => Invoice::class,
+                        'reference_id' => $invoice->id,
+                        'direction' => 'out',
+                        'operation' => 'invoice_unpaid_debt',
+                        'amount' => abs($storedRemainAmount),
+                        'description' => 'آجل غير مدفوع - فاتورة رقم '.$invoice->invoice_no,
+                        'occurred_at' => now(),
+                    ]);
+                }
             }
 
             if ((float) $preview['tax_amount'] > 0) {
@@ -336,10 +361,9 @@ class CloseSessionInvoiceAction
             $this->applyCustomerSettlement(
                 $resolvedCustomerId,
                 $actor,
-                (float) $preview['final_amount'],
+                $invoice,
                 $tenderedPaidAmount,
-                $depositRemainderToCustomerBalance,
-                $invoice->invoice_no,
+                $depositRemainderToCustomerBalance
             );
 
             OrderSessionDetail::query()
@@ -554,7 +578,7 @@ class CloseSessionInvoiceAction
     //     $shift->save();
     // }
 
-    private function applyCustomerSettlement(?int $customerId, User $actor, float $finalAmount, float $paidAmount, bool $depositRemainderToCustomerBalance, string $invoiceNo): void
+    private function applyCustomerSettlement(?int $customerId, User $actor, Invoice $invoice, float $paidAmount, bool $depositRemainderToCustomerBalance): void
     {
         if (! $customerId) {
             return;
@@ -569,12 +593,15 @@ class CloseSessionInvoiceAction
             return;
         }
 
+        $finalAmount = (float) $invoice->final_amount;
+        $invoiceNo = $invoice->invoice_no;
+
         $balanceBefore = round((float) $customer->balance, 2);
         $amountDelta = $this->resolveCustomerBalanceDelta($finalAmount, $paidAmount, $depositRemainderToCustomerBalance);
         $balanceAfter = round($balanceBefore + $amountDelta, 2);
 
         $customer->balance = $balanceAfter;
-        $customer->points = round((float) ($customer->points ?? 0) + $this->calculateEarnedPoints($finalAmount), 2);
+        $customer->points = round((float) ($customer->points ?? 0) + $this->calculateEarnedPoints($invoice), 2);
         $customer->save();
 
         if ($amountDelta !== 0.0) {
@@ -587,6 +614,24 @@ class CloseSessionInvoiceAction
                 'balance_after' => $balanceAfter,
                 'description' => 'فاتورة رقم '.$invoiceNo,
             ]);
+
+            if ($amountDelta > 0) {
+                $cbId = $invoice->cash_box_id ?? $this->resolveDefaultCashBox(true)?->id;
+                if ($cbId) {
+                    CashBoxLedgerEntry::query()->create([
+                        'shift_id' => $invoice->shift_id,
+                        'cash_box_id' => $cbId,
+                        'created_by_user_id' => $actor->id,
+                        'reference_type' => Invoice::class,
+                        'reference_id' => $invoice->id,
+                        'direction' => 'in',
+                        'operation' => 'customer_credit_deposit',
+                        'amount' => abs($amountDelta),
+                        'description' => 'إيداع باقي الفاتورة رقم '.$invoiceNo,
+                        'occurred_at' => now(),
+                    ]);
+                }
+            }
         }
     }
 
@@ -642,14 +687,30 @@ class CloseSessionInvoiceAction
         return 0.0;
     }
 
-    private function calculateEarnedPoints(float $finalAmount): float
+    private function calculateEarnedPoints(Invoice $invoice): float
     {
         $ratio = (float) SystemConfig::get('sys_customer_points_ratio', 0);
-        if ($ratio <= 0 || $finalAmount <= 0) {
+        if ($ratio <= 0) {
             return 0.0;
         }
 
-        return round(($finalAmount * $ratio), 2);
+        $type = SystemConfig::get('sys_customer_points_type', 'all');
+
+        $baseAmount = 0.0;
+        if ($type === 'play') {
+            $baseAmount = (float) ($invoice->play_amount ?? 0);
+        } elseif ($type === 'sales') {
+            $baseAmount = (float) ($invoice->order_amount ?? 0);
+        } else {
+            // For 'all', calculate based on total invoice value before subtracting deposit
+            $baseAmount = (float) $invoice->final_amount + (float) ($invoice->deposit_amount ?? 0);
+        }
+
+        if ($baseAmount <= 0) {
+            return 0.0;
+        }
+
+        return round(($baseAmount * $ratio), 2);
     }
 
     /**
@@ -833,27 +894,136 @@ class CloseSessionInvoiceAction
                 continue;
             }
 
+            $qtySold = (float) $quantity;
+
+            // Load product components (eager loaded relationship)
+            $components = $catalogItem->components()->with('component')->get();
+
             $averageCost = 0.0;
-            $warehouseStock = null;
+            $totalCost = 0.0;
 
-            if ($defaultWarehouse) {
-                $warehouseStock = WarehouseStock::query()
-                    ->where('warehouse_id', $defaultWarehouse->id)
-                    ->where('catalog_item_id', $catalogItem->id)
-                    ->first();
+            if ($components->isNotEmpty()) {
+                // This is a composite product (BOM). Calculate total cost from components and deduct them from stock.
+                $totalProductCost = 0.0;
+                foreach ($components as $componentRelation) {
+                    $componentItem = $componentRelation->component;
+                    if (! $componentItem) {
+                        continue;
+                    }
 
-                if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
-                    $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
+                    $componentQtyNeeded = (float) $componentRelation->quantity * $qtySold;
+
+                    $compStock = null;
+                    $compAverageCost = 0.0;
+                    if ($defaultWarehouse) {
+                        $compStock = WarehouseStock::query()
+                            ->where('warehouse_id', $defaultWarehouse->id)
+                            ->where('catalog_item_id', $componentRelation->component_id)
+                            ->first();
+
+                        if ($compStock && (float) $compStock->quantity > 0) {
+                            $compAverageCost = round((float) $compStock->amount / (float) $compStock->quantity, 4);
+                        } else {
+                            $compAverageCost = (float) $componentItem->purchase_price;
+                        }
+                    } else {
+                        $compAverageCost = (float) $componentItem->purchase_price;
+                    }
+
+                    $compTotalCost = round($componentQtyNeeded * $compAverageCost, 4);
+                    $totalProductCost += $compTotalCost;
+
+                    // Deduct component from stock
+                    if ($defaultWarehouse && $compStock) {
+                        $newQty = max(0.0, (float) $compStock->quantity - $componentQtyNeeded);
+                        $newAmount = max(0.0, (float) $compStock->amount - $compTotalCost);
+
+                        if ($newQty <= 0.0) {
+                            $newAmount = 0.0;
+                        }
+
+                        $compStock->update([
+                            'quantity' => $newQty,
+                            'amount' => $newAmount,
+                        ]);
+                    }
+
+                    // Create StockMovement for the component
+                    if ($defaultWarehouse) {
+                        StockMovement::query()->create([
+                            'warehouse_id' => $defaultWarehouse->id,
+                            'catalog_item_id' => $componentRelation->component_id,
+                            'invoice_id' => $invoice->id,
+                            'invoice_no' => $invoice->invoice_no,
+                            'invoice_type' => 'session_sale',
+                            'created_by_user_id' => $actor->id ?? null,
+                            'movement_type' => 'direct_sale',
+                            'quantity' => -$componentQtyNeeded,
+                            'unit_cost' => $compAverageCost,
+                            'total_cost' => -$compTotalCost,
+                            'notes' => 'خصم مكونات صنف: '.$catalogItem->name.' - '.$invoice->invoice_no,
+                            'occurred_at' => $issuedAt,
+                        ]);
+                    }
+                }
+
+                $averageCost = round($totalProductCost / $qtySold, 4);
+                $totalCost = $totalProductCost;
+            } else {
+                // Regular item. Deduct directly from stock.
+                $warehouseStock = null;
+
+                if ($defaultWarehouse) {
+                    $warehouseStock = WarehouseStock::query()
+                        ->where('warehouse_id', $defaultWarehouse->id)
+                        ->where('catalog_item_id', $catalogItem->id)
+                        ->first();
+
+                    if ($warehouseStock && (float) $warehouseStock->quantity > 0) {
+                        $averageCost = round((float) $warehouseStock->amount / (float) $warehouseStock->quantity, 4);
+                    } else {
+                        $averageCost = (float) $catalogItem->purchase_price;
+                    }
                 } else {
                     $averageCost = (float) $catalogItem->purchase_price;
                 }
-            } else {
-                $averageCost = (float) $catalogItem->purchase_price;
+
+                $totalCost = round($qtySold * $averageCost, 4);
+
+                // Deduct from stock
+                if ($defaultWarehouse) {
+                    if ($warehouseStock) {
+                        $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                        $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
+
+                        if ($newQty <= 0.0) {
+                            $newAmount = 0.0;
+                        }
+
+                        $warehouseStock->update([
+                            'quantity' => $newQty,
+                            'amount' => $newAmount,
+                        ]);
+                    }
+
+                    StockMovement::query()->create([
+                        'warehouse_id' => $defaultWarehouse->id,
+                        'catalog_item_id' => $catalogItem->id,
+                        'invoice_id' => $invoice->id,
+                        'invoice_no' => $invoice->invoice_no,
+                        'invoice_type' => 'session_sale',
+                        'created_by_user_id' => $actor->id ?? null,
+                        'movement_type' => 'direct_sale', // reuse direct_sale movement type for reports
+                        'quantity' => -$qtySold,
+                        'unit_cost' => $averageCost,
+                        'total_cost' => -$totalCost,
+                        'notes' => 'بيع من جلسة - '.$invoice->invoice_no,
+                        'occurred_at' => $issuedAt,
+                    ]);
+                }
             }
 
-            $qtySold = (float) $quantity;
-            $totalCost = round($qtySold * $averageCost, 4);
-
+            // Create MarketHistory record for the sold item (using calculated cost)
             MarketHistory::query()->create([
                 'customer_id' => $session->customer_id,
                 'device_id' => $device->id,
@@ -871,38 +1041,6 @@ class CloseSessionInvoiceAction
                 'quantity' => $quantity,
                 'invoice_no' => $invoice->invoice_no,
             ]);
-
-            // Deduct stock and record movement
-            if ($defaultWarehouse) {
-                if ($warehouseStock) {
-                    $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
-                    $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
-
-                    if ($newQty <= 0.0) {
-                        $newAmount = 0.0;
-                    }
-
-                    $warehouseStock->update([
-                        'quantity' => $newQty,
-                        'amount' => $newAmount,
-                    ]);
-                }
-
-                StockMovement::query()->create([
-                    'warehouse_id' => $defaultWarehouse->id,
-                    'catalog_item_id' => $catalogItem->id,
-                    'invoice_id' => $invoice->id,
-                    'invoice_no' => $invoice->invoice_no,
-                    'invoice_type' => 'session_sale',
-                    'created_by_user_id' => $actor->id ?? null,
-                    'movement_type' => 'direct_sale', // reuse direct_sale movement type for reports
-                    'quantity' => -$qtySold,
-                    'unit_cost' => $averageCost,
-                    'total_cost' => -$totalCost,
-                    'notes' => 'بيع من جلسة - '.$invoice->invoice_no,
-                    'occurred_at' => $issuedAt,
-                ]);
-            }
         }
     }
 

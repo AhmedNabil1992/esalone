@@ -57,11 +57,11 @@
                     </div>
                     <div style="display: grid; gap: 12px; font-size: 0.85rem;">
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">إيراد بلايستيشن (صافي دفتري)</span>
+                            <span style="color: #64748b;">إيراد بلايستيشن</span>
                             <span style="font-weight: 700; color: #0f172a;">{{ number_format($stats['playstation_amount'], 2) }} ج.م</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #64748b;">مبيعات المتجر والطلبات (دفتري)</span>
+                            <span style="color: #64748b;">مبيعات المتجر والطلبات</span>
                             <span style="font-weight: 700; color: #0f172a;">{{ number_format($stats['sales_amount'], 2) }}  ج.م</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
@@ -122,7 +122,7 @@
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #64748b;">ديون آجلة غير مدفوعة (على الفواتير)</span>
-                            <span style="font-weight: 700; color: #ea580c;">- {{ number_format($stats['credit_amount'], 2) }} ج.م</span>
+                            <span style="font-weight: 700; color: #ea580c;">- {{ number_format(abs($stats['credit_amount']), 2) }} ج.م</span>
                         </div>
                         <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
                             * ملحوظة: المعاملات غير النقدية (مثل الدفع برصيد العميل أو المتبقي الآجل) يتم استبعادها من الكاش المتوقع بالدرج لأنها معاملات دفتريّة.
@@ -178,6 +178,54 @@
                                     <span style="color: #64748b;">الرصيد الإجمالي المتوقع:</span>
                                     <span style="font-weight: 800; color: #0f172a;">{{ number_format($box['current_balance'], 2) }} ج.م</span>
                                 </div>
+
+                                @if($record->status === 'open')
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 4px;">
+                                        <span style="font-size: 0.8rem; color: #374151; font-weight: 700;">الرصيد الفعلي بالخزنة:</span>
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            wire:model.live="cashbox_actuals.{{ $box['id'] }}" 
+                                            placeholder="0.00" 
+                                            style="width: 110px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; font-size: 0.85rem; font-weight: bold; text-align: center;" 
+                                        />
+                                    </div>
+                                    @php
+                                        $actVal = $cashbox_actuals[$box['id']] ?? null;
+                                        $diffVal = ($actVal !== null && $actVal !== '') ? ((float)$actVal - (float)$box['current_balance']) : null;
+                                    @endphp
+                                    @if($diffVal !== null)
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">
+                                            <span style="color: #64748b;">فرق التسوية:</span>
+                                            @if($diffVal == 0.0)
+                                                <span style="color: #16a34a;">مطابق تماماً</span>
+                                            @elseif($diffVal < 0)
+                                                <span style="color: #dc2626;">عجز: {{ number_format(abs($diffVal), 2) }} ج.م</span>
+                                            @else
+                                                <span style="color: #16a34a;">زيادة: +{{ number_format(abs($diffVal), 2) }} ج.م</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @else
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 4px;">
+                                        <span style="color: #64748b;">الرصيد الفعلي المسجل:</span>
+                                        <span style="font-weight: 800; color: #0f172a;">{{ number_format($cashbox_actuals[$box['id']] ?? 0.0, 2) }} ج.م</span>
+                                    </div>
+                                    @php
+                                        $actVal = $cashbox_actuals[$box['id']] ?? 0.0;
+                                        $diffVal = (float)$actVal - (float)$box['current_balance'];
+                                    @endphp
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">
+                                        <span style="color: #64748b;">فرق التسوية:</span>
+                                        @if($diffVal == 0.0)
+                                            <span style="color: #16a34a;">مطابق تماماً</span>
+                                        @elseif($diffVal < 0)
+                                            <span style="color: #dc2626;">عجز: {{ number_format(abs($diffVal), 2) }} ج.م</span>
+                                        @else
+                                            <span style="color: #16a34a;">زيادة: +{{ number_format(abs($diffVal), 2) }} ج.م</span>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -195,16 +243,12 @@
                         <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0 0 8px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px;">تقفيل وتسوية الوردية</h3>
                         
                         <div>
-                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 6px;">الرصيد الفعلي المتواجد بالدرج (كاش) <span style="color:#dc2626;">*</span></label>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 6px;">الرصيد الفعلي المتواجد بالدرج (كاش - إجمالي) <span style="color:#dc2626;">*</span></label>
                             @if($record->status === 'open')
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    x-model.number="actual" 
-                                    placeholder="ادخل المبلغ الفعلي بعد جرد الدرج" 
-                                    style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold;" 
-                                    required
-                                />
+                                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; color: #1e293b; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>{{ number_format($actual_amount ?? 0.0, 2) }} ج.م</span>
+                                    <span style="font-size: 0.72rem; font-weight: normal; color: #64748b;">(محتسب تلقائياً من مجموع الخزائن بالوردية)</span>
+                                </div>
                             @else
                                 <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; color: #1e293b;">
                                     {{ number_format($actual_amount, 2) }} ج.م
@@ -492,23 +536,42 @@
             <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 500px; margin: 0 auto;">
                 <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0 0 15px 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; text-align: center;">تقفيل وتسوية الوردية</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #374151; margin-bottom: 6px; text-align: right;">الرصيد الفعلي المتواجد بالدرج (كاش) <span style="color:#dc2626;">*</span></label>
-                        @if($record->status === 'open')
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                wire:model.live="actual_amount"
-                                placeholder="ادخل المبلغ الفعلي بالكامل المتواجد بالدرج" 
-                                style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; text-align: center;" 
-                                required
-                            />
-                        @else
-                            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; color: #1e293b; text-align: center;">
-                                {{ number_format($actual_amount, 2) }} ج.م
+                    @if($record->status === 'open')
+                        @foreach($cashBoxSummaries as $box)
+                            <div>
+                                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 6px; text-align: right;">
+                                    الرصيد الفعلي في ({{ $box['name'] }}) <span style="color:#dc2626;">*</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    wire:model.live="cashbox_actuals.{{ $box['id'] }}" 
+                                    placeholder="ادخل المبلغ الفعلي في {{ $box['name'] }}" 
+                                    style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; text-align: center;" 
+                                    required
+                                />
                             </div>
-                        @endif
-                    </div>
+                        @endforeach
+
+                        <div style="border-top: 2px solid #cbd5e1; padding-top: 15px; margin-top: 15px;">
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #374151; margin-bottom: 6px; text-align: right;">إجمالي الرصيد الفعلي (كافة الخزائن)</label>
+                            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; font-weight: bold; color: #1e293b; text-align: center;">
+                                {{ number_format($actual_amount ?? 0.0, 2) }} ج.م
+                            </div>
+                        </div>
+                    @else
+                        @foreach($cashBoxSummaries as $box)
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; padding: 6px 0; border-bottom: 1px dashed #e2e8f0;">
+                                <span style="color: #64748b;">رصيد {{ $box['name'] }} الفعلي:</span>
+                                <span style="font-weight: bold;">{{ number_format($cashbox_actuals[$box['id']] ?? 0.0, 2) }} ج.م</span>
+                            </div>
+                        @endforeach
+
+                        <div style="border-top: 2px solid #cbd5e1; padding-top: 15px; margin-top: 15px; display: flex; justify-content: space-between; font-size: 1rem; font-weight: bold;">
+                            <span style="color: #1e293b;">إجمالي الرصيد الفعلي:</span>
+                            <span style="color: #22c55e;">{{ number_format($actual_amount, 2) }} ج.م</span>
+                        </div>
+                    @endif
 
                     @if($record->status === 'open')
                         <div style="padding-top: 10px;">
