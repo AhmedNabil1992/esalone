@@ -239,17 +239,19 @@ class SystemConfig extends Page
                                     ])->searchable()->preload(),
                                 ]),
                                 Section::make('نقاط العملاء')->schema([
-                                    TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
-                                    TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
-                                    Select::make('sys_customer_points_type')
-                                        ->label('نوع الفاتورة لاحتساب النقاط :')
-                                        ->options([
-                                            'all' => 'الكل (اللعب والمبيعات)',
-                                            'play' => 'اللعب فقط',
-                                            'sales' => 'المبيعات فقط',
-                                        ])
-                                        ->default('all')
-                                        ->required(),
+                                    Grid::make(3)->schema([
+                                        TextInput::make('sys_customer_points_ratio')->label('نسبة النقاط للعميل (1) :')->numeric()->default(1),
+                                        TextInput::make('sys_customer_points_redeem_ratio')->label('نسبة استبدال النقاط للعميل (2) :')->numeric()->default(1),
+                                        Select::make('sys_customer_points_type')
+                                            ->label('نوع الفاتورة لاحتساب النقاط :')
+                                            ->options([
+                                                'all' => 'الكل (اللعب والمبيعات)',
+                                                'play' => 'اللعب فقط',
+                                                'sales' => 'المبيعات فقط',
+                                            ])
+                                            ->default('all')
+                                            ->required(),
+                                    ]),
                                 ]),
 
                                 Section::make('حساب تقفيل الشيفت')

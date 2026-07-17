@@ -262,7 +262,9 @@ class AdminPanelProvider extends PanelProvider
                 EnsureTenantHasOpenShift::class,
             ])
             ->databaseNotifications()
-            ->topNavigation();
+            ->topNavigation()
+            ->spa()
+            ->globalSearch(false);
     }
 
     protected function resolveTenantCurrency(): string
