@@ -65,8 +65,8 @@ Route::middleware([
                 Shift::query()->create([
                     'shift_no' => Shift::nextShiftNumber(),
                     'opened_by_user_id' => Auth::id(),
-                    'shift_date' => now()->utc()->toDateString(),
-                    'shift_from' => now()->utc()->toDateTimeString(),
+                    'shift_date' => now()->toDateString(),
+                    'shift_from' => now()->toDateTimeString(),
                     'start_amount' => $startAmount,
                     'actual_amount' => 0,
                     'status' => 'open',
