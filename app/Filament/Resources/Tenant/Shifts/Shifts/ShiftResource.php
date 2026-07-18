@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CloseShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CreateShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\EditShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\ListShifts;
+use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\ViewShift;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Schemas\ShiftForm;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Schemas\ShiftInfolist;
 use App\Filament\Resources\Tenant\Shifts\Shifts\Tables\ShiftsTable;
@@ -59,6 +60,7 @@ class ShiftResource extends Resource
         return [
             'index' => ListShifts::route('/'),
             'create' => CreateShift::route('/create'),
+            'view' => ViewShift::route('/{record}'),
             'edit' => EditShift::route('/{record}/edit'),
             'close' => CloseShift::route('/{record}/close'),
         ];

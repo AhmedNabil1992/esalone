@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AiChatLog extends Model
+{
+    protected $connection = 'mysql'; // explicitly use central database connection
+
+    protected $table = 'ai_chat_logs';
+
+    protected $fillable = [
+        'tenant_id',
+        'user_id',
+        'user_name',
+        'question',
+        'response',
+        'executed_sql',
+        'was_routed',
+    ];
+
+    protected $casts = [
+        'was_routed' => 'boolean',
+    ];
+}

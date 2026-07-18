@@ -35,6 +35,7 @@ class Shift extends Model
         'notify',
         'notes',
         'cashbox_actual_amounts',
+        'expected_amount',
     ];
 
     protected $casts = [
@@ -55,6 +56,7 @@ class Shift extends Model
         'customer_credit_amount' => 'decimal:2',
         'credit_amount' => 'decimal:2',
         'actual_amount' => 'decimal:2',
+        'expected_amount' => 'decimal:2',
         'is_active' => 'boolean',
         'notify' => 'boolean',
         'cashbox_actual_amounts' => 'array',

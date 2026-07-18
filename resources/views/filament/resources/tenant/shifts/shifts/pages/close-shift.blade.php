@@ -76,6 +76,10 @@
                             <span style="color: #64748b;">إجمالي خدمة الصالة المستلمة</span>
                             <span style="font-weight: 700; color: #0f172a;">{{ number_format($stats['service_amount'], 2) }} ج.م</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; font-weight: 800; color: #1e293b;">
+                            <span>إجمالي الإيرادات:</span>
+                            <span>{{ number_format($stats['playstation_amount'] + $stats['sales_amount'] + $stats['customer_add_amount'] + $stats['tax_amount'] + $stats['service_amount'], 2) }} ج.م</span>
+                        </div>
                     </div>
                 </div>
 
@@ -104,6 +108,10 @@
                             <span style="color: #64748b;">إجمالي الخصومات المعطاة</span>
                             <span style="font-weight: 700; color: #e11d48;">- {{ number_format($stats['discount_amount'], 2) }} ج.م</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; font-weight: 800; color: #dc2626;">
+                            <span>إجمالي المصروفات والخصومات:</span>
+                            <span>- {{ number_format($stats['expenses_amount'] + $stats['purchase_amount'] + $stats['customer_minus_amount'] + $stats['discount_amount'], 2) }} ج.م</span>
+                        </div>
                     </div>
                 </div>
 
@@ -123,6 +131,10 @@
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #64748b;">ديون آجلة غير مدفوعة (على الفواتير)</span>
                             <span style="font-weight: 700; color: #ea580c;">- {{ number_format(abs($stats['credit_amount']), 2) }} ج.م</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; font-weight: 800; color: #ea580c;">
+                            <span>إجمالي التسويات غير النقدية:</span>
+                            <span>- {{ number_format($stats['customer_credit_amount'] + abs($stats['credit_amount']), 2) }} ج.م</span>
                         </div>
                         <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
                             * ملحوظة: المعاملات غير النقدية (مثل الدفع برصيد العميل أو المتبقي الآجل) يتم استبعادها من الكاش المتوقع بالدرج لأنها معاملات دفتريّة.
@@ -392,6 +404,24 @@
                                     </tr>
                                 @endforelse
                             </tbody>
+                            @if(count($playInvoices) > 0)
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #cbd5e1; font-weight: 800; background: #f8fafc; color: #1e293b;">
+                                        <td colspan="4" style="padding: 8px; text-align: center;">الإجمالي:</td>
+                                        <td style="padding: 8px;">{{ number_format(collect($playInvoices)->sum('play_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px;">{{ number_format(collect($playInvoices)->sum('order_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; color: #e11d48;">{{ number_format(collect($playInvoices)->sum('discount_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; font-weight: bold;">{{ number_format(collect($playInvoices)->sum('final_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; color: #16a34a;">
+                                            {{ number_format(collect($playInvoices)->flatMap(fn($inv) => $inv['payments'] ?? [])->where('payment_method', 'cash')->sum('amount'), 2) }} ج.م
+                                        </td>
+                                        <td style="padding: 8px; color: #eab308;">
+                                            {{ number_format(collect($playInvoices)->flatMap(fn($inv) => $inv['payments'] ?? [])->where('payment_method', 'customer_balance')->sum('amount'), 2) }} ج.م
+                                        </td>
+                                        <td style="padding: 8px; color: #ea580c;">{{ number_format(collect($playInvoices)->sum('remain_amount'), 2) }} ج.م</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </details>
@@ -445,6 +475,23 @@
                                     </tr>
                                 @endforelse
                             </tbody>
+                            @if(count($directSales) > 0)
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #cbd5e1; font-weight: 800; background: #f8fafc; color: #1e293b;">
+                                        <td colspan="2" style="padding: 8px; text-align: center;">الإجمالي:</td>
+                                        <td style="padding: 8px;">{{ number_format(collect($directSales)->sum('subtotal'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; color: #e11d48;">{{ number_format(collect($directSales)->sum('discount_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; font-weight: bold;">{{ number_format(collect($directSales)->sum('final_amount'), 2) }} ج.م</td>
+                                        <td style="padding: 8px; color: #16a34a;">
+                                            {{ number_format(collect($directSales)->flatMap(fn($sale) => $sale['payments'] ?? [])->where('payment_method', 'cash')->sum('amount'), 2) }} ج.م
+                                        </td>
+                                        <td style="padding: 8px; color: #eab308;">
+                                            {{ number_format(collect($directSales)->flatMap(fn($sale) => $sale['payments'] ?? [])->where('payment_method', 'customer_balance')->sum('amount'), 2) }} ج.م
+                                        </td>
+                                        <td style="padding: 8px; color: #ea580c;">{{ number_format(collect($directSales)->sum('remain_amount'), 2) }} ج.م</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </details>
@@ -486,6 +533,14 @@
                                     </tr>
                                 @endforelse
                             </tbody>
+                            @if(count($expenses) > 0)
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #cbd5e1; font-weight: 800; background: #f8fafc; color: #1e293b;">
+                                        <td colspan="4" style="padding: 8px; text-align: center;">الإجمالي:</td>
+                                        <td style="padding: 8px; color: #dc2626;">- {{ number_format(collect($expenses)->sum('amount'), 2) }} ج.م</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </details>
@@ -527,6 +582,14 @@
                                     </tr>
                                 @endforelse
                             </tbody>
+                            @if(count($purchases) > 0)
+                                <tfoot>
+                                    <tr style="border-top: 2px solid #cbd5e1; font-weight: 800; background: #f8fafc; color: #1e293b;">
+                                        <td colspan="4" style="padding: 8px; text-align: center;">الإجمالي:</td>
+                                        <td style="padding: 8px; color: #f97316;">- {{ number_format(collect($purchases)->sum('total_amount'), 2) }} ج.م</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </details>

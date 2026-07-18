@@ -7,6 +7,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
@@ -35,6 +36,9 @@ class ShiftsTable
                 TextColumn::make('start_amount')
                     ->label('رصيد البداية')
                     ->money(),
+                TextColumn::make('expected_amount')
+                    ->label('الرصيد الدفتري')
+                    ->money(),
                 TextColumn::make('actual_amount')
                     ->label('الرصيد الفعلي')
                     ->money(),
@@ -48,6 +52,7 @@ class ShiftsTable
                 //
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 Action::make('close')
                     ->label('تقفيل الوردية')
@@ -60,6 +65,7 @@ class ShiftsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->recordUrl(fn ($record) => ShiftResource::getUrl('view', ['record' => $record]));
     }
 }

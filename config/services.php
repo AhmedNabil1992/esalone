@@ -44,4 +44,9 @@ return [
         'token' => env('BRIDGE_TOKEN'),
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'enable_self_learning_lookup' => env('AI_ENABLE_SELF_LEARNING_LOOKUP', false),
+    ],
+
 ];

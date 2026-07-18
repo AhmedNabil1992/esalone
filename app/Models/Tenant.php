@@ -24,6 +24,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'ended_at',
         'auto_renew',
         'is_active',
+        'has_ai_subscription',
+        'ai_requests_limit',
     ];
 
     protected $casts = [
@@ -31,6 +33,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'ended_at' => 'datetime',
         'auto_renew' => 'boolean',
         'is_active' => 'boolean',
+        'has_ai_subscription' => 'boolean',
+        'ai_requests_limit' => 'integer',
     ];
 
     public static function getCustomColumns(): array
@@ -43,6 +47,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'ended_at',
             'auto_renew',
             'is_active',
+            'has_ai_subscription',
+            'ai_requests_limit',
         ];
     }
 

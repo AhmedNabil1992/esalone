@@ -133,7 +133,7 @@ class CloseShift extends Page
             - $discount_amount
             - $customer_credit_amount
             - $customer_minus_amount
-            + $credit_amount;
+            - $credit_amount;
 
         $expected_cash = round($expected_cash, 2);
 
@@ -234,6 +234,7 @@ class CloseShift extends Page
             'purchase_amount' => $this->stats['purchase_amount'],
             'income_history_amount' => $this->stats['income_history_amount'],
             'actual_amount' => $this->actual_amount,
+            'expected_amount' => $this->stats['expected_cash'],
             'cashbox_actual_amounts' => $this->cashbox_actuals,
             'notes' => $this->notes,
             'status' => 'close',
