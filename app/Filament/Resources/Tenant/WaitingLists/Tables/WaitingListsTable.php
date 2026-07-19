@@ -79,8 +79,10 @@ class WaitingListsTable
                     ->icon('heroicon-o-play')
                     ->color('success')
                     ->visible(fn ($record) => $record->status === 'waiting')
-                    ->action(fn ($record) => $record->update(['status' => 'playing']))
-                    ->url(fn () => DeviceControl::getUrl()),
+                    ->action(function ($record) {
+                        $record->update(['status' => 'playing']);
+                        return redirect(DeviceControl::getUrl());
+                    }),
 
                 Action::make('cancel_turn')
                     ->label('إلغاء الدور')

@@ -65,8 +65,7 @@ class GetCatalogInventoryTool implements Tool
     {
         return [
             'search_name' => $schema->string()
-                ->description('اسم منتج معين للبحث عنه في الكود (مثال: شاي، قهوة) - اختياري.')
-                ->optional(),
+                ->description('اسم منتج معين للبحث عنه في الكود (مثال: شاي، قهوة) - اختياري.'),
         ];
     }
 }

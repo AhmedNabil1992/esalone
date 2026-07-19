@@ -353,6 +353,7 @@ class SendInvoiceWhatsAppAction
                 'logoPath' => $logoDataUri,
                 'footerMessage' => (string) SystemConfig::get('print_footer_message', ''),
                 'shopName' => (string) SystemConfig::get('sys_shop_name', 'PS Web'),
+                'isPdf' => true,
             ]);
 
             $pdfContent = $pdf->output();

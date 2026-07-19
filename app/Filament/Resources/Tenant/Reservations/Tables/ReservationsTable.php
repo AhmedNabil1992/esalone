@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\Reservations\Tables;
 
+use App\Models\Tenant\SystemConfig;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -32,10 +33,12 @@ class ReservationsTable
                 TextColumn::make('start_time')
                     ->label('وقت البدء')
                     ->dateTime('Y-m-d h:i A')
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->sortable(),
                 TextColumn::make('end_time')
                     ->label('وقت الانتهاء')
                     ->dateTime('Y-m-d h:i A')
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->sortable(),
                 TextColumn::make('duration_minutes')
                     ->label('المدة (دقائق)')

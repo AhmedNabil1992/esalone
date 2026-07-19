@@ -68,10 +68,10 @@ class AIAssistantService
 
         $normalized = trim(mb_strtolower($question));
 
-        // 3. بناء سجل المحادثة (آخر 6 رسائل لتوفير التوكنز)
+        // 3. بناء سجل المحادثة (آخر 4 رسائل لتوفير التوكنز)
         $historyText = '';
         if (! empty($history)) {
-            $recentHistory = array_slice($history, -6);
+            $recentHistory = array_slice($history, -4);
             foreach ($recentHistory as $msg) {
                 $role = $msg['sender'] === 'user' ? 'User (Manager)' : 'AI Assistant';
                 if ($msg['sender'] === 'user' && trim($msg['text']) === $question) {
@@ -209,6 +209,39 @@ class AIAssistantService
                 }
 
                 $finalAnswer = $response->text;
+                $cleanAnswer = trim($finalAnswer);
+                if (preg_match('/```json(.*?)```/is', $cleanAnswer, $matches)) {
+                    $cleanAnswer = trim($matches[1]);
+                } elseif (preg_match('/```(.*?)```/is', $cleanAnswer, $matches)) {
+                    $cleanAnswer = trim($matches[1]);
+                }
+
+                $decoded = json_decode($cleanAnswer, true);
+                if (is_array($decoded) && isset($decoded['action']) && $decoded['action'] === 'update_price') {
+                    $pendingResponse = $this->buildPendingActionResponse($decoded);
+
+                    try {
+                        AiChatLog::create([
+                            'tenant_id' => $tenant->id,
+                            'user_id' => auth()->id(),
+                            'user_name' => auth()->user()->name ?? 'Manager',
+                            'question' => $question,
+                            'response' => $pendingResponse['preview'],
+                            'executed_sql' => json_encode($decoded),
+                            'was_routed' => false,
+                        ]);
+                        $tenant->ai_requests_today += 1;
+                        $tenant->save();
+                    } catch (\Throwable $logEx) {
+                        Log::warning('Failed to log decoded pending price action', ['error' => $logEx->getMessage()]);
+                    }
+
+                    return [
+                        '__pending_action' => $decoded,
+                        'preview' => $pendingResponse['preview'],
+                    ];
+                }
+
                 $executedSql = ExecuteReadOnlySql::$lastQuery;
 
                 ProposePriceUpdate::reset();
@@ -566,11 +599,33 @@ SQL Query:";
         return $this->getFilteredSchemaContext($question);
     }
 
-    /**
-     * تصفية مخطط قاعدة البيانات وإرسال الجداول ذات الصلة فقط لتوفير التوكنز.
-     */
     private function getFilteredSchemaContext(string $question): string
     {
+        $normalized = mb_strtolower($question);
+
+        // كلمات دلالية تدل على استخدام الأدوات المخصصة مباشرة
+        $toolKeywords = [
+            'حالة', 'حاله', 'جهاز', 'أجهزة', 'اجهزة', 'نشط', 'مشغول', 'متاح',
+            'انتظار', 'حجز', 'حجوزات', 'وردية', 'ورديه', 'شيفت', 'درج', 'خزينة', 'خزنه',
+            'مبيعا', 'مبيعات', 'مشروب', 'أصناف', 'اصناف', 'منتج', 'منتجات',
+            'ديون', 'مديونية', 'مديونيات', 'رصيد', 'أرصدة', 'ارصده', 'نقاط', 'عميل', 'عملاء',
+            'سعر', 'أسعار', 'اسعار', 'تعديل', 'زيادة', 'تخفيض', 'خصم',
+            'مصروف', 'مصروفات', 'مشتريات',
+        ];
+
+        $matchesTool = false;
+        foreach ($toolKeywords as $keyword) {
+            if (mb_strpos($normalized, $keyword) !== false) {
+                $matchesTool = true;
+                break;
+            }
+        }
+
+        // إذا كان السؤال يناسب إحدى الأدوات المخصصة، نكتفي بإرسال ملخص بسيط جداً لتوفير أكثر من 3000 توكن
+        if ($matchesTool) {
+            return 'Available tables for custom reporting fallback: shifts, invoices, play_history, expense_histories, catalog_items, customers.';
+        }
+
         $allTables = [
             'shifts',
             'invoices',

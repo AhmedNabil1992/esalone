@@ -67,11 +67,9 @@ class GetExpensesReportTool implements Tool
     {
         return [
             'start_date' => $schema->string()
-                ->description('تاريخ البداية لفلترة المصروفات YYYY-MM-DD')
-                ->optional(),
+                ->description('تاريخ البداية لفلترة المصروفات YYYY-MM-DD'),
             'end_date' => $schema->string()
-                ->description('تاريخ النهاية لفلترة المصروفات YYYY-MM-DD')
-                ->optional(),
+                ->description('تاريخ النهاية لفلترة المصروفات YYYY-MM-DD'),
         ];
     }
 }

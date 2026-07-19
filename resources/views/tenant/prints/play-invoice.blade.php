@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ar" dir="rtl" class="@if(isset($noPrint) && $noPrint) public-html @endif">
+<html lang="ar" @if(isset($isPdf) && $isPdf) dir="ltr" @else dir="rtl" @endif class="@if(isset($noPrint) && $noPrint) public-html @endif">
 <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>فاتورة رقم {{ $invoice->invoice_no }}</title>
     <style>
         @page {
-            size: 75mm auto;
+            size: 80mm auto;
             margin: 0;
         }
 
@@ -15,8 +15,8 @@
         }
 
         html {
-            width: 75mm;
-            max-width: 75mm;
+            width: 80mm;
+            max-width: 80mm;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -25,25 +25,27 @@
         body {
             margin: 0;
             padding: 0;
-            width: 75mm;
-            max-width: 75mm;
-            /* font-family: "Tahoma", "Arial", sans-serif;
-             */
-            
+            width: 80mm;
+            max-width: 80mm;
+            font-family: 'DejaVu Sans', 'Cairo', 'Arial', sans-serif;
             font-size: 13px;
             color: #000;
             line-height: 1.5;
+            @if(isset($isPdf) && $isPdf)
+            direction: ltr;
+            text-align: left;
+            @else
             direction: rtl;
             text-align: right;
+            @endif
             transform: none !important;
             overflow: hidden;
         }
 
         .receipt {
-            width: 71mm;
-            max-width: 71mm;
+            width: 100%;
             margin: 0 auto;
-            padding: 2mm 1.5mm;
+            padding: 2mm 4mm;
         }
 
         .center {
@@ -80,7 +82,7 @@
         }
 
         th, td {
-            padding: 2px 0;
+            padding: 2px 8px;
             vertical-align: top;
         }
 
@@ -100,6 +102,9 @@
             font-size: 13px;
             font-weight: 700;
             margin-bottom: 4px;
+            @if(isset($isPdf) && $isPdf)
+            text-align: right;
+            @endif
         }
 
         .summary td {
@@ -124,16 +129,15 @@
         @media print {
             html,
             body {
-                width: 75mm;
-                max-width: 75mm;
+                width: 80mm;
+                max-width: 80mm;
                 overflow: hidden;
             }
 
             .receipt {
-                width: 71mm;
-                max-width: 71mm;
+                width: 100%;
                 margin: 0 auto;
-                padding: 2mm 1.5mm;
+                padding: 2mm 4mm;
             }
         }
 
@@ -177,6 +181,34 @@
     $discountAmount = (float) $invoice->discount_amount;
     $serviceAmount = (float) $invoice->service_amount;
     $taxAmount = (float) $invoice->tax_amount;
+
+    $isPdfActive = isset($isPdf) && $isPdf;
+
+    $shape = function ($text) use ($isPdfActive) {
+        if (empty($text) || !$isPdfActive) {
+            return $text;
+        }
+        if (preg_match('/\p{Arabic}/u', (string) $text)) {
+            $arabic = new \ArPHP\I18N\Arabic('Glyphs');
+            return $arabic->utf8Glyphs((string) $text) . "\u{00A0}\u{00A0}\u{00A0}";
+        }
+        return $text;
+    };
+
+    $renderRow = function ($labelHtml, $valueHtml, $isHeader = false) use ($isPdfActive) {
+        $tag = $isHeader ? 'th' : 'td';
+        if ($isPdfActive) {
+            return '<tr>'
+                . '<td class="value" style="text-align: left; padding: 2px 4px 2px 0;">' . $valueHtml . '</td>'
+                . '<' . $tag . ' style="text-align: right; padding: 2px 0px 2px 4px; font-weight: ' . ($isHeader ? '700' : 'normal') . '; font-size: ' . ($isHeader ? '12px' : '13px') . ';">' . $labelHtml . '</' . $tag . '>'
+                . '</tr>';
+        } else {
+            return '<tr>'
+                . '<' . $tag . ' style="text-align: right; padding: 2px 4px; font-weight: ' . ($isHeader ? '700' : 'normal') . '; font-size: ' . ($isHeader ? '12px' : '13px') . ';">' . $labelHtml . '</' . $tag . '>'
+                . '<td class="value" style="text-align: left; padding: 2px 4px;">' . $valueHtml . '</td>'
+                . '</tr>';
+        }
+    };
 @endphp
 <div class="receipt">
     @php
@@ -191,96 +223,79 @@
         </div>
     @endif
 
-    <div class="center title">{{ $shopName !== '' ? $shopName : 'فاتورة مبيعات' }}</div>
-    <div class="center muted">فاتورة مبيعات / تقفيل جلسة</div>
+    <div class="center title">{{ $shopName !== '' ? $shape($shopName) : $shape('فاتورة مبيعات') }}</div>
+    <div class="center muted">{{ $shape('فاتورة مبيعات / تقفيل جلسة') }}</div>
 
     <div class="line"></div>
 
     <table>
-        <tr>
-            <th>رقم الفاتورة</th>
-            <td class="value">{{ $printedInvoiceNo !== '' ? $printedInvoiceNo : $invoiceNumber }}</td>
-        </tr>
-        <tr>
-            <th>التاريخ</th>
-            <td class="value">{{ $invoice->issued_at?->format('Y-m-d h:i A') ?? '-' }}</td>
-        </tr>
+        {!! $renderRow($shape('رقم الفاتورة'), $printedInvoiceNo !== '' ? $printedInvoiceNo : $invoiceNumber, true) !!}
+        {!! $renderRow($shape('التاريخ'), $invoice->issued_at?->format('Y-m-d h:i A') ?? '-', true) !!}
         @if($invoice->device)
-        <tr>
-            <th>الجهاز</th>
-            <td>{{ $invoice->device->name }}</td>
-        </tr>
+            {!! $renderRow($shape('الجهاز'), $shape($invoice->device->name), true) !!}
         @endif
-        <tr>
-            <th>العميل</th>
-            <td>{{ $invoice->customer?->name ?? '-' }}</td>
-        </tr>
-        <tr>
-            <th>الخزينة</th>
-            <td>{{ $invoice->cashBox?->name ?? '-' }}</td>
-        </tr>
-        <tr>
-            <th>الكاشير</th>
-            <td>{{ $invoice->createdBy?->name ?? '-' }}</td>
-        </tr>
+        {!! $renderRow($shape('العميل'), $shape($invoice->customer?->name ?? '-'), true) !!}
+        {!! $renderRow($shape('الخزينة'), $shape($invoice->cashBox?->name ?? '-'), true) !!}
+        {!! $renderRow($shape('الكاشير'), $shape($invoice->createdBy?->name ?? '-'), true) !!}
     </table>
 
     @if($invoice->playSessionDetails->isNotEmpty())
-        <div class="section-title">تفاصيل اللعب</div>
+        <div class="line"></div>
+        <div class="section-title">{{ $shape('تفاصيل اللعب') }}</div>
         <table>
             @foreach ($invoice->playSessionDetails as $detail)
-                <tr>
-                    <td style="width:64%;">
-                        {{ $detail->play_type ?: 'لعب' }} {{ $detail->play_category ? '(' . $detail->play_category . ')' : '' }}
-                        <br>
-                        <span class="muted">المدة: {{ (int) ($detail->period ?? 0) }} د |  {{ $detail->device?->name ?? $invoice->device?->name ?? '-' }}</span>
-                    </td>
-                    <td class="value">{{ number_format((float) ($detail->cost ?? 0), 2) }}</td>
-                </tr>
+                @php
+                    $detailLabel = $shape($detail->play_type ?: 'لعب') . ($detail->play_category ? ' (' . $shape($detail->play_category) . ')' : '')
+                        . '<br><span class="muted">' . $shape('المدة:') . ' ' . (int) ($detail->period ?? 0) . ' ' . $shape('د') . ' | ' . $shape($detail->device?->name ?? $invoice->device?->name ?? '-') . '</span>';
+                    $detailValue = number_format((float) ($detail->cost ?? 0), 2);
+                @endphp
+                {!! $renderRow($detailLabel, $detailValue) !!}
             @endforeach
         </table>
-        <div class="line"></div>
     @endif
 
     @if($invoice->orderSessionDetails->isNotEmpty())
-        <div class="section-title">تفاصيل الطلبات</div>
+        <div class="line"></div>
+        <div class="section-title">{{ $shape('تفاصيل الطلبات') }}</div>
         <table>
             @foreach ($invoice->orderSessionDetails as $order)
-                <tr>
-                    <td style="width:64%;">{{ $order->catalogItem?->name ?? 'صنف' }} x{{ (int) ($order->quantity ?? 0) }}</td>
-                    <td class="value">{{ number_format((float) ($order->total ?? 0), 2) }}</td>
-                </tr>
+                @php
+                    $orderLabel = $shape($order->catalogItem?->name ?? 'صنف') . ' x' . (int) ($order->quantity ?? 0);
+                    $orderValue = number_format((float) ($order->total ?? 0), 2);
+                @endphp
+                {!! $renderRow($orderLabel, $orderValue) !!}
             @endforeach
         </table>
-        <div class="line"></div>
     @endif
+
+    <div class="line"></div>
 
     <table class="summary">
         @if((float) $invoice->play_amount > 0)
-            <tr><td>إجمالي اللعب</td><td class="value">{{ number_format((float) $invoice->play_amount, 2) }}</td></tr>
+            {!! $renderRow($shape('إجمالي اللعب'), number_format((float) $invoice->play_amount, 2)) !!}
         @endif
         @if((float) $invoice->order_amount > 0)
-            <tr><td>إجمالي الطلبات</td><td class="value">{{ number_format((float) $invoice->order_amount, 2) }}</td></tr>
+            {!! $renderRow($shape('إجمالي الطلبات'), number_format((float) $invoice->order_amount, 2)) !!}
         @endif
-        <tr><td>الإجمالي قبل الخصم</td><td class="value">{{ number_format((float) $invoice->subtotal, 2) }}</td></tr>
+        {!! $renderRow($shape('الإجمالي قبل الخصم'), number_format((float) $invoice->subtotal, 2)) !!}
         @if ($discountAmount > 0)
-            <tr><td>الخصم</td><td class="value">{{ number_format($discountAmount, 2) }}</td></tr>
+            {!! $renderRow($shape('الخصم'), number_format($discountAmount, 2)) !!}
         @endif
         @if ($serviceAmount > 0)
-            <tr><td>الخدمة</td><td class="value">{{ number_format($serviceAmount, 2) }}</td></tr>
+            {!! $renderRow($shape('الخدمة'), number_format($serviceAmount, 2)) !!}
         @endif
         @if ($taxAmount > 0)
-            <tr><td>الضريبة</td><td class="value">{{ number_format($taxAmount, 2) }}</td></tr>
+            {!! $renderRow($shape('الضريبة'), number_format($taxAmount, 2)) !!}
         @endif
-        <tr><td>المقدم</td><td class="value">{{ number_format((float) $invoice->deposit_amount, 2) }}</td></tr>
-        <tr class="total"><td>الصافي</td><td class="value">{{ number_format((float) $invoice->final_amount, 2) }}</td></tr>
-        <tr><td>المدفوع</td><td class="value">{{ number_format((float) $invoice->paid_amount, 2) }}</td></tr>
-        <tr><td>المتبقي / الرصيد</td><td class="value">{{ number_format((float) $invoice->remain_amount, 2) }}</td></tr>
+        {!! $renderRow($shape('المقدم'), number_format((float) $invoice->deposit_amount, 2)) !!}
+        {!! $renderRow($shape('الصافي'), number_format((float) $invoice->final_amount, 2), true) !!}
+        {!! $renderRow($shape('المدفوع'), number_format((float) $invoice->paid_amount, 2)) !!}
+        {!! $renderRow($shape('المتبقي / الرصيد'), number_format((float) $invoice->remain_amount, 2)) !!}
     </table>
 
     @if (filled($footerMessage))
         <div class="line"></div>
-        <div class="footer">{{ $footerMessage }}</div>
+        <div class="footer">{{ $shape($footerMessage) }}</div>
     @endif
 
     <div class="footer small">{{ now()->format('Y-m-d h:i:s A') }}</div>
@@ -291,76 +306,69 @@
     window.addEventListener('load', function () {
         const params = new URLSearchParams(window.location.search);
         const silentMode = params.get('silent') === '1';
-        const isFallback = params.get('fallback') === '1';
+
+        // Check if we need image-fallback printing
+        const fallback = params.get('fallback') === '1';
+        if (fallback) {
+            // Wait for images to load
+            const images = document.querySelectorAll('img');
+            let loadedCount = 0;
+            const totalImages = images.length;
+
+            const startPrintProcess = () => {
+                // If it is in iframe or we just need window.print()
+                if (silentMode) {
+                    try {
+                        window.print();
+                        setTimeout(() => {
+                            window.parent.postMessage('print-finished', '*');
+                        }, 500);
+                    } catch (e) {
+                        window.parent.postMessage('print-finished', '*');
+                    }
+                } else {
+                    window.print();
+                }
+            };
+
+            if (totalImages === 0) {
+                startPrintProcess();
+            } else {
+                images.forEach((img) => {
+                    if (img.complete) {
+                        loadedCount++;
+                        if (loadedCount === totalImages) {
+                            startPrintProcess();
+                        }
+                    } else {
+                        img.addEventListener('load', () => {
+                            loadedCount++;
+                            if (loadedCount === totalImages) {
+                                startPrintProcess();
+                            }
+                        });
+                        img.addEventListener('error', () => {
+                            loadedCount++;
+                            if (loadedCount === totalImages) {
+                                startPrintProcess();
+                            }
+                        });
+                    }
+                });
+            }
+            return;
+        }
 
         if (silentMode) {
-            // Silent mode is handled by the extension/bridge only.
-            return;
+            window.print();
+            setTimeout(function () {
+                window.close();
+            }, 500);
+        } else {
+            window.print();
         }
-
-        if (isFallback) {
-            const receiptEl = document.querySelector('.receipt');
-            if (!receiptEl) return;
-
-            // Force receipt container overflow to visible for capturing
-            receiptEl.style.overflow = 'visible';
-
-            setTimeout(() => {
-                html2canvas(receiptEl, {
-                    scale: 3, // High scale for clear printing
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: document.documentElement.offsetWidth,
-                    windowHeight: document.documentElement.offsetHeight
-                }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    
-                    // Create print container
-                    const printContainer = document.createElement('div');
-                    printContainer.style.width = '75mm';
-                    printContainer.style.margin = '0';
-                    printContainer.style.padding = '0';
-                    printContainer.style.background = '#fff';
-
-                    const printImg = document.createElement('img');
-                    printImg.src = imgData;
-                    printImg.style.width = '71mm';
-                    printImg.style.display = 'block';
-                    printImg.style.margin = '0 auto';
-                    
-                    printContainer.appendChild(printImg);
-
-                    // Set HTML/Body to LTR and overflow visible for the image display
-                    document.documentElement.dir = 'ltr';
-                    document.documentElement.style.overflow = 'visible';
-                    document.documentElement.style.height = 'auto';
-                    
-                    document.body.innerHTML = '';
-                    document.body.dir = 'ltr';
-                    document.body.style.margin = '0';
-                    document.body.style.padding = '0';
-                    document.body.style.overflow = 'visible';
-                    document.body.style.height = 'auto';
-                    document.body.style.background = '#fff';
-                    
-                    document.body.appendChild(printContainer);
-                    
-                    // Trigger print
-                    window.print();
-                });
-            }, 300);
-            return;
-        }
-
-        window.print();
     });
 </script>
-@if(request()->has('fallback'))
-<script src="{{ asset('js/html2canvas.min.js') }}"></script>
-@endif
 @endif
 </body>
 </html>

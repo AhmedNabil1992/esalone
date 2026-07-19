@@ -59,11 +59,9 @@ class GetMostActiveDevicesTool implements Tool
     {
         return [
             'start_date' => $schema->string()
-                ->description('تاريخ البداية لتقرير إحصائيات الأجهزة YYYY-MM-DD')
-                ->optional(),
+                ->description('تاريخ البداية لتقرير إحصائيات الأجهزة YYYY-MM-DD'),
             'end_date' => $schema->string()
-                ->description('تاريخ النهاية لتقرير إحصائيات الأجهزة YYYY-MM-DD')
-                ->optional(),
+                ->description('تاريخ النهاية لتقرير إحصائيات الأجهزة YYYY-MM-DD'),
         ];
     }
 }

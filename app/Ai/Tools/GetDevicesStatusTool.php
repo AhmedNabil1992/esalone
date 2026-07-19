@@ -118,8 +118,7 @@ class GetDevicesStatusTool implements Tool
     {
         return [
             'device_name' => $schema->string()
-                ->description('اسم الجهاز المطلوب البحث عنه (مثال: Room 1, بلياردو 1) - اختياري لتصفية النتائج.')
-                ->optional(),
+                ->description('اسم الجهاز المطلوب البحث عنه (مثال: Room 1, بلياردو 1) - اختياري لتصفية النتائج.'),
         ];
     }
 }

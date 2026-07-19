@@ -91,14 +91,11 @@ class GetRevenueReportTool implements Tool
     {
         return [
             'start_date' => $schema->string()
-                ->description('تاريخ بدء التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-10)')
-                ->optional(),
+                ->description('تاريخ بدء التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-10)'),
             'end_date' => $schema->string()
-                ->description('تاريخ نهاية التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-15)')
-                ->optional(),
+                ->description('تاريخ نهاية التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-15)'),
             'shift_id' => $schema->integer()
-                ->description('معرف الوردية لعمل تقرير عن وردية محددة')
-                ->optional(),
+                ->description('معرف الوردية لعمل تقرير عن وردية محددة'),
         ];
     }
 }

@@ -115,6 +115,7 @@ class ProductSalesAnalytics extends Page
         return CatalogItem::query()
             ->where('is_active', true)
             ->whereNotIn('id', $soldItemIds)
+            ->where('is_component', false)
             ->get()
             ->map(fn ($item) => [
                 'name' => (string) $item->name,

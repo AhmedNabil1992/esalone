@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tenant\Reservations\Schemas;
 
 use App\Models\Tenant\Reservation;
+use App\Models\Tenant\SystemConfig;
 use Carbon\Carbon;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -47,6 +48,7 @@ class ReservationsForm
 
                 DateTimePicker::make('start_time')
                     ->label('وقت البدء')
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->required()
                     ->live()
                     ->default(fn ($operation) => $operation === 'create' && request()->query('start_time') ? Carbon::parse(request()->query('start_time')) : null)
@@ -57,6 +59,7 @@ class ReservationsForm
 
                 DateTimePicker::make('end_time')
                     ->label('وقت الانتهاء')
+                    ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->required()
                     ->live()
                     ->afterStateUpdated(function (Get $get, Set $set) {
