@@ -1,7 +1,8 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../support.css';
 
 @source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/**/*';
 
 /* Add these lines for Filament Evolution */
 @source '../../../../vendor/wallacemartinss/filament-whatsapp-conector/resources/views/**/*';

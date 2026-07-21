@@ -16,6 +16,7 @@ use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Tenancy\TenantBackgroundsProvider;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -36,6 +37,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HtmlString;
@@ -109,6 +111,10 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-lock-closed')
                     ->color('danger')
                     ->visible(fn (): bool => Shift::query()->where('status', 'open')->exists()),
+                'quick-navigation' => Action::make('quick-navigation')
+                    ->label('البحث السريع')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->url('javascript:window.dispatchEvent(new CustomEvent("open-quick-navigation"))'),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
@@ -241,6 +247,28 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(
                     view('filament.banners.subscription-warning')->render()
                 ),
+            )
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): string => filament()->auth()->check()
+                    ? Blade::render('
+                        <button
+                            type="button"
+                            x-data
+                            x-on:click="window.dispatchEvent(new CustomEvent(\'open-quick-navigation\'))"
+                            class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                            title="البحث السريع (Ctrl+K)"
+                        >
+                            <x-filament::icon icon="heroicon-o-magnifying-glass" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                        </button>
+                    ')
+                    : '',
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => filament()->auth()->check()
+                    ? Blade::render("@livewire('quick-navigation')")
+                    : '',
             )
             ->middleware([
                 InitializeTenancyByDomain::class,
