@@ -9,6 +9,8 @@ use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 class ExpensesTypeSum extends StatsOverviewWidget
 {

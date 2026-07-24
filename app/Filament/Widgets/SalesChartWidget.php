@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Tenant\Invoice;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Carbon;
 
 class SalesChartWidget extends ChartWidget
 {
