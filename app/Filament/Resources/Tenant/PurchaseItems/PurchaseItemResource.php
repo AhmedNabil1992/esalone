@@ -28,7 +28,7 @@ class PurchaseItemResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'بند مشتريات';
+    protected static ?string $modelLabel = 'بنود المشتريات';
 
     protected static ?string $pluralModelLabel = 'بنود المشتريات';
 

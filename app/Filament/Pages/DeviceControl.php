@@ -26,6 +26,7 @@ use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -37,6 +38,8 @@ use RuntimeException;
 
 class DeviceControl extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'التحكم في الأجهزة';
 
     protected static ?string $navigationLabel = 'التحكم في الأجهزة';

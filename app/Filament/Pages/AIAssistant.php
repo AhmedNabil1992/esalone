@@ -4,10 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\User;
 use App\Services\AIAssistantService;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 
 class AIAssistant extends Page
 {
+    use HasPageShield;
+
     protected string $view = 'filament.pages.ai-assistant';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';

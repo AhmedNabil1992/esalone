@@ -3,12 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Tenant\WarehouseStock;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 
 class LowStockAlertsWidget extends BaseWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'تنبيهات المخزون المنخفض (حد الأمان)';
 
     protected static ?int $sort = 5;

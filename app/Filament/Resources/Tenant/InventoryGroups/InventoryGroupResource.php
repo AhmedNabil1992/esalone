@@ -29,7 +29,7 @@ class InventoryGroupResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $modelLabel = 'مجموعة صنف';
+    protected static ?string $modelLabel = 'مجموعات الأصناف';
 
     protected static ?string $pluralModelLabel = 'مجموعات الأصناف';
 

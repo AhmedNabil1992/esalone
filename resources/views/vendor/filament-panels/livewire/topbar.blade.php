@@ -27,6 +27,12 @@
 
     @if ($isAdminPanel)
         <style>
+            .fi-main {
+                padding-inline-start: 1.5rem !important;
+                padding-inline-end: 1.5rem !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
             @media (max-width: 640px) {
                 .brand-logo-text {
                     display: none !important;
@@ -48,8 +54,24 @@
                     display: none !important;
                 }
                 .fi-main {
-                    padding-inline-start: 0 !important;
+                    padding-inline-start: 2.5rem !important;
+                    padding-inline-end: 2.5rem !important;
+                    padding-left: 2.5rem !important;
+                    padding-right: 2.5rem !important;
                 }
+            }
+
+            /* Dark mode styles for Navigation Grid App Switcher */
+            html.dark .app-switcher-grid {
+                background-color: #18181b !important;
+                color: #ffffff !important;
+            }
+            html.dark .app-switcher-grid .app-switcher-item-label {
+                color: #ffffff !important;
+            }
+            html.dark .fi-dropdown-panel {
+                background-color: #18181b !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
             }
         </style>
     @endif
@@ -92,7 +114,7 @@
 
                     <div
                         style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px; width: 100%; direction: rtl;"
-                        class="bg-white dark:bg-gray-900"
+                        class="app-switcher-grid bg-white dark:bg-zinc-900! rounded-2xl"
                     >
                         @foreach ($navigation as $group)
                             @php
@@ -109,7 +131,7 @@
                             <a
                                 href="{{ $itemUrl }}"
                                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 16px; text-decoration: none; transition: all 0.2s;"
-                                class="hover:bg-gray-50 dark:hover:bg-white/5 hover:scale-105 active:scale-95 group"
+                                class="hover:bg-gray-100 dark:hover:bg-white/10! hover:scale-105 active:scale-95 group"
                             >
                                 <div
                                     style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, {{ $colors['from'] }}, {{ $colors['to'] }}); box-shadow: 0 4px 12px {{ $colors['shadow'] }}; transition: transform 0.2s;"
@@ -121,7 +143,7 @@
                                     />
                                 </div>
 
-                                <span style="font-size: 0.75rem; font-weight: bold; text-align: center;" class="text-gray-800 dark:text-gray-200">
+                                <span style="font-size: 0.75rem; font-weight: bold; text-align: center;" class="app-switcher-item-label text-gray-900 dark:text-white! dark:text-zinc-100!">
                                     {{ $groupLabel }}
                                 </span>
                             </a>

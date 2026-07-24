@@ -47,7 +47,7 @@
                     </x-slot>
 
                     <div
-                        class="grid grid-cols-2 gap-2 overflow-y-auto p-4 md:grid-cols-3"
+                        class="app-switcher-grid bg-white dark:bg-zinc-900! grid grid-cols-2 gap-2 overflow-y-auto p-4 md:grid-cols-3"
                         style="max-height: 80vh; grid-template-columns: repeat(3, minmax(0, 1fr));"
                     >
                         @foreach ($navigation as $group)
@@ -69,14 +69,16 @@
                             >
                                 <a
                                     href="{{ $itemUrl }}"
-                                    class="fi-topbar-item-btn flex flex-col items-center justify-center gap-2 whitespace-nowrap rounded-lg p-4 text-center text-sm font-medium"
+                                    class="fi-topbar-item-btn flex flex-col items-center justify-center gap-2 whitespace-nowrap rounded-lg p-4 text-center text-sm font-medium text-gray-900 dark:text-white! dark:text-zinc-100!"
                                 >
                                     <x-filament::icon
                                         :icon="$groupIcon"
                                         style="height: 64px; width: 64px"
                                     />
 
-                                    {{ $groupLabel }}
+                                    <span class="app-switcher-item-label text-gray-900 dark:text-white! dark:text-zinc-100!">
+                                        {{ $groupLabel }}
+                                    </span>
                                 </a>
                             </div>
                         @endforeach

@@ -9,6 +9,7 @@ use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Purchase;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
@@ -16,6 +17,8 @@ use Illuminate\Support\Number;
 
 class AdminStatsOverview extends StatsOverviewWidget
 {
+    use HasWidgetShield;
+
     protected static ?int $sort = 0;
 
     protected ?string $heading = 'ملخص إحصائيات وعمليات النظام';

@@ -5,12 +5,15 @@ namespace App\Filament\Pages;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Purchase;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
 class ProfitLossReport extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'الأرباح والخسائر';
 
     protected static ?string $navigationLabel = 'الأرباح والخسائر';

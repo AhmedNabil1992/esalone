@@ -2,13 +2,12 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
 use App\Models\Tenant\SystemConfig as Setting;
-use Throwable;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Closure;
 use Filament\Support\Facades\FilamentTimezone;
+use Illuminate\Http\Request;
+use Throwable;
 
 class SetTenantTimezone
 {
@@ -20,13 +19,12 @@ class SetTenantTimezone
 
             if ($timezone) {
                 // 1. تظبيط توقيت لاراڤيل وكاربون الأساسي (عشان الحسابات في الباك إند)
-                // config(['app.timezone' => $timezone]);
-                // date_default_timezone_set($timezone);
-                // Carbon::setFallbackTimezone($timezone);
+                config(['app.timezone' => $timezone]);
+                date_default_timezone_set($timezone);
+                Carbon::setFallbackTimezone($timezone);
 
-                // 2. السحر بتاع فيلامنت: تظبيط التوقيت جلوبال لكل الجداول والفورمز
+                // 2. تظبيط التوقيت في فيلامنت لكل الجداول والفورمز
                 FilamentTimezone::set($timezone);
-                
             }
         } catch (Throwable) {
             // لو حصل أي مشكلة (مثلاً الجدول لسه متعملوش ميكريشن)، نتجاهل الخطأ ويكمل بالتوقيت الافتراضي

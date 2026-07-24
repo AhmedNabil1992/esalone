@@ -26,7 +26,7 @@ class WaitingListResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'عميل منتظر';
+    protected static ?string $modelLabel = 'قائمة الإنتظار';
 
     protected static ?string $pluralModelLabel = 'قائمة الانتظار';
 

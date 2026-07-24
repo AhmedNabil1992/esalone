@@ -16,17 +16,18 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('إسم المستخدم')
                     ->searchable(),
                 TextColumn::make('email')
-                    ->label('Email address')
+                    ->label('البريد الإلكتروني')
                     ->searchable(),
                 TextColumn::make('roles.name')
-                    ->label('Roles')
+                    ->label('الأدوار')
                     ->badge()
                     ->separator(',')
                     ->searchable(),
                 TextColumn::make('permissions.name')
-                    ->label('Permissions')
+                    ->label('الصلاحيات')
                     ->badge()
                     ->separator(',')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -37,11 +38,12 @@ class UsersTable
                 //     ->dateTime()
                 //     ->sortable(),
                 TextColumn::make('created_at')
+                    ->label('تاريخ الإضافة')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->label('تاريخ التعديل')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

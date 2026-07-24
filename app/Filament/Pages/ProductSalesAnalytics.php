@@ -4,12 +4,15 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\MarketHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
 class ProductSalesAnalytics extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'إحصائيات مبيعات الكافيه والطلبات';
 
     protected static ?string $navigationLabel = 'إحصائيات المبيعات والطلبات';

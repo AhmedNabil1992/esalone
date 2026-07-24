@@ -29,7 +29,7 @@ class DeviceResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'جهاز';
+    protected static ?string $modelLabel = 'إدارة الأجهزة';
 
     protected static ?string $pluralModelLabel = 'الأجهزة';
 

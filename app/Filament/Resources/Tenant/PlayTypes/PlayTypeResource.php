@@ -28,7 +28,7 @@ class PlayTypeResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $modelLabel = 'نوع لعب';
+    protected static ?string $modelLabel = 'أنواع اللعب';
 
     protected static ?string $pluralModelLabel = 'أنواع اللعب';
 

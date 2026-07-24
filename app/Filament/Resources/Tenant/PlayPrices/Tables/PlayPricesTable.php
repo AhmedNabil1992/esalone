@@ -3,13 +3,12 @@
 namespace App\Filament\Resources\Tenant\PlayPrices\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ColumnGroup;
-
+use Filament\Tables\Table;
 
 class PlayPricesTable
 {
@@ -17,11 +16,17 @@ class PlayPricesTable
     {
         return $table
             ->columns([
+                TextColumn::make('device.deviceType.name')
+                    ->label('نوع الجهاز')
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('device.name')
                     ->label('الجهاز')
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('playType.name')
                     ->label('نوع اللعب')
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('description')
                     ->label('الوصف')
@@ -29,10 +34,12 @@ class PlayPricesTable
                 TextColumn::make('price')
                     ->label('سعر اللعب')
                     ->money()
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('start_from')
                     ->label('وقت بدء السعر')
-                    ->time(),
+                    ->time('h:i A')
+                    ->sortable(),
             ])
             ->filters([
                 //
@@ -41,10 +48,11 @@ class PlayPricesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    // DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

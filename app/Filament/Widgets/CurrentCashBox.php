@@ -4,12 +4,15 @@ namespace App\Filament\Widgets;
 
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
 
 class CurrentCashBox extends StatsOverviewWidget
 {
+    use HasWidgetShield;
+
     protected static ?int $sort = 1;
 
     protected ?string $heading = 'رصيد الخزن الحالية';

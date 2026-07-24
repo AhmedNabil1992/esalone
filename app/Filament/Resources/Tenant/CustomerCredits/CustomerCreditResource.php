@@ -27,7 +27,7 @@ class CustomerCreditResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'حركة رصيد';
+    protected static ?string $modelLabel = 'حركات الرصيد';
 
     protected static ?string $pluralModelLabel = 'حركات الرصيد';
 

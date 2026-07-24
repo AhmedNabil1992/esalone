@@ -28,7 +28,7 @@ class CashBoxLedgerEntryResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $modelLabel = 'حركة خزنة';
+    protected static ?string $modelLabel = 'سجل حركة الخزنة';
 
     protected static ?string $pluralModelLabel = 'سجل حركة الخزنة';
 

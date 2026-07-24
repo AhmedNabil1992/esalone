@@ -6,6 +6,7 @@ use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Models\Tenant\Warehouse;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -23,6 +24,8 @@ use Illuminate\Filesystem\FilesystemAdapter;
 
 class SystemConfig extends Page
 {
+    use HasPageShield;
+
     // protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $title = 'إعدادات النظام';
 

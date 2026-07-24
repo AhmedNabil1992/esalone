@@ -3,12 +3,15 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\PlayHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
 class DeviceAnalyticsReport extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'إحصائيات استخدام الأجهزة';
 
     protected static ?string $navigationLabel = 'إحصائيات الأجهزة';

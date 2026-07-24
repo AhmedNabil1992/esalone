@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\PlayHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 class PlayTypesReport extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static ?string $title = 'تقرير تحليل أنواع اللعب والأجهزة';

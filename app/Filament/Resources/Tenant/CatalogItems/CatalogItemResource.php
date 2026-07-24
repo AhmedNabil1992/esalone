@@ -28,7 +28,7 @@ class CatalogItemResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'صنف';
+    protected static ?string $modelLabel = 'الأصناف والمنتجات';
 
     protected static ?string $pluralModelLabel = 'الأصناف والمنتجات';
 

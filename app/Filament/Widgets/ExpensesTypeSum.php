@@ -5,14 +5,15 @@ namespace App\Filament\Widgets;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\ExpensesType;
 use App\Models\Tenant\SystemConfig as Setting;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Number;
 
 class ExpensesTypeSum extends StatsOverviewWidget
 {
+    use HasWidgetShield;
+
     protected ?string $heading = 'إجمالي مصاريف الشهر الحالي حسب النوع';
 
     protected function getStats(): array

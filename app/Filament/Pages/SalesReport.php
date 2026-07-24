@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\InvoicePayment;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SalesReport extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static ?string $title = 'التقرير المالي والمبيعات';

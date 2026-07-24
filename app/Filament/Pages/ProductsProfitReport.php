@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\MarketHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductsProfitReport extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static ?string $title = 'أرباح ومبيعات المنتجات';

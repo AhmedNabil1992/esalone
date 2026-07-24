@@ -26,7 +26,7 @@ class ReservationsResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $modelLabel = 'حجز';
+    protected static ?string $modelLabel = 'الحجوزات';
 
     protected static ?string $pluralModelLabel = 'الحجوزات';
 

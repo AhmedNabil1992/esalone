@@ -30,7 +30,7 @@ class PlaySessionResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $modelLabel = 'جلسة لعب';
+    protected static ?string $modelLabel = 'جلسات اللعب';
 
     protected static ?string $pluralModelLabel = 'جلسات اللعب';
 

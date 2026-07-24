@@ -3,11 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\Customer;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 
 class CustomerAnalyticsReport extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'تقرير ولاء وتحليل العملاء';
 
     protected static ?string $navigationLabel = 'تحليل وولاء العملاء';

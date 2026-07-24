@@ -3,12 +3,15 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\PlayHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
 class RushHourReport extends Page
 {
+    use HasPageShield;
+
     protected static ?string $title = 'تقرير أوقات الذروة والإشغال (Rush Hour)';
 
     protected static ?string $navigationLabel = 'تحليل أوقات الذروة (Rush Hour)';

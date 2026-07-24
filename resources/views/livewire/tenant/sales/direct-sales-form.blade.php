@@ -1,9 +1,9 @@
-<div dir="rtl" style="--line:#e5e7eb;--ink:#111827;--muted:#6b7280;--brand:#16a34a;--brand-soft:#f0fdf4;--card:#ffffff;--bg:#f8fafc;padding:14px;background:var(--bg);border-radius:14px;">
+<div dir="rtl" class="p-3.5 bg-slate-50 dark:!bg-zinc-950 rounded-2xl border border-slate-200 dark:!border-zinc-800 space-y-4">
     <style>
         .sales-grid-container {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 16px;
             align-items: start;
         }
         @media (min-width: 1024px) {
@@ -12,233 +12,236 @@
             }
         }
     </style>
-    <div style="display:grid;grid-template-columns:1fr;gap:12px;">
-        <div class="sales-grid-container">
-            <section style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(17,24,39,.04);">
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
-                    <div>
-                        <div style="font-size:.78rem;color:var(--muted);font-weight:700;">المبيعات المباشرة</div>
-                        <div style="font-size:1rem;color:var(--ink);font-weight:900;">اختيار الأصناف</div>
-                    </div>
-                    {{-- <div style="font-size:.72rem;background:var(--brand-soft);color:#15803d;padding:6px 10px;border-radius:999px;font-weight:800;">
-                        نفس نمط شاشة إضافة الطلبات
-                    </div> --}}
-                </div>
 
-                <div style="margin-bottom:10px;">
-                    <div style="font-size:.8rem;font-weight:800;color:#374151;margin-bottom:6px;">مجموعات الأصناف</div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(98px,1fr));gap:8px;">
-                        @forelse ($this->orderGroups as $group)
-                            <button
-                                type="button"
-                                wire:click="selectOrderGroup({{ $group->id }})"
-                                style="border:1px solid {{ $inventory_group_id === $group->id ? '#16a34a' : '#d1d5db' }};background:{{ $inventory_group_id === $group->id ? '#f0fdf4' : '#fff' }};border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:.15s;"
-                            >
-                                <div style="width:54px;height:54px;border-radius:10px;overflow:hidden;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
-                                    @if ($group->picture)
-                                        <img src="{{ tenant_asset($group->picture) }}" alt="{{ $group->name }}" style="width:54px;height:54px;object-fit:contain;display:block;" />
-                                    @else
-                                        <svg style="width:22px;height:22px;color:#9ca3af;" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5A1.5 1.5 0 014.5 6h15A1.5 1.5 0 0121 7.5v9A1.5 1.5 0 0119.5 18h-15A1.5 1.5 0 013 16.5v-9z"/>
-                                        </svg>
-                                    @endif
-                                </div>
-                                <div style="font-size:.72rem;font-weight:800;color:#111827;text-align:center;line-height:1.2;word-break:break-word;">{{ $group->name }}</div>
-                            </button>
-                        @empty
-                            <div style="grid-column:1/-1;text-align:center;color:#6b7280;font-size:.8rem;padding:10px;border:1px dashed #d1d5db;border-radius:10px;">لا توجد مجموعات أصناف مفعلة</div>
-                        @endforelse
-                    </div>
+    <div class="sales-grid-container">
+        <!-- 1. Catalog & Items Selection Section -->
+        <section class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 rounded-2xl p-3.5 sm:p-5 shadow-sm text-slate-900 dark:!text-zinc-100">
+            <div class="flex justify-between items-center gap-2 mb-3">
+                <div>
+                    <div class="text-xs text-slate-500 dark:!text-zinc-400 font-bold">المبيعات المباشرة</div>
+                    <div class="text-base sm:text-lg font-black text-slate-900 dark:!text-zinc-100">اختيار الأصناف</div>
                 </div>
+            </div>
 
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
-                    <div style="font-size:.8rem;font-weight:800;color:#374151;">الأصناف</div>
-                    <input
-                        type="text"
-                        wire:model.live.debounce.250ms="item_search"
-                        placeholder="ابحث عن صنف..."
-                        style="width:min(260px,100%);border:1px solid #d1d5db;border-radius:10px;padding:7px 10px;font-size:.78rem;"
-                    />
-                </div>
-
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;max-height:450px;overflow:auto;padding-inline-end:2px;">
-                    @forelse ($this->orderItems as $item)
+            <!-- Groups List -->
+            <div class="mb-4">
+                <div class="text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-2">مجموعات الأصناف</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">
+                    @forelse ($this->orderGroups as $group)
+                        @php
+                            $isActive = $inventory_group_id === $group->id;
+                        @endphp
                         <button
                             type="button"
-                            wire:click="addItem({{ $item->id }})"
-                            style="border:1px solid #d1d5db;background:#fff;border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;text-align:center;transition:.15s;"
-                            onmouseover="this.style.borderColor='#16a34a';this.style.background='#f0fdf4'"
-                            onmouseout="this.style.borderColor='#d1d5db';this.style.background='#fff'"
+                            wire:click="selectOrderGroup({{ $group->id }})"
+                            class="border rounded-xl p-2 flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-150 text-center
+                                {{ $isActive 
+                                    ? 'border-emerald-600 dark:!border-emerald-500 bg-emerald-50 dark:!bg-emerald-950/40 text-emerald-900 dark:!text-emerald-300' 
+                                    : 'border-slate-200 dark:!border-zinc-800 bg-white dark:!bg-zinc-950 text-slate-800 dark:!text-zinc-200 hover:border-emerald-500' }}"
                         >
-                            <div style="width:58px;height:58px;border-radius:10px;overflow:hidden;background:#f3f4f6;display:flex;align-items:center;justify-content:center;">
-                                @if ($item->picture)
-                                    <img src="{{ tenant_asset($item->picture) }}" alt="{{ $item->name }}" style="width:58px;height:58px;object-fit:contain;display:block;" />
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-slate-100 dark:!bg-zinc-800 flex items-center justify-center shrink-0">
+                                @if ($group->picture)
+                                    <img src="{{ tenant_asset($group->picture) }}" alt="{{ $group->name }}" class="w-full h-full object-contain block" />
                                 @else
-                                    <svg style="width:22px;height:22px;color:#9ca3af;" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.11 1.5 2.076v8.662a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25v-8.662c0-.966.616-1.792 1.5-2.076"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v10.5m0 0l3-3m-3 3l-3-3"/>
+                                    <svg class="w-5 h-5 text-slate-400 dark:!text-zinc-500" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5A1.5 1.5 0 014.5 6h15A1.5 1.5 0 0121 7.5v9A1.5 1.5 0 0119.5 18h-15A1.5 1.5 0 013 16.5v-9z"/>
                                     </svg>
                                 @endif
                             </div>
-                            <div style="font-size:.74rem;font-weight:800;color:#111827;line-height:1.2;word-break:break-word;">{{ $item->name }}</div>
-                            <div style="font-size:.74rem;font-weight:900;color:#16a34a;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($item->sale_price ?? 0), 2) }}</div>
+                            <div class="text-[0.72rem] font-bold line-clamp-2 leading-tight break-words">{{ $group->name }}</div>
                         </button>
                     @empty
-                        <div style="grid-column:1/-1;text-align:center;color:#6b7280;font-size:.8rem;padding:12px;border:1px dashed #d1d5db;border-radius:10px;">لا توجد أصناف مطابقة</div>
+                        <div class="col-span-full text-center text-slate-500 dark:!text-zinc-400 text-xs p-3 border border-dashed border-slate-300 dark:!border-zinc-700 rounded-xl">لا توجد مجموعات أصناف مفعلة</div>
                     @endforelse
                 </div>
-            </section>
+            </div>
 
-            <aside style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;position:sticky;top:12px;box-shadow:0 6px 18px rgba(17,24,39,.04);">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                    <div style="font-size:.95rem;font-weight:900;color:#111827;">سلة البيع</div>
-                    @if (! empty($this->selectedItems))
-                        <button type="button" wire:click="clearCart" style="border:1px solid #fecaca;background:#fff1f2;color:#be123c;padding:5px 9px;border-radius:9px;font-size:.72rem;font-weight:800;cursor:pointer;">تفريغ</button>
-                    @endif
-                </div>
+            <!-- Items Search & Grid -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mb-3">
+                <div class="text-xs font-bold text-slate-700 dark:!text-zinc-300">الأصناف</div>
+                <input
+                    type="text"
+                    wire:model.live.debounce.250ms="item_search"
+                    placeholder="ابحث عن صنف..."
+                    class="w-full sm:w-64 border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500 rounded-xl px-3 py-1.5 text-xs focus:ring-emerald-500 focus:border-emerald-500"
+                />
+            </div>
 
-                <div style="max-height:300px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;">
-                    <table style="width:100%;border-collapse:collapse;font-size:.76rem;">
-                        <thead style="background:#f9fafb;color:#374151;position:sticky;top:0;">
-                            <tr>
-                                <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">الصنف</th>
-                                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;">الكمية</th>
-                                <th style="padding:8px;text-align:center;border-bottom:1px solid #e5e7eb;">الإجمالي</th>
-                                <th style="padding:8px;border-bottom:1px solid #e5e7eb;"></th>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:480px;overflow-y:auto;padding-inline-end:2px;">
+                @forelse ($this->orderItems as $item)
+                    <button
+                        type="button"
+                        wire:click="addItem({{ $item->id }})"
+                        class="border border-slate-200 dark:!border-zinc-800 bg-white dark:!bg-zinc-950 hover:border-emerald-500 dark:hover:!border-emerald-500 hover:bg-emerald-50/50 dark:hover:!bg-emerald-950/30 rounded-xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer text-center transition-all duration-150 group"
+                    >
+                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 dark:!bg-zinc-800 flex items-center justify-center shrink-0">
+                            @if ($item->picture)
+                                <img src="{{ tenant_asset($item->picture) }}" alt="{{ $item->name }}" class="w-full h-full object-contain block" />
+                            @else
+                                <svg class="w-6 h-6 text-slate-400 dark:!text-zinc-500" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.11 1.5 2.076v8.662a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25v-8.662c0-.966.616-1.792 1.5-2.076"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v10.5m0 0l3-3m-3 3l-3-3"/>
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="text-xs font-extrabold text-slate-900 dark:!text-zinc-100 line-clamp-2 leading-tight break-words">{{ $item->name }}</div>
+                        <div class="text-xs font-black text-emerald-600 dark:!text-emerald-400 dir-ltr">{{ number_format((float) ($item->sale_price ?? 0), 2) }} ج.م</div>
+                    </button>
+                @empty
+                    <div class="col-span-full text-center text-slate-500 dark:!text-zinc-400 text-xs p-4 border border-dashed border-slate-300 dark:!border-zinc-700 rounded-xl">لا توجد أصناف مطابقة</div>
+                @endforelse
+            </div>
+        </section>
+
+        <!-- 2. Shopping Cart & Checkout Aside Section -->
+        <aside class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 rounded-2xl p-3.5 sm:p-5 lg:sticky lg:top-4 shadow-sm text-slate-900 dark:!text-zinc-100">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="text-base font-black text-slate-900 dark:!text-zinc-100">سلة البيع</div>
+                @if (! empty($this->selectedItems))
+                    <button type="button" wire:click="clearCart" class="border border-rose-200 dark:!border-rose-900/60 bg-rose-50 dark:!bg-rose-950/40 text-rose-700 dark:!text-rose-400 hover:bg-rose-100 dark:hover:!bg-rose-900/60 px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-pointer transition-colors">تفريغ</button>
+                @endif
+            </div>
+
+            <!-- Cart Items Table -->
+            <div class="max-h-72 overflow-y-auto border border-slate-200 dark:!border-zinc-800 rounded-xl">
+                <table class="w-full text-xs text-right border-collapse">
+                    <thead class="bg-slate-50 dark:!bg-zinc-950 text-slate-700 dark:!text-zinc-300 sticky top-0 border-b border-slate-200 dark:!border-zinc-800">
+                        <tr>
+                            <th class="p-2.5 font-extrabold">الصنف</th>
+                            <th class="p-2.5 font-extrabold text-center">الكمية</th>
+                            <th class="p-2.5 font-extrabold text-center">الإجمالي</th>
+                            <th class="p-2.5"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($this->selectedItemRows as $row)
+                            <tr class="border-b border-slate-100 dark:!border-zinc-800/60 text-slate-800 dark:!text-zinc-200">
+                                <td class="p-2.5 align-top">
+                                    <div class="font-extrabold text-slate-900 dark:!text-zinc-100">{{ $row['name'] }}</div>
+                                    <div class="text-[0.7rem] text-slate-500 dark:!text-zinc-400 dir-ltr">{{ number_format($row['unit_price'], 2) }} ج.م</div>
+                                </td>
+                                <td class="p-2.5 text-center">
+                                    <div class="inline-flex items-center gap-1 border border-slate-300 dark:!border-zinc-700 rounded-lg p-1 bg-slate-50 dark:!bg-zinc-950">
+                                        <button type="button" wire:click="decrementItem('{{ $row['key'] }}')" class="w-6 h-6 rounded-md bg-slate-200 dark:!bg-zinc-800 text-slate-800 dark:!text-zinc-200 font-black hover:bg-slate-300 dark:hover:!bg-zinc-700 cursor-pointer flex items-center justify-center">-</button>
+                                        <span class="min-w-5 font-black text-slate-900 dark:!text-zinc-100 text-xs">{{ $row['quantity'] }}</span>
+                                        <button type="button" wire:click="incrementItem('{{ $row['key'] }}')" class="w-6 h-6 rounded-md bg-emerald-100 dark:!bg-emerald-950/60 text-emerald-700 dark:!text-emerald-400 font-black hover:bg-emerald-200 dark:hover:!bg-emerald-900/60 cursor-pointer flex items-center justify-center">+</button>
+                                    </div>
+                                </td>
+                                <td class="p-2.5 text-center font-black text-emerald-600 dark:!text-emerald-400 dir-ltr">{{ number_format($row['total_amount'], 2) }}</td>
+                                <td class="p-2.5 text-center">
+                                    <button type="button" wire:click="removeItem('{{ $row['key'] }}')" class="text-rose-600 dark:!text-rose-400 hover:text-rose-700 font-extrabold text-xs cursor-pointer">حذف</button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($this->selectedItemRows as $row)
-                                <tr>
-                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;vertical-align:top;">
-                                        <div style="font-weight:800;color:#111827;">{{ $row['name'] }}</div>
-                                        <div style="font-size:.7rem;color:#6b7280;direction:ltr;unicode-bidi:isolate;">{{ number_format($row['unit_price'], 2) }}</div>
-                                    </td>
-                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;">
-                                        <div style="display:inline-flex;align-items:center;gap:4px;border:1px solid #d1d5db;border-radius:8px;padding:2px;">
-                                            <button type="button" wire:click="decrementItem('{{ $row['key'] }}')" style="width:22px;height:22px;border:none;border-radius:6px;background:#f3f4f6;color:#374151;font-weight:800;cursor:pointer;">-</button>
-                                            <span style="min-width:18px;font-weight:800;">{{ $row['quantity'] }}</span>
-                                            <button type="button" wire:click="incrementItem('{{ $row['key'] }}')" style="width:22px;height:22px;border:none;border-radius:6px;background:#dcfce7;color:#15803d;font-weight:800;cursor:pointer;">+</button>
-                                        </div>
-                                    </td>
-                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;font-weight:900;color:#16a34a;direction:ltr;unicode-bidi:isolate;">{{ number_format($row['total_amount'], 2) }}</td>
-                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;">
-                                        <button type="button" wire:click="removeItem('{{ $row['key'] }}')" style="border:none;background:transparent;color:#dc2626;font-size:.72rem;font-weight:800;cursor:pointer;">حذف</button>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" style="padding:18px;text-align:center;color:#6b7280;">لا توجد أصناف مضافة</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="p-5 text-center text-slate-400 dark:!text-zinc-500">لا توجد أصناف مضافة</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Form Options -->
+            <div class="mt-3.5 space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-1">خزنة الدفع</label>
+                    <select wire:model="selected_cash_box_id" class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 rounded-xl p-2.5 text-xs focus:ring-emerald-500 focus:border-emerald-500">
+                        @foreach ($this->cashBoxes as $cashBox)
+                            <option value="{{ $cashBox->id }}">{{ $cashBox->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
-                <div style="margin-top:10px;display:grid;gap:8px;">
-                    <div>
-                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">خزنة الدفع</div>
-                        <select wire:model="selected_cash_box_id" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;background:#fff;margin-bottom:10px;">
-                            @foreach ($this->cashBoxes as $cashBox)
-                                <option value="{{ $cashBox->id }}">{{ $cashBox->name }}</option>
-                            @endforeach
-                        </select>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-1">تعيين عميل</label>
+                    <input
+                        type="text"
+                        wire:model.live.debounce.250ms="customer_search"
+                        placeholder="بحث عميل..."
+                        class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500 rounded-xl p-2 text-xs mb-1.5 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                    <select wire:model="selected_customer_id" class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 rounded-xl p-2.5 text-xs focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">بدون عميل</option>
+                        @foreach ($this->customers as $customer)
+                            <option value="{{ $customer->id }}">{{ $customer->name }}{{ $customer->phone ? ' - ' . $customer->phone : '' }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">تعيين عميل</div>
-                        <input
-                            type="text"
-                            wire:model.live.debounce.250ms="customer_search"
-                            placeholder="بحث عميل..."
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:7px 10px;font-size:.78rem;margin-bottom:6px;"
-                        />
-                        <select wire:model="selected_customer_id" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;background:#fff;">
-                            <option value="">بدون عميل</option>
-                            @foreach ($this->customers as $customer)
-                                <option value="{{ $customer->id }}">{{ $customer->name }}{{ $customer->phone ? ' - ' . $customer->phone : '' }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
+                <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">الخصم</div>
+                        <label class="block text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-1">الخصم</label>
                         <input
                             type="number"
                             step="0.01"
                             min="0"
                             wire:model.live="discount_amount"
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                            class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500 rounded-xl p-2.5 text-xs focus:ring-emerald-500 focus:border-emerald-500"
                             placeholder="0.00"
                         />
                     </div>
 
                     <div>
-                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">المدفوع</div>
+                        <label class="block text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-1">المدفوع</label>
                         <input
                             type="number"
                             step="0.01"
                             min="0"
                             wire:model.live.debounce.250ms="paid_amount"
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                            class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500 rounded-xl p-2.5 text-xs focus:ring-emerald-500 focus:border-emerald-500"
                             placeholder="0.00"
                         />
                     </div>
-
-                    @if ($selected_customer_id && $this->getRemainingAmount() > 0)
-                        <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151;font-weight:700;cursor:pointer;">
-                            <input type="checkbox" wire:model.live="deposit_remainder_to_customer_balance" style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;" />
-                            <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
-                        </label>
-                    @endif
-
-                    <div>
-                        <div style="font-size:.76rem;font-weight:800;color:#4b5563;margin-bottom:5px;">رقم الواتساب لإرسال الفاتورة (اختياري)</div>
-                        <input
-                            type="text"
-                            wire:model="whatsapp_phone"
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
-                            placeholder="مثال: 01012345678"
-                        />
-                    </div>
                 </div>
 
-                <div style="margin-top:10px;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;display:grid;gap:6px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:#4b5563;">
-                        <span>الإجمالي</span>
-                        <strong style="direction:ltr;unicode-bidi:isolate;">{{ number_format($this->getTotalAmount(), 2) }}</strong>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.95rem;color:#111827;font-weight:900;border-top:1px solid #e5e7eb;padding-top:6px;">
-                        <span>الصافي</span>
-                        <span style="color:#16a34a;direction:ltr;unicode-bidi:isolate;">{{ number_format($this->getFinalAmount(), 2) }}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.9rem;color:#111827;font-weight:800;border-top:1px solid #e5e7eb;padding-top:6px;">
-                        <span>الباقي</span>
-                        <span style="color:{{ $this->getRemainingAmount() > 0 ? '#2563eb' : '#16a34a' }};direction:ltr;unicode-bidi:isolate;">{{ number_format($this->getRemainingAmount(), 2) }}</span>
-                    </div>
-                </div>
+                @if ($selected_customer_id && $this->getRemainingAmount() > 0)
+                    <label class="flex items-center gap-2 text-xs text-slate-700 dark:!text-zinc-300 font-bold cursor-pointer pt-1">
+                        <input type="checkbox" wire:model.live="deposit_remainder_to_customer_balance" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer" />
+                        <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
+                    </label>
+                @endif
 
-                <button
-                    type="button"
-                    wire:click="saveSale"
-                    @disabled(empty($this->selectedItems))
-                    style="width:100%;margin-top:10px;border:none;background:{{ empty($this->selectedItems) ? '#9ca3af' : '#16a34a' }};color:#fff;padding:11px;border-radius:10px;font-size:.85rem;font-weight:900;cursor:{{ empty($this->selectedItems) ? 'not-allowed' : 'pointer' }};"
-                >
-                    حفظ الفاتورة
-                </button>
-            </aside>
-        </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:!text-zinc-300 mb-1">رقم الواتساب لإرسال الفاتورة (اختياري)</label>
+                    <input
+                        type="text"
+                        wire:model="whatsapp_phone"
+                        class="w-full border border-slate-300 dark:!border-zinc-700 bg-white dark:!bg-zinc-950 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500 rounded-xl p-2.5 text-xs focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder="مثال: 01012345678"
+                    />
+                </div>
+            </div>
+
+            <!-- Totals Summary Card -->
+            <div class="mt-4 border border-slate-200 dark:!border-zinc-800 rounded-xl p-3 bg-slate-50 dark:!bg-zinc-950/80 space-y-2">
+                <div class="flex justify-between items-center text-xs text-slate-600 dark:!text-zinc-400">
+                    <span>الإجمالي</span>
+                    <strong class="dir-ltr text-slate-900 dark:!text-zinc-100 font-bold">{{ number_format($this->getTotalAmount(), 2) }} ج.م</strong>
+                </div>
+                <div class="flex justify-between items-center text-sm text-slate-900 dark:!text-zinc-100 font-black border-t border-slate-200 dark:!border-zinc-800 pt-2">
+                    <span>الصافي</span>
+                    <span class="text-emerald-600 dark:!text-emerald-400 dir-ltr">{{ number_format($this->getFinalAmount(), 2) }} ج.م</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-slate-900 dark:!text-zinc-100 font-extrabold border-t border-slate-200 dark:!border-zinc-800 pt-2">
+                    <span>الباقي</span>
+                    <span class="{{ $this->getRemainingAmount() > 0 ? 'text-blue-600 dark:!text-blue-400' : 'text-emerald-600 dark:!text-emerald-400' }} dir-ltr">{{ number_format($this->getRemainingAmount(), 2) }} ج.م</span>
+                </div>
+            </div>
+
+            <!-- Checkout Button -->
+            <button
+                type="button"
+                wire:click="saveSale"
+                @disabled(empty($this->selectedItems))
+                class="w-full mt-4 py-3 rounded-xl text-xs sm:text-sm font-black text-white transition-all shadow-sm cursor-pointer
+                    {{ empty($this->selectedItems) 
+                        ? 'bg-slate-300 dark:!bg-zinc-800 text-slate-500 dark:!text-zinc-500 cursor-not-allowed' 
+                        : 'bg-emerald-600 hover:bg-emerald-700 dark:!bg-emerald-600 dark:hover:!bg-emerald-500' }}"
+            >
+                حفظ الفاتورة
+            </button>
+        </aside>
     </div>
-
-    <style>
-        @media (max-width: 1200px) {
-            .sales-grid-container {
-                grid-template-columns: 1fr !important;
-            }
-
-            .sales-grid-container aside {
-                position: static !important;
-            }
-        }
-    </style>
 
     @php
         $invoicePrinter = \App\Models\Tenant\SystemConfig::get('sys_invoice_printer', '');

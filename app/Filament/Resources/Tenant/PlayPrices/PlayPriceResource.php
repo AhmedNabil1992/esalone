@@ -28,7 +28,7 @@ class PlayPriceResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    protected static ?string $modelLabel = 'سعر لعب';
+    protected static ?string $modelLabel = 'أسعار اللعب';
 
     protected static ?string $pluralModelLabel = 'أسعار اللعب';
 

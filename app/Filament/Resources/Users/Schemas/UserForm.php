@@ -15,42 +15,46 @@ class UserForm
     {
         return $schema
             ->components([
-                Section::make('Basic Information')
+                Section::make('المعلومات الأساسية')
                     ->schema([
                         TextInput::make('name')
+                            ->label('إسم المستخدم')
                             ->required(),
                         TextInput::make('email')
-                            ->label('Email address')
+                            ->label('البريد الإلكتروني')
                             ->email()
                             ->required(),
                         TextInput::make('password')
+                            ->label('كلمة المرور')
                             ->password()
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? $state : null),
-                        DateTimePicker::make('email_verified_at'),
+                        DateTimePicker::make('email_verified_at')
+                            ->label('تاريخ التحقق من البريد الإلكتروني')
+                            ->default(now()),
                     ])
                     ->columns(2),
 
-                Section::make('Access Control')
-                    ->description('Assign roles and direct permissions for this user.')
+                Section::make('التحكم في الوصول')
+                    ->description('تعيين الأدوار والصلاحيات المباشرة لهذا المستخدم')
                     ->schema([
                         Select::make('roles')
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload()
                             ->searchable()
-                            ->label('Roles'),
+                            ->label('الأدوار'),
                         Select::make('permissions')
                             ->relationship('permissions', 'name')
                             ->multiple()
                             ->preload()
                             ->searchable()
-                            ->label('Direct Permissions'),
+                            ->label('الصلاحيات المباشرة'),
                     ])
                     ->columns(2),
 
-                Section::make('Two-Factor Authentication')
+                Section::make('المصادقة الثنائية')
                     ->schema([
                         Textarea::make('two_factor_secret')
                             ->columnSpanFull(),

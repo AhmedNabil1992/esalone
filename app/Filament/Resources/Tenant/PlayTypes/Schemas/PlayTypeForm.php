@@ -2,13 +2,14 @@
 
 namespace App\Filament\Resources\Tenant\PlayTypes\Schemas;
 
-use Filament\Schemas\Schema;
+use Filament\Forms\Components\BaseFileUpload;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\BaseFileUpload;
+use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 
 class PlayTypeForm
 {
@@ -26,9 +27,12 @@ class PlayTypeForm
                     ->label('إسم نوع اللعب')
                     ->required()
                     ->maxLength(20)
-                    ->unique(ignoreRecord: true)
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule, $get) => $rule->where('device_type_id', $get('device_type_id')),
+                    )
                     ->placeholder('مثال: فردي، زوجي، لعب تنافسي...')
-                    ->helperText('يجب أن يكون إسم نوع اللعب فريدًا ولا يتجاوز 20 حرفًا.'),
+                    ->helperText('يجب أن يكون إسم نوع اللعب فريدًا لـنوع الجهاز ولا يتجاوز 20 حرفًا.'),
                 TextInput::make('description')
                     ->label('وصف نوع اللعب')
                     ->maxLength(50)

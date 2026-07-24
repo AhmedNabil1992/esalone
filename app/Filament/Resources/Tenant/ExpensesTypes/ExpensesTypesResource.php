@@ -25,6 +25,7 @@ class ExpensesTypesResource extends Resource
     protected static ?string $recordTitleAttribute = 'أنواع المصروفات';
     protected static ?string $navigationLabel = 'أنواع المصروفات';
     protected static ?string $pluralModelLabel = 'أنواع المصروفات';
+    protected static ?string $modelLabel = 'أنواع المصروفات';
 
 
     public static function form(Schema $schema): Schema

@@ -26,7 +26,7 @@ class CustomerLevelResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'فئة عميل';
+    protected static ?string $modelLabel = 'فئات ومستويات العملاء';
 
     protected static ?string $pluralModelLabel = 'فئات ومستويات العملاء';
 

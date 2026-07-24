@@ -29,9 +29,9 @@ class ShiftResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $modelLabel = 'شيفت';
+    protected static ?string $modelLabel = 'إدارة الشيفتات';
 
-    protected static ?string $pluralModelLabel = 'الشيفتات';
+    protected static ?string $pluralModelLabel = 'إدارة الشيفتات';
 
     public static function form(Schema $schema): Schema
     {

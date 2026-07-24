@@ -28,9 +28,14 @@ class ExpenseHistoryResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $modelLabel = 'مصروف';
+    protected static ?string $modelLabel = 'سجل المصروفات';
 
     protected static ?string $pluralModelLabel = 'سجل المصروفات';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('ViewAny:ExpenseHistory') ?? parent::shouldRegisterNavigation();
+    }
 
     public static function getEloquentQuery(): Builder
     {

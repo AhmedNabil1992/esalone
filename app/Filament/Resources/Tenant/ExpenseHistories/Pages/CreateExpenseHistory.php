@@ -28,6 +28,10 @@ class CreateExpenseHistory extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
+        if (! auth()->user()?->can('ViewAny:ExpenseHistory')) {
+            return url('/admin');
+        }
+
         return $this->getResource()::getUrl('index');
     }
 

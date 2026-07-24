@@ -30,7 +30,7 @@ class ProductComponentResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $modelLabel = 'مكوّن منتج';
+    protected static ?string $modelLabel = 'مكونات المنتج';
 
     protected static ?string $pluralModelLabel = 'مكونات المنتج';
 

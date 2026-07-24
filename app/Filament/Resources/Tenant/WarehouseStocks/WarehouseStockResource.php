@@ -28,7 +28,7 @@ class WarehouseStockResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $modelLabel = 'رصيد مخزون';
+    protected static ?string $modelLabel = 'أرصدة المخزون';
 
     protected static ?string $pluralModelLabel = 'أرصدة المخزون';
 

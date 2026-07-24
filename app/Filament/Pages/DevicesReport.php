@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\PlayHistory;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
@@ -18,6 +19,7 @@ use Filament\Tables\Table;
 
 class DevicesReport extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static ?string $title = 'تقرير إنتاجية واستخدام الأجهزة';

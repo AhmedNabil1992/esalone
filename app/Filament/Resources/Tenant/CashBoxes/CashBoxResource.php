@@ -28,7 +28,7 @@ class CashBoxResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $modelLabel = 'خزنة';
+    protected static ?string $modelLabel = 'الخزن';
 
     protected static ?string $pluralModelLabel = 'الخزن';
 

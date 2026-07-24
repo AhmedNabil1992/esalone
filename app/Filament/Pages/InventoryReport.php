@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\WarehouseStock;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\Summarizers\Summarizer;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class InventoryReport extends Page implements HasTable
 {
+    use HasPageShield;
     use InteractsWithTable;
 
     protected static ?string $title = 'تقرير جرد وحالة المخزون';

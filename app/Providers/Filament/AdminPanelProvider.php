@@ -16,6 +16,7 @@ use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Tenancy\TenantBackgroundsProvider;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Emuniq\FilamentBrowserNotifications\BrowserNotificationsPlugin;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -234,6 +235,10 @@ class AdminPanelProvider extends PanelProvider
                 FilamentEvolutionPlugin::make()
                     ->whatsappInstanceResource() // عشان يظهر شاشة ربط الأرقام
                     ->viewMessageHistory(),
+                BrowserNotificationsPlugin::make()
+                    ->promptDelay(5)           // seconds before showing prompt (default: 2)
+                    ->dismissCooldownDays(14)  // days before re-prompting (default: 7)
+                    ->profileSection(true),
 
             ])
             ->renderHook(

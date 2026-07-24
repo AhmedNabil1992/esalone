@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\Reservation;
 use BackedEnum;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Livewire\Attributes\Url;
@@ -12,6 +13,8 @@ use UnitEnum;
 
 class ReservationsCalendar extends Page
 {
+    use HasPageShield;
+
     protected string $view = 'filament.pages.reservations-calendar';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calendar';

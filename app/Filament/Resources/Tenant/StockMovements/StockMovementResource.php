@@ -28,7 +28,7 @@ class StockMovementResource extends Resource
 
     protected static ?int $navigationSort = 6;
 
-    protected static ?string $modelLabel = 'حركة مخزون';
+    protected static ?string $modelLabel = 'حركة المخزون';
 
     protected static ?string $pluralModelLabel = 'حركات المخزون';
 

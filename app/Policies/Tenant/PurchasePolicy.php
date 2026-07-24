@@ -1,72 +1,44 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies\Tenant;
 
 use App\Models\Tenant\Purchase;
-use App\Models\Tenant\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class PurchasePolicy
 {
     use HandlesAuthorization;
 
-    public function viewAny(User $user): bool
+    public function viewAny(AuthUser $authUser): bool
     {
-        return $user->can('ViewAny:Purchase');
+        return $authUser->can('ViewAny:Purchase');
     }
 
-    public function view(User $user, Purchase $purchase): bool
+    public function view(AuthUser $authUser, Purchase $purchase): bool
     {
-        return $user->can('View:Purchase');
+        return $authUser->can('View:Purchase');
     }
 
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return $user->can('Create:Purchase');
+        return $authUser->can('Create:Purchase');
     }
 
-    public function update(User $user, Purchase $purchase): bool
+    public function update(AuthUser $authUser, Purchase $purchase): bool
     {
-        return false;
+        return $authUser->can('Update:Purchase');
     }
 
-    public function delete(User $user, Purchase $purchase): bool
+    public function delete(AuthUser $authUser, Purchase $purchase): bool
     {
-        return false;
+        return $authUser->can('Delete:Purchase');
     }
 
-    public function deleteAny(User $user): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
-        return false;
-    }
-
-    public function restore(User $user, Purchase $purchase): bool
-    {
-        return false;
-    }
-
-    public function restoreAny(User $user): bool
-    {
-        return false;
-    }
-
-    public function forceDelete(User $user, Purchase $purchase): bool
-    {
-        return false;
-    }
-
-    public function forceDeleteAny(User $user): bool
-    {
-        return false;
-    }
-
-    public function replicate(User $user): bool
-    {
-        return false;
-    }
-
-    public function reorder(User $user): bool
-    {
-        return false;
+        return $authUser->can('DeleteAny:Purchase');
     }
 }
