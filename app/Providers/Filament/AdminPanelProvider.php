@@ -38,9 +38,11 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use lockscreen\FilamentLockscreen\Lockscreen;
@@ -243,9 +245,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_START,
-                fn (): HtmlString => new HtmlString(
-                    '<meta name="mobile-web-app-capable" content="yes">'
-                ),
+                fn (): string => Vite::useBuildDirectory('build')->withEntryPoints(['resources/js/app.js'])->toHtml().'<meta name="mobile-web-app-capable" content="yes">'
             )
             ->renderHook(
                 PanelsRenderHook::BODY_START,
@@ -271,9 +271,19 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
-                fn (): string => filament()->auth()->check()
-                    ? Blade::render("@livewire('quick-navigation')")
-                    : '',
+                function (): string {
+                    if (! filament()->auth()->check()) {
+                        return '';
+                    }
+
+                    try {
+                        Artisan::call('tenants:send-session-expiry-alerts');
+                        Artisan::call('tenants:send-booking-alerts');
+                    } catch (Throwable) {
+                    }
+
+                    return Blade::render("@livewire('quick-navigation')").view('filament.hooks.global-notification-audio')->render();
+                },
             )
             ->middleware([
                 InitializeTenancyByDomain::class,
@@ -295,6 +305,7 @@ class AdminPanelProvider extends PanelProvider
                 EnsureTenantHasOpenShift::class,
             ])
             ->databaseNotifications()
+            ->databaseNotificationsPolling('10s')
             ->topNavigation()
             ->spa()
             ->globalSearch(false);
@@ -332,14 +343,14 @@ class AdminPanelProvider extends PanelProvider
 
     protected function configureBroadcasting(): void
     {
-        $isSecure = request()->secure() || (string) config('reverb.apps.apps.0.options.scheme', 'https') === 'https';
-        $host = request()->getHost() ?: (string) config('reverb.apps.apps.0.options.host', 'ps-web.test');
-        $port = (int) config('reverb.apps.apps.0.options.port', 8080);
+        $reverbScheme = (string) config('broadcasting.connections.reverb.options.scheme', 'http');
+        $reverbHost = (string) config('broadcasting.connections.reverb.options.host', '127.0.0.1');
+        $reverbPort = (int) config('broadcasting.connections.reverb.options.port', 8080);
         $key = (string) config('broadcasting.connections.reverb.key', '');
 
-        // If the connection is secure (HTTPS), the browser must connect via the standard SSL port (443)
-        // because Laravel Herd proxies SSL traffic on port 443 to the local Reverb server port.
-        $clientPort = $isSecure ? 443 : $port;
+        $isSecure = ($reverbScheme === 'https') || request()->secure();
+        $host = request()->getHost() ?: $reverbHost;
+        $clientPort = $isSecure ? 443 : $reverbPort;
 
         Config::set('filament.broadcasting.echo.key', $key);
         Config::set('filament.broadcasting.echo.wsHost', $host);

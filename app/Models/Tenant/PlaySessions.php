@@ -22,6 +22,11 @@ class PlaySessions extends Model
         'prepaid_amount',
         'session_key',
         'status',
+        'alert_5min_sent',
+    ];
+
+    protected $casts = [
+        'alert_5min_sent' => 'boolean',
     ];
 
     /**

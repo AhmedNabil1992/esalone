@@ -12,3 +12,8 @@ Schedule::command('tenants:run tenants:send-booking-alerts')
     ->everyMinute()
     ->runInBackground()
     ->withoutOverlapping();
+
+Schedule::command('tenants:run tenants:send-session-expiry-alerts')
+    ->everyMinute()
+    ->runInBackground()
+    ->withoutOverlapping();

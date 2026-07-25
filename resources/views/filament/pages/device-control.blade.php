@@ -42,7 +42,6 @@
 
     <div
         dir="rtl"
-        wire:poll.30000ms
         x-data="{
             sessions: [],
             warned5Min: {},
@@ -51,12 +50,17 @@
             init() {
                 const channelName = @js($this->getRealtimeDeviceControlChannel());
 
-                if (window.Echo) {
-                    window.Echo.channel(channelName)
-                        .listen('.device-control.updated', () => {
-                            $wire.$refresh();
-                        });
-                }
+                const setupEcho = () => {
+                    if (window.Echo) {
+                        window.Echo.channel(channelName)
+                            .listen('.device-control.updated', () => {
+                                $wire.$refresh();
+                            });
+                    } else {
+                        setTimeout(setupEcho, 300);
+                    }
+                };
+                setupEcho();
 
                 // Initial load of sessions
                 this.syncSessionsFromDOM();
@@ -556,13 +560,13 @@
             @endphp
 
             <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;" wire:click="closeBusyActionsModal">
-                <div style="width:min(560px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px;" wire:click.stop>
+                <div style="width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px;" wire:click.stop class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
                         <div>
-                            <div style="font-size:1.05rem;font-weight:800;color:#111827;">{{ $busyDevice?->name ?? 'الجهاز' }}</div>
-                            <div style="font-size:.76rem;color:#6b7280;margin-top:2px;">خيارات الجهاز</div>
+                            <div style="font-size:1.05rem;font-weight:800;" class="text-slate-900 dark:!text-zinc-100">{{ $busyDevice?->name ?? 'الجهاز' }}</div>
+                            <div style="font-size:.76rem;margin-top:2px;" class="text-slate-500 dark:!text-zinc-400">خيارات الجهاز</div>
                         </div>
-                        <button type="button" wire:click="closeBusyActionsModal" style="width:34px;height:34px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;cursor:pointer;">
+                        <button type="button" wire:click="closeBusyActionsModal" style="width:34px;height:34px;border-radius:10px;cursor:pointer;" class="bg-slate-50 dark:!bg-zinc-800 border border-slate-200 dark:!border-zinc-700 text-slate-700 dark:!text-zinc-300">
                             ✕
                         </button>
                     </div>
@@ -576,7 +580,8 @@
                                 @else
                                     wire:click="openBusyActionDetails('{{ $action['label'] }}')"
                                 @endif
-                                style="display:flex;align-items:center;gap:8px;border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;text-align:right;font-size:.82rem;font-weight:700;color:#111827;"
+                                style="display:flex;align-items:center;gap:8px;border-radius:12px;padding:10px 12px;cursor:pointer;text-align:right;font-size:.82rem;font-weight:700;"
+                                class="bg-white dark:!bg-zinc-950 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100 hover:bg-blue-50/50 dark:hover:!bg-zinc-800/80"
                             >
                                 <x-filament::icon :icon="$action['icon']" style="width:18px;height:18px;color:#2563eb;" />
                                 <span>{{ $action['label'] }}</span>
@@ -594,8 +599,8 @@
                     : ($selectedBusyActionLabel === 'تقفيل الحساب' ? 'min(96vw, 1180px)' : 'min(92vw, 460px)');
             @endphp
             <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:71;display:flex;align-items:center;justify-content:center;padding:12px;" wire:click="closeBusyActionDetailsModal">
-                <div style="width:{{ $detailModalWidth }};max-height:92vh;overflow-y:auto;overflow-x:hidden;background:#fff;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px 20px;" wire:click.stop>
-                    <div style="font-size:1rem;font-weight:800;color:#111827;margin-bottom:8px;">{{ $selectedBusyActionLabel }}</div>
+                <div style="width:{{ $detailModalWidth }};max-height:92vh;overflow-y:auto;overflow-x:hidden;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px 20px;" wire:click.stop class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100">
+                    <div style="font-size:1rem;font-weight:800;margin-bottom:8px;" class="text-slate-900 dark:!text-zinc-100">{{ $selectedBusyActionLabel }}</div>
 
                     @if ($selectedBusyActionLabel === 'تقفيل الحساب')
                         @php
@@ -605,11 +610,11 @@
                         @endphp
 
                         @if (! $closePreview)
-                            <div style="padding:10px;border:1px dashed #d1d5db;border-radius:10px;text-align:center;color:#6b7280;font-size:.82rem;">
+                            <div style="padding:10px;border-radius:10px;text-align:center;font-size:.82rem;" class="border border-dashed border-slate-300 dark:!border-zinc-700 text-slate-500 dark:!text-zinc-400">
                                 تعذر تحميل بيانات التقفيل حالياً. حاول مرة أخرى.
                             </div>
                             <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-                                <button type="button" wire:click="closeBusyActionDetailsModal" style="border:1px solid #d1d5db;background:#fff;color:#111827;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">
+                                <button type="button" wire:click="closeBusyActionDetailsModal" style="padding:8px 12px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100">
                                     إغلاق
                                 </button>
                             </div>
@@ -714,33 +719,34 @@
 
                             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;">
                                 <div>
-                                    <label style="display:block;font-size:.74rem;color:#374151;margin-bottom:4px;">قيمة الخصم</label>
-                                    <input type="number" min="0" max="999" step="0.01" wire:model.live="busyActionDiscountAmount" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.84rem;" />
+                                    <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">قيمة الخصم</label>
+                                    <input type="number" min="0" max="999" step="0.01" wire:model.live="busyActionDiscountAmount" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
                                 </div>
                                 <div>
-                                    <label style="display:block;font-size:.74rem;color:#374151;margin-bottom:4px;">سبب الخصم (إجباري عند وجود خصم)</label>
-                                    <input type="text" wire:model.live="busyActionDiscountReason" placeholder="اكتب سبب الخصم" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.84rem;" />
+                                    <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">سبب الخصم (إجباري عند وجود خصم)</label>
+                                    <input type="text" wire:model.live="busyActionDiscountReason" placeholder="اكتب سبب الخصم" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
                                 </div>
                                 <div style="grid-column:1/-1;display:grid;gap:6px;">
-                                    <label style="display:block;font-size:.74rem;color:#374151;">تعيين عميل (لازم لو فيه متبقي على الحساب)</label>
+                                    <label style="display:block;font-size:.74rem;" class="text-slate-700 dark:!text-zinc-300">تعيين عميل (لازم لو فيه متبقي على الحساب)</label>
 
                                     <div x-data="{ open: false }" style="position:relative;">
                                         <button
                                             type="button"
                                             @click="open = !open"
-                                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.84rem;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;"
+                                            style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;"
+                                            class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100"
                                         >
-                                            <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#111827;display:flex;align-items:center;gap:6px;">
+                                            <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;" class="text-slate-900 dark:!text-zinc-100">
                                                 @if ($this->busySelectedCustomer)
                                                     <span>{{ $this->busySelectedCustomer->name }} - {{ $this->busySelectedCustomer->phone }}</span>
-                                                    <span style="color: {{ $this->busySelectedCustomer->balance < 0 ? '#dc2626' : '#16a34a' }}; font-weight: bold; font-size: .78rem;">
+                                                    <span style="font-weight: bold; font-size: .78rem;" class="{{ $this->busySelectedCustomer->balance < 0 ? 'text-rose-600 dark:!text-rose-400' : 'text-emerald-600 dark:!text-emerald-400' }}">
                                                         (الرصيد: {{ number_format($this->busySelectedCustomer->balance, 2) }} ج.م)
                                                     </span>
                                                 @else
                                                     بدون عميل
                                                 @endif
                                             </span>
-                                            <svg style="width:14px;height:14px;color:#6b7280;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <svg style="width:14px;height:14px;flex-shrink:0;" class="text-slate-400 dark:!text-zinc-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                             </svg>
                                         </button>
@@ -749,20 +755,23 @@
                                             x-cloak
                                             x-show="open"
                                             @click.outside="open = false"
-                                            style="position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:8px;display:grid;gap:8px;"
+                                            style="position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:8px;display:grid;gap:8px;"
+                                            class="bg-white dark:!bg-zinc-900 border border-slate-300 dark:!border-zinc-700"
                                         >
                                             <input
                                                 type="text"
                                                 wire:model.live.debounce.300ms="busyActionCustomerSearch"
                                                 placeholder="ابحث بالاسم أو رقم الهاتف"
-                                                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:7px 9px;font-size:.82rem;"
+                                                style="width:100%;border-radius:8px;padding:7px 9px;font-size:.82rem;"
+                                                class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                             />
 
                                             <button
                                                 type="button"
                                                 wire:click="clearBusyActionCustomer"
                                                 @click="open = false"
-                                                style="text-align:right;border:1px dashed #d1d5db;background:#f9fafb;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#374151;cursor:pointer;"
+                                                style="text-align:right;border-radius:8px;padding:7px 9px;font-size:.8rem;cursor:pointer;"
+                                                class="bg-slate-50 dark:!bg-zinc-950 border border-dashed border-slate-300 dark:!border-zinc-700 text-slate-700 dark:!text-zinc-300"
                                             >
                                                 بدون عميل
                                             </button>
@@ -773,24 +782,25 @@
                                                         type="button"
                                                         wire:click="selectBusyActionCustomer({{ $customer->id }})"
                                                         @click="open = false"
-                                                        style="text-align:right;border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#111827;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;"
+                                                        style="text-align:right;border-radius:8px;padding:7px 9px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;"
+                                                        class="bg-white dark:!bg-zinc-950 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100 hover:bg-emerald-50 dark:hover:!bg-emerald-950/40"
                                                     >
                                                         <span>{{ $customer->name }} - {{ $customer->phone }}</span>
-                                                        <span style="color: {{ $customer->balance < 0 ? '#dc2626' : '#16a34a' }}; font-weight: bold; font-size: .78rem;">
+                                                        <span style="font-weight: bold; font-size: .78rem;" class="{{ $customer->balance < 0 ? 'text-rose-600 dark:!text-rose-400' : 'text-emerald-600 dark:!text-emerald-400' }}">
                                                             (الرصيد: {{ number_format($customer->balance, 2) }} ج.م)
                                                         </span>
                                                     </button>
                                                 @empty
-                                                    <div style="text-align:center;padding:8px;color:#6b7280;font-size:.78rem;">لا يوجد عميل مطابق للبحث</div>
+                                                    <div style="text-align:center;padding:8px;font-size:.78rem;" class="text-slate-500 dark:!text-zinc-400">لا يوجد عميل مطابق للبحث</div>
                                                 @endforelse
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div style="grid-column:1/-1;border:1px solid #e5e7eb;border-radius:12px;padding:10px;">
+                                <div style="grid-column:1/-1;border-radius:12px;padding:10px;" class="border border-slate-200 dark:!border-zinc-800 bg-white dark:!bg-zinc-950">
                                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                                        <div style="font-size:.76rem;font-weight:800;color:#374151;">تفاصيل الدفع (يمكن التقسيم على أكثر من خزينة)</div>
-                                        <button type="button" wire:click="addBusyActionPaymentRow" style="border:1px solid #2563eb;background:#eff6ff;color:#1d4ed8;padding:4px 8px;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;">
+                                        <div style="font-size:.76rem;font-weight:800;" class="text-slate-700 dark:!text-zinc-300">تفاصيل الدفع (يمكن التقسيم على أكثر من خزينة)</div>
+                                        <button type="button" wire:click="addBusyActionPaymentRow" style="padding:4px 8px;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;" class="border border-blue-600 bg-blue-50 dark:!bg-blue-950/40 text-blue-700 dark:!text-blue-300">
                                             + إضافة دفعة
                                         </button>
                                     </div>
@@ -799,8 +809,8 @@
                                         @foreach ($busyActionPayments as $index => $payment)
                                             <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
                                                 <div>
-                                                    <label style="display:block;font-size:.7rem;color:#6b7280;margin-bottom:3px;">الخزينة</label>
-                                                    <select wire:model.live="busyActionPayments.{{ $index }}.cash_box_id" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;">
+                                                    <label style="display:block;font-size:.7rem;margin-bottom:3px;" class="text-slate-500 dark:!text-zinc-400">الخزينة</label>
+                                                    <select wire:model.live="busyActionPayments.{{ $index }}.cash_box_id" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.8rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100">
                                                         <option value="">اختر خزينة</option>
                                                         @foreach ($this->busyPaymentCashBoxes as $cashBox)
                                                             <option value="{{ $cashBox->id }}">{{ $cashBox->name }}</option>
@@ -809,35 +819,36 @@
                                                 </div>
 
                                                 <div>
-                                                    <label style="display:block;font-size:.7rem;color:#6b7280;margin-bottom:3px;">المبلغ</label>
-                                                    <input type="number" min="0" step="0.01" wire:model.live.debounce.250ms="busyActionPayments.{{ $index }}.amount" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;" />
+                                                    <label style="display:block;font-size:.7rem;margin-bottom:3px;" class="text-slate-500 dark:!text-zinc-400">المبلغ</label>
+                                                    <input type="number" min="0" step="0.01" wire:model.live.debounce.250ms="busyActionPayments.{{ $index }}.amount" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.8rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
                                                 </div>
 
-                                                <button type="button" wire:click="removeBusyActionPaymentRow({{ $index }})" style="border:1px solid #ef4444;background:#fef2f2;color:#b91c1c;padding:8px 10px;border-radius:10px;font-size:.72rem;font-weight:700;cursor:pointer;">
+                                                <button type="button" wire:click="removeBusyActionPaymentRow({{ $index }})" style="padding:8px 10px;border-radius:10px;font-size:.72rem;font-weight:700;cursor:pointer;" class="border border-rose-300 dark:!border-rose-800 bg-rose-50 dark:!bg-rose-950/40 text-rose-700 dark:!text-rose-300">
                                                     حذف
                                                 </button>
                                             </div>
                                         @endforeach
                                     </div>
 
-                                    <div style="margin-top:8px;font-size:.78rem;color:#111827;font-weight:800;">
-                                        إجمالي المدفوع: <span style="direction:ltr;unicode-bidi:isolate;color:#2563eb;">{{ number_format((float) $this->busyActionPaidTotal, 2) }}</span>
+                                    <div style="margin-top:8px;font-size:.78rem;font-weight:800;" class="text-slate-900 dark:!text-zinc-100">
+                                        إجمالي المدفوع: <span style="direction:ltr;unicode-bidi:isolate;" class="text-blue-600 dark:!text-blue-400">{{ number_format((float) $this->busyActionPaidTotal, 2) }}</span>
                                     </div>
 
                                     @if ($this->busySelectedCustomer && (float) ($closePreview['remain_amount'] ?? 0) > 0)
-                                        <label style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:.78rem;color:#374151;font-weight:700;cursor:pointer;">
+                                        <label style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;cursor:pointer;" class="text-slate-700 dark:!text-zinc-300">
                                             <input type="checkbox" wire:model.live="busyCloseDepositRemainderToCustomerBalance" style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;" />
                                             <span>إضافة الباقي إلى رصيد العميل بدل إرجاعه نقداً</span>
                                         </label>
                                     @endif
 
                                     <div style="margin-top:10px;">
-                                        <label style="display:block;font-size:.7rem;color:#6b7280;margin-bottom:3px;">رقم الواتساب لإرسال الفاتورة (اختياري)</label>
+                                        <label style="display:block;font-size:.7rem;margin-bottom:3px;" class="text-slate-500 dark:!text-zinc-400">رقم الواتساب لإرسال الفاتورة (اختياري)</label>
                                         <input
                                             type="text"
                                             wire:model="busyActionWhatsappPhone"
                                             placeholder="مثال: 01012345678"
-                                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                                            style="width:100%;border-radius:10px;padding:8px 10px;font-size:.8rem;"
+                                            class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                         />
                                     </div>
                                 </div>
@@ -908,7 +919,8 @@
                             step="0.01"
                             wire:model.live="busyActionAmount"
                             placeholder="اكتب المبلغ المطلوب إضافته"
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                            style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                            class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                         />
 
                         <div style="display:flex;justify-content:flex-end;gap:8px;">
@@ -988,13 +1000,15 @@
                                         step="1"
                                         wire:model.live="orderItemQuantity"
                                         placeholder="اكتب الكمية المطلوبة"
-                                        style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                        style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                        class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                     />
                                     <input
                                         type="text"
                                         wire:model.live="orderItemNotes"
                                         placeholder="ملاحظات (اختياري)"
-                                        style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                        style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                        class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                     />
                                     <div style="display:flex;justify-content:flex-end;gap:8px;">
                                         <button type="button" wire:click="closeOrderItemQuantityModal" style="border:1px solid #d1d5db;background:#fff;color:#111827;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;">
@@ -1061,7 +1075,8 @@
                                                     type="text"
                                                     wire:model.live.debounce.300ms="busyActionCustomerSearch"
                                                     placeholder="ابحث بالاسم أو رقم الهاتف..."
-                                                    style="width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:.82rem; padding-left:32px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);"
+                                                    style="width:100%; border-radius:8px; padding:8px 12px; font-size:.82rem; padding-left:32px;"
+                                                    class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                                 />
                                                 <svg style="width:14px; height:14px; color:#94a3b8; position:absolute; left:10px; pointer-events:none;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -1458,7 +1473,8 @@
                             step="1"
                             wire:model.live="busyActionLimitMinutes"
                             placeholder="اكتب إجمالي الدقائق (مثال: 180)"
-                            style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                            style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                            class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                         />
 
                         <div style="display:flex;justify-content:flex-end;gap:8px;">
@@ -1499,7 +1515,8 @@
                                 step="1"
                                 wire:model.live="busyActionMinutes"
                                 placeholder="اكتب عدد الدقائق المطلوب إضافتها"
-                                style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;margin-bottom:12px;"
+                                class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                             />
 
                             <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:4px;">
@@ -1539,21 +1556,21 @@
             @endphp
 
             <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;" wire:click="closeStartSessionModal">
-                <div style="width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px;" wire:click.stop>
+                <div style="width:min(680px,100%);max-height:90vh;overflow:auto;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px;" wire:click.stop class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
                         <div>
-                            <div style="font-size:1.05rem;font-weight:800;color:#111827;">{{ $selectedDevice?->name ?? 'الجهاز' }}</div>
-                            <div style="font-size:.76rem;color:#6b7280;margin-top:2px;">بدء جلسة جديدة</div>
+                            <div style="font-size:1.05rem;font-weight:800;" class="text-slate-900 dark:!text-zinc-100">{{ $selectedDevice?->name ?? 'الجهاز' }}</div>
+                            <div style="font-size:.76rem;margin-top:2px;" class="text-slate-500 dark:!text-zinc-400">بدء جلسة جديدة</div>
                         </div>
-                        <button type="button" wire:click="closeStartSessionModal" style="width:34px;height:34px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;cursor:pointer;">
+                        <button type="button" wire:click="closeStartSessionModal" style="width:34px;height:34px;border-radius:10px;cursor:pointer;" class="bg-slate-50 dark:!bg-zinc-800 border border-slate-200 dark:!border-zinc-700 text-slate-700 dark:!text-zinc-300">
                             ✕
                         </button>
                     </div>
 
-                    <div style="padding:10px 14px;border-radius:12px;background:{{ $hasReservationToday ? '#fef2f2' : '#f0fdf4' }};border:1px solid {{ $hasReservationToday ? '#fecaca' : '#bbf7d0' }};margin-bottom:14px;">
+                    <div style="padding:10px 14px;border-radius:12px;margin-bottom:14px;" class="{{ $hasReservationToday ? 'bg-rose-50 dark:!bg-rose-950/40 border border-rose-200 dark:!border-rose-900' : 'bg-emerald-50 dark:!bg-emerald-950/40 border border-emerald-200 dark:!border-emerald-900' }}">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:{{ $hasReservationToday ? '8px' : '0' }};">
-                            <span style="width:8px;height:8px;border-radius:9999px;background:{{ $hasReservationToday ? '#ef4444' : '#16a34a' }};display:inline-block;"></span>
-                            <span style="font-size:.78rem;font-weight:700;color:#374151;">
+                            <span style="width:8px;height:8px;border-radius:9999px;display:inline-block;" class="{{ $hasReservationToday ? 'bg-rose-500' : 'bg-emerald-500' }}"></span>
+                            <span style="font-size:.78rem;font-weight:700;" class="{{ $hasReservationToday ? 'text-rose-900 dark:!text-rose-200' : 'text-emerald-900 dark:!text-emerald-200' }}">
                                 حالة الحجز اليوم: {{ $hasReservationToday ? 'يوجد حجز' : 'لا يوجد حجز' }}
                             </span>
                         </div>
@@ -1564,7 +1581,7 @@
                                         $startTime = \Carbon\Carbon::parse($res->start_time)->format('h:i A');
                                         $endTime = \Carbon\Carbon::parse($res->end_time)->format('h:i A');
                                     @endphp
-                                    <div style="font-size:.74rem;color:#7f1d1d;font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                                    <div style="font-size:.74rem;font-weight:600;display:flex;justify-content:space-between;align-items:center;" class="text-rose-800 dark:!text-rose-300">
                                         <span>• من {{ $startTime }} إلى {{ $endTime }}</span>
                                         <span>العميل: {{ $res->customer?->name ?? 'بدون اسم' }} ({{ $res->playPrice?->playType?->name }})</span>
                                     </div>
@@ -1574,18 +1591,19 @@
                     </div>
 
                     <div style="display:grid;gap:10px;margin-bottom:14px;">
-                        <label style="font-size:.78rem;font-weight:700;color:#374151;">اختيار العميل (اختياري)</label>
+                        <label style="font-size:.78rem;font-weight:700;" class="text-slate-700 dark:!text-zinc-300">اختيار العميل (اختياري)</label>
 
                         <div x-data="{ open: false }" style="position:relative;">
                             <button
                                 type="button"
                                 @click="open = !open"
-                                style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:.85rem;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;"
+                                style="width:100%;border-radius:10px;padding:8px 10px;font-size:.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;"
+                                class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100"
                             >
-                                <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#111827;">
+                                <span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" class="text-slate-900 dark:!text-zinc-100">
                                     {{ $this->selectedCustomer?->name ? ($this->selectedCustomer->name . ' - ' . $this->selectedCustomer->phone) : 'بدون عميل' }}
                                 </span>
-                                <svg style="width:14px;height:14px;color:#6b7280;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <svg style="width:14px;height:14px;flex-shrink:0;" class="text-slate-400 dark:!text-zinc-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
@@ -1594,20 +1612,23 @@
                                 x-cloak
                                 x-show="open"
                                 @click.outside="open = false"
-                                style="position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:8px;display:grid;gap:8px;"
+                                style="position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.12);padding:8px;display:grid;gap:8px;"
+                                class="bg-white dark:!bg-zinc-900 border border-slate-300 dark:!border-zinc-700"
                             >
                                 <input
                                     type="text"
                                     wire:model.live.debounce.300ms="customerSearch"
                                     placeholder="ابحث بالاسم أو رقم الهاتف"
-                                    style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:7px 9px;font-size:.82rem;"
+                                    style="width:100%;border-radius:8px;padding:7px 9px;font-size:.82rem;"
+                                    class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500"
                                 />
 
                                 <button
                                     type="button"
                                     wire:click="clearCustomerSelection"
                                     @click="open = false"
-                                    style="text-align:right;border:1px dashed #d1d5db;background:#f9fafb;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#374151;cursor:pointer;"
+                                    style="text-align:right;border-radius:8px;padding:7px 9px;font-size:.8rem;cursor:pointer;"
+                                    class="bg-slate-50 dark:!bg-zinc-950 border border-dashed border-slate-300 dark:!border-zinc-700 text-slate-700 dark:!text-zinc-300"
                                 >
                                     بدون عميل
                                 </button>
@@ -1618,12 +1639,13 @@
                                             type="button"
                                             wire:click="selectCustomer({{ $customer->id }})"
                                             @click="open = false"
-                                            style="text-align:right;border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:7px 9px;font-size:.8rem;color:#111827;cursor:pointer;"
+                                            style="text-align:right;border-radius:8px;padding:7px 9px;font-size:.8rem;cursor:pointer;"
+                                            class="bg-white dark:!bg-zinc-950 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100 hover:bg-emerald-50 dark:hover:!bg-emerald-950/40"
                                         >
                                             {{ $customer->name }} - {{ $customer->phone }}
                                         </button>
                                     @empty
-                                        <div style="text-align:center;padding:8px;color:#6b7280;font-size:.78rem;">لا يوجد عميل مطابق للبحث</div>
+                                        <div style="text-align:center;padding:8px;font-size:.78rem;" class="text-slate-500 dark:!text-zinc-400">لا يوجد عميل مطابق للبحث</div>
                                     @endforelse
                                 </div>
                             </div>
@@ -1842,7 +1864,7 @@
                 $todayReservations = $this->getTodayReservations();
             @endphp
             <div style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;" wire:click="closeReservationAlertModal">
-                <div style="width:min(500px,100%);background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:24px;" wire:click.stop>
+                <div style="width:min(500px,100%);border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:24px;" wire:click.stop class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100">
                     <div style="text-align:center;margin-bottom:16px;">
                         <div style="width:56px;height:56px;border-radius:9999px;background:#fef2f2;border:1px solid #fca5a5;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                             <svg style="width:28px;height:28px;color:#ef4444;" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

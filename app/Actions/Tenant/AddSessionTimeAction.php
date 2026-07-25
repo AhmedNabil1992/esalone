@@ -126,6 +126,8 @@ class AddSessionTimeAction
                 'shift_id' => $shiftId,
             ]);
 
+            $session->update(['alert_5min_sent' => false]);
+
             app(DispatchDeviceControlCommandAction::class)->execute(
                 $device,
                 $actor,

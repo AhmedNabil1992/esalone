@@ -6,11 +6,11 @@ namespace App\Events\Tenant;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeviceControlUpdated implements ShouldBroadcast
+class DeviceControlUpdated implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;

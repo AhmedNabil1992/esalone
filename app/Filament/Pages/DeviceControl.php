@@ -34,6 +34,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Url;
 use RuntimeException;
 
 class DeviceControl extends Page
@@ -57,10 +58,15 @@ class DeviceControl extends Page
         $tenantKey = $this->getTenantBroadcastKey();
 
         return [
+            "echo:tenant.{$tenantKey}.device-control,.device-control.updated" => '$refresh',
+            "echo:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
+            "echo:tenant.{$tenantKey}.device-control,DeviceControlUpdated" => '$refresh',
+            "echo:public:tenant.{$tenantKey}.device-control,.device-control.updated" => '$refresh',
             "echo:public:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
         ];
     }
 
+    #[Url]
     public ?int $selectedTypeId = null;
 
     public bool $showStartSessionModal = false;
@@ -139,12 +145,14 @@ class DeviceControl extends Page
 
     public function mount(): void
     {
-        $first = DevicesType::query()
-            ->where('is_active', true)
-            ->orderBy('id', 'asc')
-            ->first();
+        if (! $this->selectedTypeId || ! DevicesType::query()->where('id', $this->selectedTypeId)->where('is_active', true)->exists()) {
+            $first = DevicesType::query()
+                ->where('is_active', true)
+                ->orderBy('id', 'asc')
+                ->first();
 
-        $this->selectedTypeId = $first?->id;
+            $this->selectedTypeId = $first?->id;
+        }
 
         $this->verifyBridgeConnectivity();
 

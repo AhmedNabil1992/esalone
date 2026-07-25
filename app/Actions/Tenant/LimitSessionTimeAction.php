@@ -117,6 +117,8 @@ class LimitSessionTimeAction
                 'play_category' => 'محدد',
             ]);
 
+            $session->update(['alert_5min_sent' => false]);
+
             return $currentDetail->fresh();
         });
     }
