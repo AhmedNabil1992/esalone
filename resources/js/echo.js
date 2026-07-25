@@ -4,7 +4,9 @@ import Pusher from "pusher-js";
 window.Pusher = Pusher;
 
 const reverbHost =
-    import.meta.env.VITE_REVERB_HOST && import.meta.env.VITE_REVERB_HOST !== "127.0.0.1"
+    import.meta.env.VITE_REVERB_HOST &&
+    import.meta.env.VITE_REVERB_HOST !== "127.0.0.1" &&
+    import.meta.env.VITE_REVERB_HOST !== "localhost"
         ? import.meta.env.VITE_REVERB_HOST
         : window.location.hostname;
 const reverbScheme =

@@ -7,29 +7,43 @@
 
         let previousUnreadCount = null;
 
+        let globalAudioCtx = null;
+
+        const unlockAudioContext = () => {
+            try {
+                if (!globalAudioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        globalAudioCtx = new AudioContextClass();
+                    }
+                }
+                if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+                    globalAudioCtx.resume();
+                }
+            } catch (e) {}
+        };
+
+        document.addEventListener('click', unlockAudioContext, { passive: true });
+        document.addEventListener('keydown', unlockAudioContext, { passive: true });
+
         // 2. Audio Alert Synthesizer (Beep Tone)
         window.playGlobalAlertSound = function () {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
+                unlockAudioContext();
+                if (!globalAudioCtx || globalAudioCtx.state === 'suspended') return;
 
-                const audioCtx = new AudioContext();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                const now = audioCtx.currentTime;
+                const now = globalAudioCtx.currentTime;
 
                 // High-pitched warning double beep
                 const playBeep = (freq, startTime, duration) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
+                    const osc = globalAudioCtx.createOscillator();
+                    const gain = globalAudioCtx.createGain();
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(freq, startTime);
                     gain.gain.setValueAtTime(0.5, startTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
                     osc.connect(gain);
-                    gain.connect(audioCtx.destination);
+                    gain.connect(globalAudioCtx.destination);
                     osc.start(startTime);
                     osc.stop(startTime + duration);
                 };
