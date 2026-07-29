@@ -172,8 +172,8 @@ class SystemConfig extends Page
                                         Grid::make(5)->schema([
                                             TextInput::make('round_money_new')->label('وقت جديد')->numeric()->minValue(0.1),
                                             TextInput::make('round_money_add')->label('إضافة وقت')->numeric()->minValue(0.1),
-                                            TextInput::make('round_money_s_play')->label('تبديل لعب')->numeric()->minValue(0.1),
-                                            TextInput::make('round_money_s_device')->label('تبديل أجهزة')->numeric()->minValue(0.1),
+                                            TextInput::make('round_money_s_play')->label('تبديل لعب')->numeric()->minValue(0),
+                                            TextInput::make('round_money_s_device')->label('تبديل أجهزة')->numeric()->minValue(0),
                                             TextInput::make('round_money_close')->label('تقفيل الوقت')->numeric()->minValue(0.1),
                                         ]),
                                         Placeholder::make('note')->content('* ملحوظة : إذا كان التقريب إلي أعلى المبلغ أو الدقائق 2 و التقريب إلي 5 سوف يكون الناتج 5'),

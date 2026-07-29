@@ -17,7 +17,11 @@ return new class extends Migration
         });
 
         // Backfill device_id from existing device_name values for old rows.
-        DB::statement('UPDATE play_history ph JOIN devices d ON d.name = ph.device_name SET ph.device_id = d.id WHERE ph.device_id IS NULL AND ph.device_name IS NOT NULL');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('UPDATE play_history SET device_id = (SELECT id FROM devices WHERE devices.name = play_history.device_name) WHERE device_id IS NULL AND device_name IS NOT NULL');
+        } else {
+            DB::statement('UPDATE play_history ph JOIN devices d ON d.name = ph.device_name SET ph.device_id = d.id WHERE ph.device_id IS NULL AND ph.device_name IS NOT NULL');
+        }
     }
 
     public function down(): void

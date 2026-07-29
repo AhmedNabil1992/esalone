@@ -12,7 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasColumn('invoices', 'device_id')) {
-            DB::statement('ALTER TABLE `invoices` MODIFY `device_id` BIGINT UNSIGNED NULL');
+            if (DB::getDriverName() === 'sqlite') {
+                Schema::table('invoices', function (Blueprint $table): void {
+                    $table->unsignedBigInteger('device_id')->nullable()->change();
+                });
+            } else {
+                DB::statement('ALTER TABLE `invoices` MODIFY `device_id` BIGINT UNSIGNED NULL');
+            }
         }
 
         if (! Schema::hasColumn('invoices', 'invoice_type')) {

@@ -8,6 +8,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -44,6 +45,15 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        $httpVerify = config('services.gemini.http_verify', true);
+        if (is_string($httpVerify)) {
+            $httpVerify = filter_var($httpVerify, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (! $httpVerify) {
+            Http::globalOptions(['verify' => false]);
+        }
 
         RateLimiter::for('tenant-provisioning', function (Request $request): Limit {
             return Limit::perMinute(10)

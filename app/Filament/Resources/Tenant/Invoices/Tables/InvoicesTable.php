@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Tenant\Invoices\Tables;
 
+use Carbon\Carbon;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class InvoicesTable
 {
     public static function configure(Table $table): Table
     {
+        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
+        $defaultUntil = Carbon::today()->toDateString();
+
         return $table
             ->columns([
                 TextColumn::make('invoice_no')
@@ -69,6 +77,30 @@ class InvoicesTable
                     ->badge(),
             ])
             ->defaultSort('id', 'desc')
+            ->filters([
+                SelectFilter::make('shift_id')
+                    ->label('رقم الشيفت')
+                    ->relationship('shift', 'shift_no', fn (Builder $query) => $query->orderByDesc('shift_no'))
+                    ->searchable()
+                    ->preload(),
+                Filter::make('issued_at')
+                    ->label('التاريخ')
+                    ->form([
+                        DatePicker::make('from')->label('من تاريخ')->default($defaultFrom),
+                        DatePicker::make('until')->label('إلى تاريخ')->default($defaultUntil),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '>=', $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '<=', $data['until'])
+                            );
+                    }),
+            ])
             ->recordActions([
                 ViewAction::make(),
             ])

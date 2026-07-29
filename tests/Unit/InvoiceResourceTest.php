@@ -8,8 +8,11 @@ use App\Filament\Resources\Tenant\Invoices\InvoiceResource;
 use App\Filament\Resources\Tenant\Invoices\RelationManagers\InvoiceItemsRelationManager;
 use App\Filament\Resources\Tenant\Invoices\RelationManagers\InvoicePaymentsRelationManager;
 use App\Filament\Resources\Tenant\Invoices\RelationManagers\PlaySessionDetailsRelationManager;
+use App\Filament\Resources\Tenant\Invoices\Tables\InvoicesTable;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\MarketHistory;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Tests\TestCase;
 
 class InvoiceResourceTest extends TestCase
@@ -30,5 +33,15 @@ class InvoiceResourceTest extends TestCase
         $this->assertSame(MarketHistory::class, $relation->getRelated()::class);
         $this->assertSame('invoice_no', $relation->getForeignKeyName());
         $this->assertSame('invoice_no', $relation->getLocalKeyName());
+    }
+
+    public function test_invoices_table_configures_date_and_shift_filters(): void
+    {
+        $livewire = $this->createMock(HasTable::class);
+        $table = InvoicesTable::configure(new Table($livewire));
+        $filters = $table->getFilters();
+
+        $this->assertArrayHasKey('shift_id', $filters);
+        $this->assertArrayHasKey('issued_at', $filters);
     }
 }

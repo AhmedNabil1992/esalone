@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table): void {
+            $table->dropIndex(['play_session_id', 'status']);
             $table->dropForeign(['play_session_id']);
             $table->dropColumn('play_session_id');
         });

@@ -47,6 +47,7 @@ return [
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
         'enable_self_learning_lookup' => env('AI_ENABLE_SELF_LEARNING_LOOKUP', false),
+        'http_verify' => env('GEMINI_HTTP_VERIFY', env('HTTP_VERIFY', true)),
     ],
 
 ];
