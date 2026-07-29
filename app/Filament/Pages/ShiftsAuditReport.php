@@ -40,7 +40,7 @@ class ShiftsAuditReport extends Page implements HasTable
                 Shift::query()
                     ->where('status', 'close')
                     ->with(['opener', 'closer'])
-                    ->latest('closed_at')
+                    ->latest('shift_date')
             )
             ->columns([
                 TextColumn::make('shift_no')

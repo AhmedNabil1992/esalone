@@ -1,0 +1,645 @@
+{
+  "meta": {
+    "displayName": "PlayStation Cafe Management System (PS-Web)",
+    "version": "1.0.0",
+    "description": "Multi-Tenant SaaS PlayStation Cafe Management System built with Laravel 13, Filament v5, Livewire v4, MySQL / MariaDB multi-database tenancy, and Reverb real-time web sockets.",
+    "generatedAt": "2026-07-28",
+    "techStack": {
+      "language": "PHP 8.3",
+      "framework": "Laravel 13 / Filament v5 / Livewire v4",
+      "database": "MySQL / MariaDB (Multi-DB Tenancy)",
+      "auth": "Laravel Fortify / Multi-Tenant Guards",
+      "realtime": "Laravel Reverb",
+      "frontend": "Blade / Livewire Flux / Tailwind CSS v4"
+    }
+  },
+  "workspaces": [
+    {
+      "id": "ps-web",
+      "name": "ps-web",
+      "type": "backend",
+      "description": "Main Multi-Tenant SaaS Backend & Admin Dashboard",
+      "port": 80,
+      "entrypoint": "public/index.php"
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "landlord-db",
+      "name": "Landlord Central DB (MySQL)",
+      "type": "database",
+      "image": "mysql:8.0",
+      "port": 3306,
+      "description": "Stores central landlord metadata: Tenants, Domains, Subscriptions, Global System Billing.",
+      "features": ["Landlord Tenant Mapping", "Domain Routing", "Global Billing"]
+    },
+    {
+      "id": "tenant-dbs",
+      "name": "Isolated Tenant DBs (MySQL)",
+      "type": "database",
+      "image": "mysql:8.0",
+      "port": 3306,
+      "description": "Dedicated database schema per tenant for Sessions, POS, Shifts, Inventory, and Cash Registers.",
+      "features": ["Strict Data Isolation", "Per-Tenant Migrations", "Multi-Warehouse Inventory"]
+    },
+    {
+      "id": "reverb-websocket",
+      "name": "Laravel Reverb WebSockets",
+      "type": "queue",
+      "image": "laravel-reverb",
+      "port": 8080,
+      "description": "Real-time WebSocket server for device session timer sync and POS notifications.",
+      "features": ["Live Play Session Timers", "Real-Time Order Ticket Alerts"]
+    }
+  ],
+  "dockerDiagram": {
+    "description": "Multi-database multi-tenant container architecture topology.",
+    "nodes": [
+      {
+        "id": "ps_web_app",
+        "label": "PS-Web Application (Laravel 13)",
+        "type": "app",
+        "port": 80
+      },
+      {
+        "id": "landlord_db",
+        "label": "Landlord DB (MySQL)",
+        "type": "database",
+        "port": 3306
+      },
+      {
+        "id": "tenant_dbs",
+        "label": "Tenant DB Pool (MySQL)",
+        "type": "database",
+        "port": 3306
+      },
+      {
+        "id": "reverb_server",
+        "label": "Laravel Reverb (WebSockets)",
+        "type": "queue",
+        "port": 8080
+      }
+    ],
+    "edges": [
+      {
+        "from": "ps_web_app",
+        "to": "landlord_db",
+        "label": "Central Auth & Domain Resolution"
+      },
+      {
+        "from": "ps_web_app",
+        "to": "tenant_dbs",
+        "label": "Dynamic Tenant DB Connection Switch"
+      },
+      {
+        "from": "ps_web_app",
+        "to": "reverb_server",
+        "label": "Broadcast Timer & Session Events"
+      }
+    ]
+  },
+  "systemArchitectureDiagram": {
+    "description": "Multi-Tenant SaaS architecture layers, database isolation, and operational domains.",
+    "subgraphs": [
+      {
+        "id": "client_layer",
+        "label": "Client Layer",
+        "nodes": [
+          {
+            "id": "cashier_pos",
+            "label": "Cashier POS Dashboard (Livewire / Filament)",
+            "type": "app"
+          },
+          {
+            "id": "customer_portal",
+            "label": "Customer Landing & Menu Portal",
+            "type": "app"
+          },
+          {
+            "id": "admin_panel",
+            "label": "Filament Landlord Admin Panel",
+            "type": "app"
+          }
+        ]
+      },
+      {
+        "id": "middleware_layer",
+        "label": "Tenancy & Routing Layer",
+        "nodes": [
+          {
+            "id": "tenancy_router",
+            "label": "Domain Tenancy Initializer (Stancl Tenancy)",
+            "type": "app"
+          },
+          {
+            "id": "auth_middleware",
+            "label": "Auth & Shift Validation Middleware",
+            "type": "app"
+          }
+        ]
+      },
+      {
+        "id": "core_business_layer",
+        "label": "Core Business Engine",
+        "nodes": [
+          {
+            "id": "session_engine",
+            "label": "PlaySession & Device Controller",
+            "type": "app"
+          },
+          {
+            "id": "shift_manager",
+            "label": "Shift & Multi-Safe Manager",
+            "type": "app"
+          },
+          {
+            "id": "pos_engine",
+            "label": "POS & Multi-Warehouse Deduction",
+            "type": "app"
+          },
+          {
+            "id": "offline_sync_engine",
+            "label": "Offline POS Sync Engine",
+            "type": "app"
+          }
+        ]
+      },
+      {
+        "id": "data_layer",
+        "label": "Multi-Database Persistence",
+        "nodes": [
+          {
+            "id": "landlord_storage",
+            "label": "Landlord Central Database",
+            "type": "database"
+          },
+          {
+            "id": "tenant_storage",
+            "label": "Isolated Tenant Database",
+            "type": "database"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "cashier_pos",
+        "to": "tenancy_router",
+        "label": "HTTP / Livewire Requests"
+      },
+      {
+        "from": "customer_portal",
+        "to": "tenancy_router",
+        "label": "Public Browsing & Point Redemptions"
+      },
+      {
+        "from": "tenancy_router",
+        "to": "auth_middleware",
+        "label": "Tenant Context Established"
+      },
+      {
+        "from": "auth_middleware",
+        "to": "session_engine",
+        "label": "Device Session Management"
+      },
+      {
+        "from": "auth_middleware",
+        "to": "shift_manager",
+        "label": "Active Shift Check"
+      },
+      {
+        "from": "auth_middleware",
+        "to": "pos_engine",
+        "label": "Invoice & Safe Transactions"
+      },
+      {
+        "from": "auth_middleware",
+        "to": "offline_sync_engine",
+        "label": "Offline Payload Sync"
+      },
+      {
+        "from": "tenancy_router",
+        "to": "landlord_storage",
+        "label": "Lookup Tenant Domain"
+      },
+      {
+        "from": "session_engine",
+        "to": "tenant_storage",
+        "label": "Query Tenant Session Data"
+      },
+      {
+        "from": "shift_manager",
+        "to": "tenant_storage",
+        "label": "Audit Shift & Cash Drawer"
+      },
+      {
+        "from": "pos_engine",
+        "to": "tenant_storage",
+        "label": "Stock Deduction & Sales Invoices"
+      }
+    ]
+  },
+  "swaggerSchemas": {
+    "matchStatus": "Verified Parity (11/11 Endpoints)",
+    "openapi": "3.0.0",
+    "servedAt": "/api/docs",
+    "securityScheme": "bearerAuth (Provisioning Token / Session Cookie)",
+    "servers": [
+      {
+        "url": "http://localhost",
+        "description": "Local Development Server"
+      },
+      {
+        "url": "https://{tenant}.ps-web.test",
+        "description": "Multi-Tenant Subdomain Server"
+      }
+    ],
+    "schemas": [
+      {
+        "name": "TenantProvisionPayload",
+        "description": "Request body for provisioning new tenant database and domain"
+      },
+      {
+        "name": "OfflineSyncPayload",
+        "description": "Array of cashier offline transactions to be processed upon reconnect"
+      },
+      {
+        "name": "InvoicePrintData",
+        "description": "Formatted invoice print structure for cashier thermal printer"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "play-session-management",
+      "name": "PlayStation Session & Device Management",
+      "basePath": "/tenant/sessions",
+      "description": "Console session timers, hourly rates, multi-device play management, and order attachments.",
+      "color": "#6366f1",
+      "icon": "🎮",
+      "files": [
+        "app/Models/Tenant/PlaySession.php",
+        "app/Models/Tenant/Device.php",
+        "app/Filament/Resources/Tenant/PlaySessionResource.php"
+      ],
+      "permissions": ["devices:control", "sessions:manage"],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tenant/order-prepares/print",
+          "auth": true,
+          "permission": "sessions:manage",
+          "description": "Print order preparation tickets for console play sessions"
+        }
+      ]
+    },
+    {
+      "id": "shift-management",
+      "name": "Shift & Cash Handover Engine",
+      "basePath": "/tenant/shifts",
+      "description": "Shift lifecycle, opening cash drawers, handover reconciliation, and shift audit logs.",
+      "color": "#10b981",
+      "icon": "⏱️",
+      "files": [
+        "app/Models/Tenant/Shift.php",
+        "routes/tenant.php"
+      ],
+      "permissions": ["shifts:manage"],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tenant/shifts/quick-open",
+          "auth": true,
+          "permission": "shifts:manage",
+          "description": "Quickly opens a new shift using closing balance of prior shift"
+        }
+      ]
+    },
+    {
+      "id": "pos-invoicing",
+      "name": "Multi-Safe POS & Invoicing",
+      "basePath": "/tenant/invoices",
+      "description": "Cashier POS billing, invoice generation, multi-safe transaction logging, and public tokenized viewing.",
+      "color": "#f59e0b",
+      "icon": "🧾",
+      "files": [
+        "app/Http/Controllers/Tenant/PublicInvoiceController.php",
+        "app/Http/Controllers/Tenant/PrintPlayInvoiceController.php",
+        "app/Models/Tenant/Invoice.php"
+      ],
+      "permissions": ["pos:sell"],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/invoice/view/{invoice}/{token}",
+          "auth": false,
+          "permission": null,
+          "description": "Public invoice viewing page protected by cryptographically secure token"
+        },
+        {
+          "method": "GET",
+          "path": "/tenant/invoices/{invoice}/print",
+          "auth": true,
+          "permission": "pos:sell",
+          "description": "Generates print receipt preview for Play Session & POS Invoices"
+        }
+      ]
+    },
+    {
+      "id": "offline-sync",
+      "name": "Offline Cashier Sync",
+      "basePath": "/tenant/offline",
+      "description": "Enables local offline POS operation and batch sync to tenant DB when connectivity resumes.",
+      "color": "#8b5cf6",
+      "icon": "⚡",
+      "files": [
+        "app/Http/Controllers/Tenant/OfflineSyncController.php"
+      ],
+      "permissions": ["pos:sell"],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tenant/offline/init",
+          "auth": true,
+          "permission": "pos:sell",
+          "description": "Retrieves cached catalog, price lists, and session states for offline client init"
+        },
+        {
+          "method": "POST",
+          "path": "/tenant/offline/sync",
+          "auth": true,
+          "permission": "pos:sell",
+          "description": "Batch processes offline completed sales, session logs, and stock deductions"
+        }
+      ]
+    },
+    {
+      "id": "tenant-provisioning",
+      "name": "Multi-Tenant API Provisioning",
+      "basePath": "/api/tenants",
+      "description": "Automated tenant onboarding, database creation, seed execution, and tenant removal.",
+      "color": "#ec4899",
+      "icon": "🏢",
+      "files": [
+        "app/Http/Controllers/Api/TenantProvisioningController.php",
+        "app/Http/Controllers/Api/TenantDeletionController.php",
+        "routes/api.php"
+      ],
+      "permissions": ["tenants:provision"],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/tenants",
+          "auth": true,
+          "permission": "tenants:provision",
+          "description": "Creates tenant record, provisions isolated MySQL DB, runs migrations & seeds domain"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/tenants/{tenant}",
+          "auth": true,
+          "permission": "tenants:provision",
+          "description": "Safely deprovisions tenant database and removes assigned domains"
+        }
+      ]
+    },
+    {
+      "id": "customer-portal",
+      "name": "Customer Landing & Loyalty Portal",
+      "basePath": "/",
+      "description": "Customer public view for menu catalog, gaming rules, and loyalty point conversion.",
+      "color": "#06b6d4",
+      "icon": "🌐",
+      "files": [
+        "app/Http/Controllers/Tenant/LandingPageController.php",
+        "routes/tenant.php"
+      ],
+      "permissions": [],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "auth": false,
+          "permission": null,
+          "description": "Customer landing page for active tenant domain"
+        },
+        {
+          "method": "GET",
+          "path": "/menu",
+          "auth": false,
+          "permission": null,
+          "description": "Public food, drink, and gaming session menu catalog"
+        },
+        {
+          "method": "POST",
+          "path": "/convert-points",
+          "auth": false,
+          "permission": null,
+          "description": "Converts customer loyalty reward points into discounts or play session credits"
+        }
+      ]
+    }
+  ],
+  "systemEndpoints": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "auth": false,
+      "description": "Application status and DB connection health check endpoint"
+    }
+  ],
+  "coreLayer": {
+    "security": [
+      {
+        "name": "InitializeTenancyByDomain",
+        "file": "vendor/stancl/tenancy/src/Middleware/InitializeTenancyByDomain.php",
+        "description": "Resolves tenant context from request HTTP domain and switches default DB connection"
+      },
+      {
+        "name": "PreventAccessFromCentralDomains",
+        "file": "vendor/stancl/tenancy/src/Middleware/PreventAccessFromCentralDomains.php",
+        "description": "Ensures tenant-only routes cannot be called from central/landlord domains"
+      },
+      {
+        "name": "tenant.provisioning.token",
+        "file": "app/Http/Middleware/TenantProvisioningToken.php",
+        "description": "Validates secret Bearer token for tenant provisioning and deletion API requests"
+      }
+    ],
+    "middleware": [
+      {
+        "name": "InitializeTenancyByDomain",
+        "file": "Stancl\\Tenancy\\Middleware\\InitializeTenancyByDomain",
+        "description": "Tenant DB Switcher",
+        "guards": [
+          "Tenancy Middleware"
+        ]
+      },
+      {
+        "name": "Auth Middleware",
+        "file": "Illuminate\\Auth\\Middleware\\Authenticate",
+        "description": "Verifies session authentication for cashier and admin pages",
+        "guards": [
+          "web guard"
+        ]
+      }
+    ],
+    "services": [
+      {
+        "name": "Shift",
+        "file": "app/Models/Tenant/Shift.php",
+        "description": "Service model managing shift quick open, status resolution, and cash audit",
+        "exports": [
+          "currentOpenShift()",
+          "nextShiftNumber()"
+        ]
+      },
+      {
+        "name": "OfflineSyncController",
+        "file": "app/Http/Controllers/Tenant/OfflineSyncController.php",
+        "description": "Handles transaction reconciliation from local offline store",
+        "exports": [
+          "init()",
+          "sync()"
+        ]
+      }
+    ]
+  },
+  "dataFlow": {
+    "requestPipeline": [
+      {
+        "step": "HTTP Request received by NGINX / Caddy web server",
+        "detail": "Forwarded to PHP-FPM running PHP 8.3 / Laravel framework."
+      },
+      {
+        "step": "Domain Tenancy Middleware triggers (InitializeTenancyByDomain)",
+        "detail": "Host domain matched against Landlord central DB. Tenant connection instantiated.",
+        "coreRef": "security"
+      },
+      {
+        "step": "Authentication & Shift Context Verified",
+        "detail": "User auth guard checked. Active shift verified for cashier financial operations.",
+        "coreRef": "security"
+      },
+      {
+        "step": "Livewire / Controller Action Executes",
+        "detail": "Device timer modified, POS invoice calculated, or stock deduction recorded.",
+        "coreRef": "services"
+      },
+      {
+        "step": "Reverb WebSocket Event Broadcasted (optional)",
+        "detail": "Real-time play session timer update broadcasted to connected client displays."
+      },
+      {
+        "step": "Response returned to client",
+        "detail": "Livewire DOM patch, PDF receipt stream, or JSON payload rendered."
+      }
+    ],
+    "errorPipeline": [
+      "Exception raised during request execution",
+      "Laravel exception handler catches exception",
+      "Database transaction rolled back to preserve multi-tenant DB integrity",
+      "Formatted error response or Livewire notification returned to client"
+    ],
+    "tenantIsolation": "Strict multi-database isolation: Each tenant possesses a distinct MySQL database. Landlord domain middleware dynamically rebinds DB connection prior to application code execution."
+  },
+  "permissions": {
+    "description": "RBAC permission catalog and mapped endpoints.",
+    "catalog": [
+      "devices:control",
+      "inventory:manage",
+      "pos:sell",
+      "sessions:manage",
+      "shifts:manage",
+      "tenants:provision"
+    ],
+    "details": [
+      {
+        "slug": "shifts:manage",
+        "module": "Shift Management",
+        "action": "OPEN/CLOSE/AUDIT",
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/tenant/shifts/quick-open"
+          }
+        ],
+        "adminPages": [
+          "Shifts Management",
+          "Cash Drawer Reconciliation"
+        ]
+      },
+      {
+        "slug": "pos:sell",
+        "module": "POS & Invoicing",
+        "action": "CREATE_INVOICE",
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/tenant/invoices/{invoice}/print"
+          },
+          {
+            "method": "POST",
+            "path": "/tenant/offline/sync"
+          }
+        ],
+        "adminPages": [
+          "POS Terminal",
+          "Orders & Invoices"
+        ]
+      },
+      {
+        "slug": "tenants:provision",
+        "module": "Tenant Onboarding API",
+        "action": "PROVISION/DELETE",
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/tenants"
+          },
+          {
+            "method": "DELETE",
+            "path": "/api/tenants/{tenant}"
+          }
+        ],
+        "adminPages": [
+          "Landlord Tenant Administration"
+        ]
+      }
+    ]
+  },
+  "sqlQueries": [
+    {
+      "id": "shift-quick-open-last-closed",
+      "label": "Fetch Last Closed Shift Actual Amount",
+      "module": "Shift Management",
+      "file": "routes/tenant.php",
+      "function": "Shift::quickOpen",
+      "tables": ["shifts"],
+      "purpose": "Queries the most recent closed shift to carry forward its actual cash amount as the opening balance for the new shift.",
+      "sql": "SELECT * FROM shifts WHERE status = 'close' ORDER BY shift_no DESC LIMIT 1",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tenant/shifts/quick-open"
+        }
+      ]
+    },
+    {
+      "id": "active-shift-check",
+      "label": "Check Active Open Shift for Current Tenant",
+      "module": "Shift Management",
+      "file": "app/Models/Tenant/Shift.php",
+      "function": "Shift::currentOpenShift()",
+      "tables": ["shifts"],
+      "purpose": "Checks if there is currently an open active shift in the tenant DB for enforcing shift-based financial operations.",
+      "sql": "SELECT * FROM shifts WHERE status = 'open' AND is_active = 1 LIMIT 1",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tenant/shifts/quick-open"
+        }
+      ]
+    }
+  ]
+}
