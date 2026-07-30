@@ -28,6 +28,16 @@ class CashBoxLedgerEntry extends Model
         'occurred_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $entry): void {
+            if (! $entry->shift_id) {
+                $entry->shift_id = Shift::currentOpenShiftId()
+                    ?? Shift::query()->orderByDesc('id')->value('id');
+            }
+        });
+    }
+
     public function cashBox(): BelongsTo
     {
         return $this->belongsTo(CashBox::class, 'cash_box_id');

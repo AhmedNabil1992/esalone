@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Tenant\CashBoxLedgerEntries\Tables;
 
 use App\Models\Tenant\CashBoxLedgerEntry;
+use Carbon\Carbon;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -17,6 +19,9 @@ class CashBoxLedgerEntriesTable
 {
     public static function configure(Table $table): Table
     {
+        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
+        $defaultUntil = Carbon::today()->toDateString();
+
         return $table
             ->columns([
                 TextColumn::make('cashBox.name')
@@ -57,8 +62,36 @@ class CashBoxLedgerEntriesTable
                     ->dateTime()
                     ->sortable(),
             ])
-            ->defaultSort('occurred_at', 'desc')
+            ->defaultSort('id', 'desc')
             ->filters([
+                Filter::make('occurred_at')
+                    ->label('تاريخ العملية')
+                    ->form([
+                        DatePicker::make('from')
+                            ->label('من تاريخ')
+                            ->default($defaultFrom),
+                        DatePicker::make('until')
+                            ->label('إلى تاريخ')
+                            ->default($defaultUntil),
+                    ])
+                    ->default([
+                        'from' => $defaultFrom,
+                        'until' => $defaultUntil,
+                    ])
+                    ->query(function (Builder $query, array $data) use ($defaultFrom, $defaultUntil): Builder {
+                        $from = $data['from'] ?? $defaultFrom;
+                        $until = $data['until'] ?? $defaultUntil;
+
+                        return $query
+                            ->when(
+                                filled($from),
+                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '>=', $from)
+                            )
+                            ->when(
+                                filled($until),
+                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $until)
+                            );
+                    }),
                 SelectFilter::make('cash_box_id')
                     ->label('الخزنة')
                     ->relationship('cashBox', 'name')
@@ -73,6 +106,9 @@ class CashBoxLedgerEntriesTable
                 SelectFilter::make('operation')
                     ->label('نوع العملية')
                     ->options([
+                        'direct_sale' => 'بيع مباشر',
+                        'customer_credit_payment' => 'سداد برصيد المحفظة',
+                        'invoice_unpaid_debt' => 'آجل غير مدفوع (دين)',
                         'purchase' => 'شراء',
                         'purchase_reverse' => 'عكس شراء',
                         'expense' => 'مصروف',
@@ -85,26 +121,25 @@ class CashBoxLedgerEntriesTable
                         'play_invoice_discount' => 'فاتورة لعب - خصم',
                         'play_invoice_payment' => 'فاتورة لعب - تحصيل',
                         'adjustment' => 'تسوية',
+                        'cashbox_adjustment' => 'تسوية رصيد خزانة',
+                        'owner_withdrawal' => 'مسحوبات مالك (سحب)',
+                        'shift_deficit' => 'عجز إيراد / وردية',
+                        'shift_surplus' => 'زيادة إيراد / وردية',
                         'transfer' => 'تحويل',
                     ]),
-                Filter::make('occurred_at')
-                    ->label('تاريخ العملية')
-                    ->form([
-                        DatePicker::make('from')->label('من تاريخ'),
-                        DatePicker::make('until')->label('إلى تاريخ'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '>=', $data['from'])
-                            )
-                            ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $data['until'])
-                            );
-                    }),
+                SelectFilter::make('shift_id')
+                    ->label('رقم الشيفت')
+                    ->relationship('shift', 'shift_no', fn (Builder $query) => $query->orderByDesc('shift_no'))
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('created_by_user_id')
+                    ->label('بواسطة')
+                    ->relationship('createdBy', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
+            ->filtersLayout(FiltersLayout::Modal)
+            ->pluralModelLabel('الصفحات')
             ->recordActions([
                 ViewAction::make(),
             ])
@@ -114,6 +149,9 @@ class CashBoxLedgerEntriesTable
     private static function formatOperation(string $operation): string
     {
         return match ($operation) {
+            'direct_sale' => 'بيع مباشر',
+            'customer_credit_payment' => 'سداد برصيد المحفظة',
+            'invoice_unpaid_debt' => 'آجل غير مدفوع (دين)',
             'purchase' => 'شراء',
             'purchase_reverse' => 'عكس شراء',
             'expense' => 'مصروف',
@@ -126,6 +164,10 @@ class CashBoxLedgerEntriesTable
             'play_invoice_discount' => 'فاتورة لعب - خصم',
             'play_invoice_payment' => 'فاتورة لعب - تحصيل',
             'adjustment' => 'تسوية',
+            'cashbox_adjustment' => 'تسوية رصيد خزانة',
+            'owner_withdrawal' => 'مسحوبات مالك (سحب)',
+            'shift_deficit' => 'عجز إيراد / وردية',
+            'shift_surplus' => 'زيادة إيراد / وردية',
             'transfer' => 'تحويل',
             default => $operation,
         };

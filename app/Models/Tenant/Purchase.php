@@ -25,6 +25,16 @@ class Purchase extends Model
         'purchased_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $purchase): void {
+            if (! $purchase->shift_id) {
+                $purchase->shift_id = Shift::currentOpenShiftId()
+                    ?? Shift::query()->orderByDesc('id')->value('id');
+            }
+        });
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id');

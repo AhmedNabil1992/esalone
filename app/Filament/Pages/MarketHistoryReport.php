@@ -9,10 +9,14 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -55,18 +59,10 @@ class MarketHistoryReport extends Page implements HasTable
                     ->label('رقم الفاتورة')
                     ->searchable()
                     ->sortable(),
-                // TextColumn::make('customer_id')
-                //     ->label('ID العميل')
-                //     ->placeholder('-')
-                //     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('اسم العميل')
                     ->placeholder('-')
                     ->searchable(),
-                // TextColumn::make('device_id')
-                //     ->label('ID الجهاز')
-                //     ->placeholder('-')
-                //     ->sortable(),
                 TextColumn::make('device.type.name')
                     ->label('نوع الجهاز')
                     ->placeholder('-')
@@ -75,7 +71,6 @@ class MarketHistoryReport extends Page implements HasTable
                     ->label('اسم الجهاز')
                     ->placeholder('-')
                     ->searchable(),
-
                 TextColumn::make('subject_name')
                     ->label('اسم مرجعي')
                     ->placeholder('-')
@@ -86,7 +81,10 @@ class MarketHistoryReport extends Page implements HasTable
                     ->searchable(),
                 TextColumn::make('quantity')
                     ->label('الكمية')
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي الكمية'),
+                    ]),
                 TextColumn::make('unit_price')
                     ->label('السعر')
                     ->money()
@@ -94,7 +92,11 @@ class MarketHistoryReport extends Page implements HasTable
                 TextColumn::make('total_amount')
                     ->label('القيمة')
                     ->money()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي المبيعات')->money(),
+                        Count::make()->label('عدد السجلات'),
+                    ]),
                 TextColumn::make('created_by')
                     ->label('بواسطة')
                     ->searchable(),
@@ -127,7 +129,49 @@ class MarketHistoryReport extends Page implements HasTable
                                 fn (Builder $builder): Builder => $builder->whereDate('transaction_date', '<=', $until)
                             );
                     }),
+                SelectFilter::make('customer_id')
+                    ->label('اسم العميل')
+                    ->relationship('customer', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('device_type_id')
+                    ->label('نوع الجهاز')
+                    ->relationship('device.type', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('device_id')
+                    ->label('اسم الجهاز')
+                    ->relationship('device', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('item_id')
+                    ->label('الصنف')
+                    ->relationship('item', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('shift_no')
+                    ->label('الشيفت')
+                    ->options(fn (): array => MarketHistory::query()
+                        ->whereNotNull('shift_no')
+                        ->where('shift_no', '!=', '')
+                        ->orderBy('shift_no')
+                        ->distinct()
+                        ->pluck('shift_no', 'shift_no')
+                        ->toArray())
+                    ->searchable(),
+                SelectFilter::make('created_by')
+                    ->label('بواسطة')
+                    ->options(fn (): array => MarketHistory::query()
+                        ->whereNotNull('created_by')
+                        ->where('created_by', '!=', '')
+                        ->orderBy('created_by')
+                        ->distinct()
+                        ->pluck('created_by', 'created_by')
+                        ->toArray())
+                    ->searchable(),
             ])
+            ->filtersLayout(FiltersLayout::Modal)
+            ->pluralModelLabel('الصفحات')
             ->defaultSort('id', 'desc');
     }
 }

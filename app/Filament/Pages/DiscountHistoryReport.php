@@ -9,10 +9,14 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -48,7 +52,12 @@ class DiscountHistoryReport extends Page implements HasTable
                 TextColumn::make('amount')
                     ->label('المبلغ')
                     ->money()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي الخصومات')->money(),
+                        Count::make()->label('عدد السجلات'),
+                    ]),
                 TextColumn::make('reason')
                     ->label('السبب')
                     ->placeholder('-'),
@@ -103,6 +112,23 @@ class DiscountHistoryReport extends Page implements HasTable
                                 fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $until)
                             );
                     }),
-            ]);
+                SelectFilter::make('shift_id')
+                    ->label('شيفت رقم')
+                    ->options(fn (): array => DiscountHistory::query()
+                        ->whereNotNull('shift_id')
+                        ->orderByDesc('shift_id')
+                        ->distinct()
+                        ->pluck('shift_id', 'shift_id')
+                        ->toArray())
+                    ->searchable(),
+                SelectFilter::make('user_id')
+                    ->label('المستخدم')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
+            ])
+            ->filtersLayout(FiltersLayout::Modal)
+            ->pluralModelLabel('الصفحات')
+            ->defaultSort('id', 'desc');
     }
 }

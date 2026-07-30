@@ -8,6 +8,4 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateExpensesTypes extends CreateRecord
 {
     protected static string $resource = ExpensesTypesResource::class;
-
-    
 }

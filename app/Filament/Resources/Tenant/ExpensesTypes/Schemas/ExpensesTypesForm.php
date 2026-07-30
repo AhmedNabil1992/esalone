@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\Tenant\ExpensesTypes\Schemas;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
 
 class ExpensesTypesForm
 {

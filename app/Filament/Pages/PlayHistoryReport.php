@@ -174,6 +174,7 @@ class PlayHistoryReport extends Page implements HasTable
 
             ])
             ->filtersLayout(FiltersLayout::Modal)
+            ->pluralModelLabel('الصفحات')
             ->defaultSort('id', 'desc');
     }
 

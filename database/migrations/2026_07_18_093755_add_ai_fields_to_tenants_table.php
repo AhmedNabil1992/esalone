@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            if (!Schema::hasColumn('tenants', 'has_ai_subscription')) {
+            if (! Schema::hasColumn('tenants', 'has_ai_subscription')) {
                 $table->boolean('has_ai_subscription')->default(false);
             }
-            if (!Schema::hasColumn('tenants', 'ai_requests_limit')) {
+            if (! Schema::hasColumn('tenants', 'ai_requests_limit')) {
                 $table->integer('ai_requests_limit')->default(50);
             }
         });

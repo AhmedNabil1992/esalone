@@ -7,7 +7,10 @@ namespace App\Filament\Resources\Tenant\Invoices\Tables;
 use Carbon\Carbon;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -62,45 +65,81 @@ class InvoicesTable
                 TextColumn::make('final_amount')
                     ->label('الصافي')
                     ->money()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي الصافي')->money(),
+                        Count::make()->label('عدد الفواتير'),
+                    ]),
                 TextColumn::make('paid_amount')
                     ->label('المدفوع')
                     ->money()
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي المدفوع')->money(),
+                    ]),
                 TextColumn::make('remain_amount')
                     ->label('المتبقي')
                     ->money()
                     ->color(fn ($state): string => (float) $state < 0 ? 'danger' : 'success')
-                    ->sortable(),
+                    ->sortable()
+                    ->summarize([
+                        Sum::make()->label('إجمالي المتبقي')->money(),
+                    ]),
                 TextColumn::make('status')
                     ->label('الحالة')
                     ->badge(),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
-                SelectFilter::make('shift_id')
-                    ->label('رقم الشيفت')
-                    ->relationship('shift', 'shift_no', fn (Builder $query) => $query->orderByDesc('shift_no'))
-                    ->searchable()
-                    ->preload(),
                 Filter::make('issued_at')
                     ->label('التاريخ')
                     ->form([
                         DatePicker::make('from')->label('من تاريخ')->default($defaultFrom),
                         DatePicker::make('until')->label('إلى تاريخ')->default($defaultUntil),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
+                    ->query(function (Builder $query, array $data) use ($defaultFrom, $defaultUntil): Builder {
+                        $from = $data['from'] ?? $defaultFrom;
+                        $until = $data['until'] ?? $defaultUntil;
+
                         return $query
                             ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '>=', $data['from'])
+                                filled($from),
+                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '>=', $from)
                             )
                             ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '<=', $data['until'])
+                                filled($until),
+                                fn (Builder $builder): Builder => $builder->whereDate('issued_at', '<=', $until)
                             );
                     }),
+                SelectFilter::make('invoice_type')
+                    ->label('نوع الفاتورة')
+                    ->options([
+                        'direct_sale' => 'بيع مباشر',
+                        'device_sale' => 'جهاز',
+                    ]),
+                SelectFilter::make('shift_id')
+                    ->label('رقم الشيفت')
+                    ->relationship('shift', 'shift_no', fn (Builder $query) => $query->orderByDesc('shift_no'))
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('cash_box_id')
+                    ->label('الخزينة')
+                    ->relationship('cashBox', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('customer_id')
+                    ->label('العميل')
+                    ->relationship('customer', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('device_id')
+                    ->label('الجهاز')
+                    ->relationship('device', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
+            ->filtersLayout(FiltersLayout::Modal)
+            ->pluralModelLabel('الصفحات')
             ->recordActions([
                 ViewAction::make(),
             ])

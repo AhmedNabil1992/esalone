@@ -81,6 +81,7 @@ class WaitingListsTable
                     ->visible(fn ($record) => $record->status === 'waiting')
                     ->action(function ($record) {
                         $record->update(['status' => 'playing']);
+
                         return redirect(DeviceControl::getUrl());
                     }),
 

@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Tenant\PlaySessions\RelationManagers;
 
+use App\Models\Tenant\SystemConfig;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use App\Models\Tenant\SystemConfig;
 
 class PlaySessionDetailsRelationManager extends RelationManager
 {

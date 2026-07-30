@@ -15,7 +15,7 @@ class PublicInvoiceController extends Controller
     public function __invoke(Invoice $invoice, string $token): View
     {
         $expectedToken = substr(hash_hmac('sha256', (string) $invoice->id, config('app.key')), 0, 16);
-        
+
         if (! hash_equals($expectedToken, $token)) {
             throw new AccessDeniedHttpException('رابط غير صالح أو منتهي الصلاحية.');
         }

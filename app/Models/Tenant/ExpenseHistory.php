@@ -31,6 +31,16 @@ class ExpenseHistory extends Model
         'occurred_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $history): void {
+            if (! $history->shift_id) {
+                $history->shift_id = Shift::currentOpenShiftId()
+                    ?? Shift::query()->orderByDesc('id')->value('id');
+            }
+        });
+    }
+
     public function cashBox(): BelongsTo
     {
         return $this->belongsTo(CashBox::class, 'cash_box_id');

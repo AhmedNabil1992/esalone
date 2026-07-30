@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 
 foreach (config('tenancy.central_domains', []) as $centralDomain) {
     Route::domain($centralDomain)->group(function () use ($centralDomain) {
@@ -23,7 +23,7 @@ Route::get('/health', function () {
 
     try {
         DB::connection()->getPdo();
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $dbStatus = 'error';
     }
 

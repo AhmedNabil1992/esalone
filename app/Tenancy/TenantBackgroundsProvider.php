@@ -2,16 +2,16 @@
 
 namespace App\Tenancy;
 
+use Illuminate\Support\Facades\Storage;
 use Swis\Filament\Backgrounds\Contracts\ProvidesImages;
 use Swis\Filament\Backgrounds\Image;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class TenantBackgroundsProvider implements ProvidesImages
 {
     public static function make(): static
     {
-        return new static();
+        return new static;
     }
 
     public function getImage(): Image
@@ -21,7 +21,7 @@ class TenantBackgroundsProvider implements ProvidesImages
         $defaultUrl = asset('images/backgrounds/default.png');
 
         // 2. التأكد إن فيه عميل فعلياً فاتح السيستم
-        if (!tenant('id')) {
+        if (! tenant('id')) {
             return new Image($defaultUrl);
         }
 
@@ -33,9 +33,9 @@ class TenantBackgroundsProvider implements ProvidesImages
                 return new Image($defaultUrl);
             }
 
-            // 4. اختيار صورة عشوائية 
+            // 4. اختيار صورة عشوائية
             $randomFile = $files[array_rand($files)];
-            
+
             // السحر هنا: استخدام tenant_asset لضمان الدخول على الـ Storage الصحيح
             $url = tenant_asset($randomFile);
 
