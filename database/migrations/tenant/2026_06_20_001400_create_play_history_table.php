@@ -22,13 +22,13 @@ return new class extends Migration
             $table->integer('play_time')->nullable();
             $table->decimal('cost', 12, 2)->nullable();
             $table->string('username', 255)->nullable();
-            $table->integer('shift_no')->nullable();
+            $table->foreignId('shift_id')->nullable()->constrained('shifts')->nullOnDelete();
             $table->string('invoice_no', 50)->nullable();
             $table->date('trx_date')->nullable();
             $table->timestamps();
 
             $table->index(['invoice_no', 'trx_date']);
-            $table->index(['shift_no', 'trx_date']);
+            $table->index(['shift_id', 'trx_date']);
         });
     }
 

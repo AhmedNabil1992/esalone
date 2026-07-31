@@ -844,7 +844,7 @@ class CloseSessionInvoiceAction
                 'play_time' => $detail->period,
                 'cost' => $detail->cost,
                 'username' => $actor->name,
-                'shift_no' => $shiftId,
+                'shift_id' => $shiftId,
                 'invoice_no' => $invoice->invoice_no,
                 'trx_date' => now()->toDateString(),
             ]);
@@ -1036,7 +1036,7 @@ class CloseSessionInvoiceAction
                 'transaction_date' => $trxDate,
                 'transaction_time' => $trxTime,
                 'created_by' => $actor->name,
-                'shift_no' => $shiftId,
+                'shift_id' => $shiftId,
                 'ledger_entry_id' => $orderLedgerEntryId,
                 'quantity' => $quantity,
                 'invoice_no' => $invoice->invoice_no,

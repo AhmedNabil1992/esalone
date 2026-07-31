@@ -317,7 +317,7 @@ class CreateDirectSaleAction
                     'transaction_date' => $now->toDateString(),
                     'transaction_time' => $now->toTimeString(),
                     'created_by' => $actor->id,
-                    'shift_no' => $shiftNo,
+                    'shift_id' => $shiftNo,
                     'invoice_no' => $invoiceNo,
                 ]);
             }

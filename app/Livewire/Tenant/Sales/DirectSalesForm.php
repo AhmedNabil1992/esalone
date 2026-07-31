@@ -191,6 +191,14 @@ class DirectSalesForm extends Component
             $this->selectedItems[$key]['quantity'] = $newQuantity;
             $this->selectedItems[$key]['total_amount'] = round($unitPrice * $newQuantity, 2);
 
+            $this->syncPaidAmount();
+
+            Notification::make()
+                ->success()
+                ->title('تمت الإضافة')
+                ->body("تمت زيادة كمية {$item->name} إلى {$newQuantity}.")
+                ->send();
+
             return;
         }
 

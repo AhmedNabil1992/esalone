@@ -21,7 +21,7 @@ class MarketHistory extends Model
         'transaction_date',
         'transaction_time',
         'created_by',
-        'shift_no',
+        'shift_id',
         'ledger_entry_id',
         'quantity',
         'invoice_no',
@@ -37,7 +37,7 @@ class MarketHistory extends Model
         'unit_cost' => 'decimal:4',
         'total_cost' => 'decimal:4',
         'transaction_date' => 'date',
-        'shift_no' => 'integer',
+        'shift_id' => 'integer',
         'ledger_entry_id' => 'integer',
     ];
 
@@ -49,6 +49,16 @@ class MarketHistory extends Model
     public function catalogItem(): BelongsTo
     {
         return $this->belongsTo(CatalogItem::class, 'catalog_item_id');
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
+
+    public function getShiftNoAttribute(): ?int
+    {
+        return $this->shift?->shift_no ?? $this->shift_id;
     }
 
     public function getPriceAttribute(): mixed

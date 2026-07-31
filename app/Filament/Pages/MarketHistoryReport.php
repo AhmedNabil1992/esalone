@@ -100,8 +100,9 @@ class MarketHistoryReport extends Page implements HasTable
                 TextColumn::make('created_by')
                     ->label('بواسطة')
                     ->searchable(),
-                TextColumn::make('shift_no')
-                    ->label('الشيفت')
+                TextColumn::make('shift.shift_no')
+                    ->label('رقم الشيفت')
+                    ->formatStateUsing(fn ($state, $record) => $state ? "#{$state}" : ($record->shift_id ? "#{$record->shift_id}" : '-'))
                     ->sortable(),
             ])
             ->filters([
@@ -149,16 +150,11 @@ class MarketHistoryReport extends Page implements HasTable
                     ->relationship('item', 'name')
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('shift_no')
+                SelectFilter::make('shift_id')
                     ->label('الشيفت')
-                    ->options(fn (): array => MarketHistory::query()
-                        ->whereNotNull('shift_no')
-                        ->where('shift_no', '!=', '')
-                        ->orderBy('shift_no')
-                        ->distinct()
-                        ->pluck('shift_no', 'shift_no')
-                        ->toArray())
-                    ->searchable(),
+                    ->relationship('shift', 'shift_no')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('created_by')
                     ->label('بواسطة')
                     ->options(fn (): array => MarketHistory::query()

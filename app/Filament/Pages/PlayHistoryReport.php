@@ -106,8 +106,9 @@ class PlayHistoryReport extends Page implements HasTable
                     ->label('بواسطة')
                     ->searchable()
                     ->placeholder('-'),
-                TextColumn::make('shift_no')
-                    ->label('الشيفت')
+                TextColumn::make('shift.shift_no')
+                    ->label('رقم الشيفت')
+                    ->formatStateUsing(fn ($state, $record) => $state ? "#{$state}" : ($record->shift_id ? "#{$record->shift_id}" : '-'))
                     ->sortable()
                     ->placeholder('-'),
             ])
@@ -167,7 +168,7 @@ class PlayHistoryReport extends Page implements HasTable
                     ->label('بواسطة (الكاشير)')
                     ->options(fn (): array => $this->getUsernameFilterOptions())
                     ->searchable(),
-                SelectFilter::make('shift_no')
+                SelectFilter::make('shift_id')
                     ->label('الشيفت')
                     ->options(fn (): array => $this->getShiftFilterOptions())
                     ->searchable(),
@@ -180,18 +181,16 @@ class PlayHistoryReport extends Page implements HasTable
 
     private function getBaseFilteredQuery(?string $excludeFilter = null): Builder
     {
-        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
-        $defaultUntil = Carbon::today()->toDateString();
+        $defaultFrom = now()->startOfDay()->toDateString();
+        $defaultUntil = now()->endOfDay()->toDateString();
 
-        $trxDateState = $this->getTableFilterState('trx_date') ?? [];
-        $from = (string) ($trxDateState['from'] ?? $defaultFrom);
-        $until = (string) ($trxDateState['until'] ?? $defaultUntil);
-
+        $from = data_get($this->getTableFilterState('trx_date'), 'from', $defaultFrom);
+        $until = data_get($this->getTableFilterState('trx_date'), 'until', $defaultUntil);
         $deviceTypeId = data_get($this->getTableFilterState('device_type_id'), 'value');
         $deviceId = data_get($this->getTableFilterState('device_id'), 'value');
         $playType = data_get($this->getTableFilterState('play_type'), 'value');
         $username = data_get($this->getTableFilterState('username'), 'value');
-        $shiftNo = data_get($this->getTableFilterState('shift_no'), 'value');
+        $shiftId = data_get($this->getTableFilterState('shift_id'), 'value');
 
         return PlayHistory::query()
             ->when(
@@ -222,8 +221,8 @@ class PlayHistoryReport extends Page implements HasTable
                 fn (Builder $query): Builder => $query->where('username', $username)
             )
             ->when(
-                $excludeFilter !== 'shift_no' && filled($shiftNo),
-                fn (Builder $query): Builder => $query->where('shift_no', $shiftNo)
+                $excludeFilter !== 'shift_id' && filled($shiftId),
+                fn (Builder $query): Builder => $query->where('shift_id', $shiftId)
             );
     }
 
@@ -306,12 +305,16 @@ class PlayHistoryReport extends Page implements HasTable
      */
     private function getShiftFilterOptions(): array
     {
-        return $this->getBaseFilteredQuery(excludeFilter: 'shift_no')
-            ->whereNotNull('shift_no')
-            ->where('shift_no', '!=', '')
-            ->orderBy('shift_no')
-            ->distinct()
-            ->pluck('shift_no', 'shift_no')
+        return $this->getBaseFilteredQuery(excludeFilter: 'shift_id')
+            ->whereNotNull('shift_id')
+            ->orderBy('shift_id', 'desc')
+            ->with(['shift'])
+            ->get()
+            ->mapWithKeys(function ($history) {
+                $shiftNo = $history->shift?->shift_no ?? $history->shift_id;
+
+                return [(string) $history->shift_id => "الشيفت #{$shiftNo}"];
+            })
             ->toArray();
     }
 }

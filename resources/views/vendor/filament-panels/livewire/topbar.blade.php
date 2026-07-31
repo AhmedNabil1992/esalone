@@ -37,16 +37,61 @@
                 .brand-logo-text {
                     display: none !important;
                 }
+                .fi-topbar-ctn {
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                    overflow-x: hidden !important;
+                }
                 .fi-topbar {
-                    padding-left: 8px !important;
-                    padding-right: 8px !important;
-                    gap: 6px !important;
+                    padding-left: 6px !important;
+                    padding-right: 6px !important;
+                    gap: 4px !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                    box-sizing: border-box !important;
                 }
                 .fi-topbar-start {
-                    gap: 6px !important;
+                    gap: 4px !important;
+                    flex-shrink: 1 !important;
+                    min-width: 0 !important;
+                    overflow: hidden !important;
+                }
+                .fi-topbar-start a, .fi-topbar-start img, .fi-topbar-start svg {
+                    max-height: 28px !important;
+                }
+                .fi-topbar-nav-groups {
+                    gap: 2px !important;
+                    min-width: 0 !important;
+                    overflow: hidden !important;
+                    flex-shrink: 1 !important;
+                }
+                .topbar-group-label {
+                    font-size: 0.8rem !important;
+                    padding-left: 4px !important;
+                    padding-right: 4px !important;
+                    padding-top: 2px !important;
+                    padding-bottom: 2px !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    max-width: 95px !important;
+                    display: inline-block !important;
+                }
+                .fi-topbar-item {
+                    font-size: 0.75rem !important;
+                }
+                .fi-topbar-item a, .fi-topbar-item button {
+                    padding-left: 4px !important;
+                    padding-right: 4px !important;
+                    font-size: 0.75rem !important;
                 }
                 .fi-global-search {
-                    max-width: 140px !important;
+                    max-width: 90px !important;
+                }
+                .fi-topbar-end {
+                    gap: 4px !important;
+                    flex-shrink: 0 !important;
+                    margin-inline-start: auto !important;
                 }
             }
             @media (min-width: 1024px) {
@@ -234,7 +279,7 @@
                             @if ($isAdminPanel)
                                 {{-- Admin panel: show active group name as a plain bold heading --}}
                                 <li class="fi-topbar-item">
-                                    <span class="px-3 py-2 text-lg font-black text-primary-600 dark:text-primary-400">
+                                    <span class="topbar-group-label px-3 py-2 text-lg font-black text-primary-600 dark:text-primary-400">
                                         {{ $groupLabel }}
                                     </span>
                                 </li>

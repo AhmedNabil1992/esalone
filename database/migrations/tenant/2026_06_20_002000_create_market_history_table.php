@@ -24,12 +24,12 @@ return new class extends Migration
             $table->time('transaction_time')->nullable();
             $table->string('invoice_no', 50)->nullable();
             $table->string('created_by', 255)->nullable();
-            $table->integer('shift_no')->nullable();
+            $table->foreignId('shift_id')->nullable()->constrained('shifts')->nullOnDelete();
             $table->foreignId('ledger_entry_id')->nullable()->constrained('cash_box_ledger_entries')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['transaction_date', 'id']);
-            $table->index(['shift_no', 'transaction_date']);
+            $table->index(['shift_id', 'transaction_date']);
             $table->index(['invoice_no', 'transaction_date']);
             $table->index(['customer_id', 'transaction_date']);
             $table->index(['device_id', 'transaction_date']);

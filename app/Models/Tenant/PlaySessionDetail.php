@@ -58,4 +58,12 @@ class PlaySessionDetail extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * الحركة تمت في وردية معينة.
+     */
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
 }

@@ -19,7 +19,7 @@ class PlayHistory extends Model
         'play_time',
         'cost',
         'username',
-        'shift_no',
+        'shift_id',
         'invoice_no',
         'trx_date',
     ];
@@ -32,13 +32,23 @@ class PlayHistory extends Model
         'actual_end_time' => 'datetime',
         'play_time' => 'integer',
         'cost' => 'decimal:2',
-        'shift_no' => 'integer',
+        'shift_id' => 'integer',
         'trx_date' => 'date',
     ];
 
     public function device(): BelongsTo
     {
         return $this->belongsTo(Devices::class, 'device_id');
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
+
+    public function getShiftNoAttribute(): ?int
+    {
+        return $this->shift?->shift_no ?? $this->shift_id;
     }
 
     public function getPlayPriceAttribute(): mixed
