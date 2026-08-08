@@ -156,11 +156,6 @@
             "id": "pos_engine",
             "label": "POS & Multi-Warehouse Deduction",
             "type": "app"
-          },
-          {
-            "id": "offline_sync_engine",
-            "label": "Offline POS Sync Engine",
-            "type": "app"
           }
         ]
       },
@@ -211,11 +206,6 @@
         "from": "auth_middleware",
         "to": "pos_engine",
         "label": "Invoice & Safe Transactions"
-      },
-      {
-        "from": "auth_middleware",
-        "to": "offline_sync_engine",
-        "label": "Offline Payload Sync"
       },
       {
         "from": "tenancy_router",
@@ -346,34 +336,6 @@
       ]
     },
     {
-      "id": "offline-sync",
-      "name": "Offline Cashier Sync",
-      "basePath": "/tenant/offline",
-      "description": "Enables local offline POS operation and batch sync to tenant DB when connectivity resumes.",
-      "color": "#8b5cf6",
-      "icon": "⚡",
-      "files": [
-        "app/Http/Controllers/Tenant/OfflineSyncController.php"
-      ],
-      "permissions": ["pos:sell"],
-      "endpoints": [
-        {
-          "method": "GET",
-          "path": "/tenant/offline/init",
-          "auth": true,
-          "permission": "pos:sell",
-          "description": "Retrieves cached catalog, price lists, and session states for offline client init"
-        },
-        {
-          "method": "POST",
-          "path": "/tenant/offline/sync",
-          "auth": true,
-          "permission": "pos:sell",
-          "description": "Batch processes offline completed sales, session logs, and stock deductions"
-        }
-      ]
-    },
-    {
       "id": "tenant-provisioning",
       "name": "Multi-Tenant API Provisioning",
       "basePath": "/api/tenants",
@@ -492,15 +454,6 @@
         "exports": [
           "currentOpenShift()",
           "nextShiftNumber()"
-        ]
-      },
-      {
-        "name": "OfflineSyncController",
-        "file": "app/Http/Controllers/Tenant/OfflineSyncController.php",
-        "description": "Handles transaction reconciliation from local offline store",
-        "exports": [
-          "init()",
-          "sync()"
         ]
       }
     ]
