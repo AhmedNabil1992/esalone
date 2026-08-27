@@ -125,6 +125,7 @@ class CustomersTable
                                 $record->save();
 
                                 CustomerCredit::create([
+                                    'branch_id' => session('active_branch_id'),
                                     'customer_id' => $record->id,
                                     'user_id' => auth()->id() ?? User::first()?->id,
                                     'type' => 'redeem',

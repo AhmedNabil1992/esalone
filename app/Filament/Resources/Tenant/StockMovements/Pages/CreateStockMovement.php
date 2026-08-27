@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\Tenant\StockMovements\Pages;
 
 use App\Filament\Resources\Tenant\StockMovements\StockMovementResource;
+use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\StockMovement;
+use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
+use App\Scopes\BranchScope;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +36,9 @@ class CreateStockMovement extends CreateRecord
             ]);
         }
 
+        $sourceWarehouse = Warehouse::withoutGlobalScope(BranchScope::class)->find($sourceWarehouseId);
+        $destinationWarehouse = Warehouse::withoutGlobalScope(BranchScope::class)->find($destinationWarehouseId);
+
         if (! is_array($items) || $items === []) {
             throw ValidationException::withMessages([
                 'stock_items' => 'يجب إضافة صنف واحد على الأقل للنقل.',
@@ -41,7 +47,7 @@ class CreateStockMovement extends CreateRecord
 
         $actor = Filament::auth()->user();
 
-        return DB::transaction(function () use ($sourceWarehouseId, $destinationWarehouseId, $items, $actor): Model {
+        return DB::transaction(function () use ($sourceWarehouseId, $destinationWarehouseId, $sourceWarehouse, $destinationWarehouse, $items, $actor): Model {
             $lastCreatedMovement = null;
 
             foreach ($items as $index => $line) {
@@ -72,6 +78,19 @@ class CreateStockMovement extends CreateRecord
                     ]);
                 }
 
+                // Calculate average unit cost of source stock or fallback to catalog item purchase_price
+                $sourceQty = (float) $sourceStock->quantity;
+                $sourceAmt = (float) ($sourceStock->amount ?? 0);
+
+                if ($sourceQty > 0 && $sourceAmt > 0) {
+                    $unitCost = $sourceAmt / $sourceQty;
+                } else {
+                    $catalogItem = CatalogItem::find($itemId);
+                    $unitCost = (float) ($catalogItem?->purchase_price ?? 0);
+                }
+
+                $totalCost = round($unitCost * $quantity, 4);
+
                 $destinationStock = WarehouseStock::query()
                     ->where('warehouse_id', $destinationWarehouseId)
                     ->where('catalog_item_id', $itemId)
@@ -83,36 +102,43 @@ class CreateStockMovement extends CreateRecord
                         'warehouse_id' => $destinationWarehouseId,
                         'catalog_item_id' => $itemId,
                         'quantity' => 0,
+                        'amount' => 0,
                     ]);
                 }
 
-                $sourceStock->quantity = round((float) $sourceStock->quantity - $quantity, 3);
+                // Deduct quantity and financial cost from source warehouse stock
+                $sourceStock->quantity = max(0, round((float) $sourceStock->quantity - $quantity, 3));
+                $sourceStock->amount = max(0, round((float) ($sourceStock->amount ?? 0) - $totalCost, 4));
                 $sourceStock->save();
 
+                // Add quantity and financial cost to destination warehouse stock
                 $destinationStock->quantity = round((float) $destinationStock->quantity + $quantity, 3);
+                $destinationStock->amount = round((float) ($destinationStock->amount ?? 0) + $totalCost, 4);
                 $destinationStock->save();
 
                 $lastCreatedMovement = StockMovement::query()->create([
+                    'branch_id' => $sourceWarehouse?->branch_id,
                     'warehouse_id' => $sourceWarehouseId,
                     'destination_warehouse_id' => $destinationWarehouseId,
                     'catalog_item_id' => $itemId,
                     'created_by_user_id' => $actor?->id,
                     'movement_type' => 'transfer',
                     'quantity' => -$quantity,
-                    'unit_cost' => null,
-                    'total_cost' => null,
+                    'unit_cost' => round($unitCost, 2),
+                    'total_cost' => -$totalCost,
                     'occurred_at' => now(),
                 ]);
 
                 StockMovement::query()->create([
+                    'branch_id' => $destinationWarehouse?->branch_id,
                     'warehouse_id' => $destinationWarehouseId,
                     'destination_warehouse_id' => $sourceWarehouseId,
                     'catalog_item_id' => $itemId,
                     'created_by_user_id' => $actor?->id,
                     'movement_type' => 'transfer',
                     'quantity' => $quantity,
-                    'unit_cost' => null,
-                    'total_cost' => null,
+                    'unit_cost' => round($unitCost, 2),
+                    'total_cost' => $totalCost,
                     'occurred_at' => now(),
                 ]);
             }

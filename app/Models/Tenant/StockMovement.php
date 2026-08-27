@@ -2,12 +2,17 @@
 
 namespace App\Models\Tenant;
 
+use App\Scopes\BranchScope;
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockMovement extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'warehouse_id',
         'destination_warehouse_id',
         'catalog_item_id',
@@ -35,12 +40,12 @@ class StockMovement extends Model
 
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id')->withoutGlobalScope(BranchScope::class);
     }
 
     public function destinationWarehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class, 'destination_warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'destination_warehouse_id')->withoutGlobalScope(BranchScope::class);
     }
 
     public function item(): BelongsTo

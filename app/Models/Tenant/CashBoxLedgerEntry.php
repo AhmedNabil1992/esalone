@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class CashBoxLedgerEntry extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'shift_id',
         'cash_box_id',
         'created_by_user_id',

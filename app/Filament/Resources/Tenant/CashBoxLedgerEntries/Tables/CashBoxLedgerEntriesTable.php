@@ -35,8 +35,16 @@ class CashBoxLedgerEntriesTable
                     ->color(fn (string $state): string => $state === 'in' ? 'success' : 'danger'),
                 TextColumn::make('operation')
                     ->label('نوع العملية')
-                    ->formatStateUsing(fn (string $state): string => self::formatOperation($state))
-                    ->badge(),
+                    ->formatStateUsing(fn (?string $state): string => self::formatOperation($state))
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'direct_sale', 'play_invoice_payment', 'customer_credit_deposit' => 'success',
+                        'purchase', 'expense', 'customer_credit_withdraw', 'owner_withdrawal' => 'danger',
+                        'customer_credit_payment', 'invoice_unpaid_debt', 'transfer' => 'info',
+                        'purchase_reverse', 'shift_deficit', 'shift_surplus' => 'warning',
+                        default => 'gray',
+                    })
+                    ->sortable(),
                 TextColumn::make('reference_type')
                     ->label('مرجع العملية')
                     ->formatStateUsing(fn (?string $state, CashBoxLedgerEntry $record): string => self::formatReference($state, $record->reference_id))
@@ -146,10 +154,15 @@ class CashBoxLedgerEntriesTable
             ->toolbarActions([]);
     }
 
-    private static function formatOperation(string $operation): string
+    private static function formatOperation(?string $operation): string
     {
+        if (! $operation) {
+            return '-';
+        }
+
         return match ($operation) {
             'direct_sale' => 'بيع مباشر',
+            'direct_sale_discount' => 'خصم بيع مباشر',
             'customer_credit_payment' => 'سداد برصيد المحفظة',
             'invoice_unpaid_debt' => 'آجل غير مدفوع (دين)',
             'purchase' => 'شراء',

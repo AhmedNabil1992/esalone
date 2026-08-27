@@ -343,6 +343,7 @@ class CloseSessionInvoiceAction
 
             if ((float) $preview['discount_amount'] > 0) {
                 DiscountHistory::query()->create([
+                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
                     'invoice_id' => $invoice->id,
                     'invoice_no' => $invoice->invoice_no,
                     'amount' => $preview['discount_amount'],
@@ -354,8 +355,8 @@ class CloseSessionInvoiceAction
                 ]);
             }
 
-            $this->insertPlayHistoryRows($session, $invoice, $actor, $shiftNo);
-            $this->insertMarketHistoryRows($device, $session, $invoice, $actor, $shiftNo, $coreLedgerEntries['orders'] ?? null);
+            $this->insertPlayHistoryRows($session, $invoice, $actor, $shiftId);
+            $this->insertMarketHistoryRows($device, $session, $invoice, $actor, $shiftId, $coreLedgerEntries['orders'] ?? null);
 
             // $this->updateShiftTotals($shiftId, $preview);
             $this->applyCustomerSettlement(
@@ -606,6 +607,7 @@ class CloseSessionInvoiceAction
 
         if ($amountDelta !== 0.0) {
             CustomerCredit::query()->create([
+                'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
                 'customer_id' => $customer->id,
                 'user_id' => $actor->id,
                 'type' => $amountDelta > 0 ? 'deposit' : 'withdraw',
@@ -835,6 +837,7 @@ class CloseSessionInvoiceAction
             }
 
             PlayHistory::query()->create([
+                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? session('active_branch_id'),
                 'device_id' => (int) ($detail->device_id ?? 0) ?: null,
                 'play_type' => (string) ($detail->play_type ?? ''),
                 'hour_price' => $detail->play_price,
@@ -951,6 +954,7 @@ class CloseSessionInvoiceAction
                     // Create StockMovement for the component
                     if ($defaultWarehouse) {
                         StockMovement::query()->create([
+                            'branch_id' => $defaultWarehouse->branch_id ?? $invoice->branch_id,
                             'warehouse_id' => $defaultWarehouse->id,
                             'catalog_item_id' => $componentRelation->component_id,
                             'invoice_id' => $invoice->id,
@@ -1007,6 +1011,7 @@ class CloseSessionInvoiceAction
                     }
 
                     StockMovement::query()->create([
+                        'branch_id' => $defaultWarehouse->branch_id ?? $invoice->branch_id,
                         'warehouse_id' => $defaultWarehouse->id,
                         'catalog_item_id' => $catalogItem->id,
                         'invoice_id' => $invoice->id,
@@ -1025,17 +1030,18 @@ class CloseSessionInvoiceAction
 
             // Create MarketHistory record for the sold item (using calculated cost)
             MarketHistory::query()->create([
+                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? session('active_branch_id'),
                 'customer_id' => $session->customer_id,
                 'device_id' => $device->id,
                 'catalog_item_id' => $catalogItem->id,
-                'subject_name' => $device->name,
+                'subject_name' => $catalogItem->name,
                 'unit_price' => $price,
                 'total_amount' => round($quantity * $price, 2),
                 'unit_cost' => $averageCost,
                 'total_cost' => $totalCost,
                 'transaction_date' => $trxDate,
                 'transaction_time' => $trxTime,
-                'created_by' => $actor->name,
+                'created_by' => $actor->id,
                 'shift_id' => $shiftId,
                 'ledger_entry_id' => $orderLedgerEntryId,
                 'quantity' => $quantity,

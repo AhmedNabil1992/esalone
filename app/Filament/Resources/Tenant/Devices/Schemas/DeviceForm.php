@@ -13,6 +13,13 @@ class DeviceForm
     {
         return $schema
             ->components([
+                Select::make('branch_id')
+                    ->relationship('branch', 'name')
+                    ->label('الفرع')
+                    ->required()
+                    ->default(fn () => session('active_branch_id') !== 'all' ? (int) session('active_branch_id') : null)
+                    ->searchable()
+                    ->preload(),
                 Select::make('devices_type_id')
                     ->label('نوع الجهاز')
                     ->relationship('type', 'name')

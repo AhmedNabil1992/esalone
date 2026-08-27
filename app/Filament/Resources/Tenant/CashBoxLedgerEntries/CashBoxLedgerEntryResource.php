@@ -34,7 +34,9 @@ class CashBoxLedgerEntryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['cashBox', 'createdBy', 'shift']);
+        return parent::getEloquentQuery()
+            ->whereHas('cashBox')
+            ->with(['cashBox', 'createdBy', 'shift']);
     }
 
     public static function infolist(Schema $schema): Schema

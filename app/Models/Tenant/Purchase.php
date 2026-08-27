@@ -2,13 +2,17 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Purchase extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'warehouse_id',
         'cash_box_id',
         'supplier_id',
@@ -58,5 +62,10 @@ class Purchase extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseItem::class, 'purchase_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 }

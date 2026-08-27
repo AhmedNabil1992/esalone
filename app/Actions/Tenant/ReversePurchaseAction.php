@@ -45,6 +45,7 @@ class ReversePurchaseAction
                 $stock->save();
 
                 StockMovement::query()->create([
+                    'branch_id' => $purchase->warehouse?->branch_id ?? $purchase->branch_id,
                     'warehouse_id' => $purchase->warehouse_id,
                     'catalog_item_id' => $purchaseItem->catalog_item_id,
                     'purchase_id' => $purchase->id,

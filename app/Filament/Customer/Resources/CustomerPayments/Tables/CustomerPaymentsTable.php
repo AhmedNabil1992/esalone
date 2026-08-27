@@ -14,6 +14,10 @@ class CustomerPaymentsTable
     {
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->placeholder('-'),
                 TextColumn::make('description')
                     ->searchable()
                     ->label('الوصف'),

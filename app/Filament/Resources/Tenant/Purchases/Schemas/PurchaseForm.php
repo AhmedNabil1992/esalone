@@ -18,19 +18,12 @@ class PurchaseForm
     {
         return $schema
             ->components([
-                // Select::make('shift_id')
-                //     ->label('الشيفت')
-                //     ->options(fn (): array => static::shiftOptions())
-                //     ->default(fn (): ?int => Shift::currentOpenShiftId())
-                //     ->searchable()
-                //     ->preload()
-                //     ->dehydrated(false)
-                //     ->disabled()
-                //     ->helperText(fn (): string => SchemaFacade::connection('tenant')->hasTable('shifts')
-                //         ? (Shift::currentOpenShiftNumber()
-                //             ? 'رقم الشيفت الحالي: '.Shift::currentOpenShiftNumber()
-                //             : 'لا يوجد شيفت مفتوح حاليًا. قم بفتح شيفت جديد أولاً.')
-                //         : 'جدول الشيفتات غير موجود في قاعدة بيانات العميل الحالي. شغّل ترحيل الشيفتات أولاً.'),
+                TextInput::make('shift_no_display')
+                    ->label('الشيفت الحالي')
+                    ->default(fn (): string => Shift::currentOpenShiftNumber() ? 'شيفت #'.Shift::currentOpenShiftNumber() : 'لا يوجد شيفت مفتوح')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('يتم ترحيل الفاتورة وتأثيرها المالي تلقائياً على الشيفت المفتوح الحالي بالنظام.'),
                 Select::make('warehouse_id')
                     ->label('المخزن')
                     ->relationship('warehouse', 'name', fn ($query) => $query->where('is_active', true))

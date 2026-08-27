@@ -2,14 +2,18 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlayHistory extends Model
 {
+    use BelongsToBranch;
+
     protected $table = 'play_history';
 
     protected $fillable = [
+        'branch_id',
         'device_id',
         'play_type',
         'hour_price',

@@ -46,22 +46,25 @@ class PostPurchaseAction
             throw new InvalidArgumentException('An active cash box is required for purchases.');
         }
 
-        $shift = isset($payload['shift_id'])
-            ? Shift::query()
-                ->whereKey($payload['shift_id'])
-                ->active()
-                ->open()
-                ->first()
+        $shiftId = $payload['shift_id'] ?? null;
+
+        $shift = $shiftId
+            ? Shift::query()->whereKey($shiftId)->first()
             : Shift::currentOpenShift();
 
         if (! $shift) {
-            throw new InvalidArgumentException('An active open shift is required for purchases.');
+            $shift = Shift::currentOpenShift();
+        }
+
+        if (! $shift) {
+            throw new InvalidArgumentException('لا يوجد شيفت مفتوح حالياً لربط الفاتورة به. يرجى فتح شيفت جديد أولاً.');
         }
 
         $payload['shift_id'] = $shift->id;
 
-        return DB::transaction(function () use ($payload, $actor): Purchase {
+        return DB::transaction(function () use ($payload, $shift, $actor): Purchase {
             $purchase = Purchase::query()->create([
+                'branch_id' => $shift->branch_id,
                 'warehouse_id' => $payload['warehouse_id'],
                 'cash_box_id' => $payload['cash_box_id'],
                 'supplier_id' => $payload['supplier_id'] ?? null,
@@ -131,6 +134,7 @@ class PostPurchaseAction
                 $catalogItem->save();
 
                 StockMovement::query()->create([
+                    'branch_id' => $purchase->warehouse?->branch_id ?? $purchase->branch_id,
                     'warehouse_id' => $purchase->warehouse_id,
                     'catalog_item_id' => $catalogItem->id,
                     'purchase_id' => $purchase->id,

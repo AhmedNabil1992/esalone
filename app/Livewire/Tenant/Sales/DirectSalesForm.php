@@ -181,7 +181,7 @@ class DirectSalesForm extends Component
             return;
         }
 
-        $unitPrice = (float) $item->sale_price;
+        $unitPrice = $item->getEffectiveSalePrice();
         $totalAmount = round($unitPrice * $quantity, 2);
 
         $key = "item_{$itemId}";

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Tenant\StockMovements\Schemas;
 
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
+use App\Scopes\BranchScope;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,9 +20,17 @@ class StockMovementForm
                 Select::make('warehouse_id')
                     ->label('المخزن المصدر (من)')
                     ->options(function (): Collection {
-                        return Warehouse::query()
+                        return Warehouse::withoutGlobalScope(BranchScope::class)
                             ->where('is_active', true)
-                            ->pluck('name', 'id');
+                            ->when(
+                                session('active_branch_id') !== 'all' && session('active_branch_id') !== null,
+                                fn ($q) => $q->where('branch_id', (int) session('active_branch_id'))
+                            )
+                            ->with('branch')
+                            ->get()
+                            ->mapWithKeys(fn (Warehouse $w): array => [
+                                $w->id => $w->name.($w->branch ? " ({$w->branch->name})" : ''),
+                            ]);
                     })
                     ->searchable()
                     ->required()
@@ -40,10 +49,14 @@ class StockMovementForm
                             return Collection::make();
                         }
 
-                        return Warehouse::query()
+                        return Warehouse::withoutGlobalScope(BranchScope::class)
                             ->where('is_active', true)
                             ->where('id', '!=', $sourceWarehouseId)
-                            ->pluck('name', 'id');
+                            ->with('branch')
+                            ->get()
+                            ->mapWithKeys(fn (Warehouse $w): array => [
+                                $w->id => $w->name.($w->branch ? " ({$w->branch->name})" : ''),
+                            ]);
                     })
                     ->searchable()
                     ->disabled(fn (callable $get): bool => blank($get('warehouse_id')))

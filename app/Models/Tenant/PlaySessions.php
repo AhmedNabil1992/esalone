@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,11 +13,12 @@ use Illuminate\Support\Str;
 
 class PlaySessions extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $table = 'play_sessions';
 
     protected $fillable = [
+        'branch_id',
         'device_id',
         'customer_id',
         'prepaid_amount',

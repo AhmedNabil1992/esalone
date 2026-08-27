@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class PlayPriceResource extends Resource
@@ -45,6 +46,13 @@ class PlayPriceResource extends Resource
     public static function table(Table $table): Table
     {
         return PlayPricesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['device.branch', 'playType'])
+            ->whereHas('device');
     }
 
     public static function getRelations(): array

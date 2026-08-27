@@ -16,6 +16,14 @@ class OfferForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->schema([
+            Select::make('branch_id')
+                ->relationship('branch', 'name')
+                ->label('الفرع')
+                ->required()
+                ->default(fn () => session('active_branch_id') !== 'all' ? (int) session('active_branch_id') : null)
+                ->searchable()
+                ->preload(),
+
             TextInput::make('name')
                 ->label('اسم العرض')
                 ->required()

@@ -33,7 +33,7 @@ class PlaySessionDetailResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->orderByDesc('play_session_id');
+        return parent::getEloquentQuery()->whereHas('playSession')->orderByDesc('play_session_id');
     }
 
     public static function form(Schema $schema): Schema

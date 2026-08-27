@@ -2,12 +2,16 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerCredit extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'customer_id',
         'user_id',
         'type',
@@ -33,5 +37,10 @@ class CustomerCredit extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

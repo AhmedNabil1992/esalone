@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Tenant;
 
+use App\Models\Tenant\Branch;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\Warehouse;
@@ -12,6 +13,14 @@ class DefaultSeeder extends Seeder
     public function run(): void
     {
         // Create default cash box
+        Branch::firstOrCreate(
+            ['code' => '1'],
+            [
+                'name' => 'الفرع الرئيسي',
+                'is_active' => true,
+            ]
+        );
+
         CashBox::firstOrCreate(
             ['code' => '1'],
             [
@@ -37,5 +46,6 @@ class DefaultSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
     }
 }

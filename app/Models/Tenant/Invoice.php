@@ -2,13 +2,17 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'invoice_no',
         'invoice_type',
         'device_id',

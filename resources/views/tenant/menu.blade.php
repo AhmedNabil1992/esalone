@@ -321,6 +321,19 @@
         <section class="menu-title-section">
             <h1 class="menu-title">قائمة المأكولات والمشروبات</h1>
             <p class="menu-subtitle">استمتع بتشكيلة رائعة من المشروبات الباردة والساخنة والمأكولات الخفيفة أثناء اللعب</p>
+
+            @if(isset($branches) && $branches->count() > 1)
+                <form method="GET" action="{{ route('tenant.menu') }}" class="branch-select-form" style="margin-top: 18px; display: inline-flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); padding: 6px 16px; border-radius: 9999px;">
+                    <label for="branch_id" style="font-size: 0.88rem; color: var(--text-muted); font-weight: 700;">عرض أسعار فرع:</label>
+                    <select name="branch_id" id="branch_id" onchange="this.form.submit()" style="background: rgba(13, 20, 35, 0.95); color: #fff; border: 1px solid var(--primary); padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; outline: none;">
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ ($selectedBranchId ?? null) == $branch->id ? 'selected' : '' }}>
+                                📍 {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            @endif
         </section>
 
         @if($groups->isNotEmpty())
@@ -357,7 +370,7 @@
                                         <p class="product-desc">{{ $item->description ?: 'صنف طازج ومميز مجهز خصيصاً لك لتعزيز متعة اللعب.' }}</p>
                                         <div class="product-footer">
                                             <div class="product-price">
-                                                {{ number_format($item->sale_price, 2) }} <span>ج.م</span>
+                                                {{ number_format($item->effective_price ?? $item->sale_price, 2) }} <span>ج.م</span>
                                             </div>
                                         </div>
                                     </div>

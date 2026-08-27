@@ -20,9 +20,9 @@ return new class extends Migration
 
             // 3. إعادة إنشاء المفتاح الأجنبي
             $table->foreign('play_session_id')
-                  ->references('id')
-                  ->on('play_sessions')
-                  ->cascadeOnDelete(); // أو nullOnDelete() حسب البيزنس لوجيك بتاعك
+                ->references('id')
+                ->on('play_sessions')
+                ->cascadeOnDelete(); // أو nullOnDelete() حسب البيزنس لوجيك بتاعك
         });
     }
 
@@ -40,9 +40,9 @@ return new class extends Migration
 
             // 3. إعادة إنشاء المفتاح الأجنبي
             $table->foreign('play_session_id')
-                  ->references('id')
-                  ->on('play_sessions')
-                  ->cascadeOnDelete();
+                ->references('id')
+                ->on('play_sessions')
+                ->cascadeOnDelete();
         });
     }
 };

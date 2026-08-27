@@ -23,6 +23,10 @@ class ExpenseHistoriesTable
 
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->placeholder('-'),
                 TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
@@ -49,6 +53,8 @@ class ExpenseHistoriesTable
                     ->placeholder('-'),
                 TextColumn::make('shift_id')
                     ->label('رقم الشفت')
+                    ->formatStateUsing(fn ($state, $record) => $record->shift ? "#{$record->shift->shift_no}" : ($state ? "#{$state}" : '-'))
+                    ->placeholder('-')
                     ->sortable(),
                 TextColumn::make('occurred_at')
                     ->label('تاريخ العملية')

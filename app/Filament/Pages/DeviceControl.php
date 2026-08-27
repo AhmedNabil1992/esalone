@@ -939,7 +939,7 @@ class DeviceControl extends Page
             return;
         }
 
-        $unitPrice = round((float) ($item->sale_price ?? 0), 2);
+        $unitPrice = round($item->getEffectiveSalePrice(null, 'device_sale'), 2);
         $quantity = (int) $this->orderItemQuantity;
         $total = round($unitPrice * $quantity, 2);
 

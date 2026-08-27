@@ -2,15 +2,19 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ExpenseHistory extends Model
 {
+    use BelongsToBranch;
+
     protected $table = 'expense_histories';
 
     protected $fillable = [
+        'branch_id',
         'shift_id',
         'cash_box_id',
         'created_by_user_id',

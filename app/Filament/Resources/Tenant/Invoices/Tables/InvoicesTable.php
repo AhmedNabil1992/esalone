@@ -87,7 +87,23 @@ class InvoicesTable
                     ]),
                 TextColumn::make('status')
                     ->label('الحالة')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'paid' => 'مدفوعة',
+                        'unpaid' => 'غير مدفوعة',
+                        'partially_paid' => 'مدفوعة جزئياً',
+                        'posted' => 'مكتملة',
+                        'draft' => 'مسودة',
+                        'cancelled', 'voided' => 'ملغاة',
+                        default => $state ?? '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'paid', 'posted' => 'success',
+                        'partially_paid' => 'warning',
+                        'unpaid', 'cancelled', 'voided' => 'danger',
+                        'draft' => 'gray',
+                        default => 'gray',
+                    }),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
@@ -111,6 +127,16 @@ class InvoicesTable
                                 fn (Builder $builder): Builder => $builder->whereDate('issued_at', '<=', $until)
                             );
                     }),
+                SelectFilter::make('status')
+                    ->label('الحالة')
+                    ->options([
+                        'paid' => 'مدفوعة',
+                        'unpaid' => 'غير مدفوعة',
+                        'partially_paid' => 'مدفوعة جزئياً',
+                        'posted' => 'مكتملة',
+                        'draft' => 'مسودة',
+                        'cancelled' => 'ملغاة',
+                    ]),
                 SelectFilter::make('invoice_type')
                     ->label('نوع الفاتورة')
                     ->options([

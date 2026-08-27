@@ -16,6 +16,11 @@ class DevicesTable
     {
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('type.name')
                     ->label('نوع الجهاز')
                     ->searchable(),

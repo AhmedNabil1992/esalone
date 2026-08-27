@@ -2,14 +2,18 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MarketHistory extends Model
 {
+    use BelongsToBranch;
+
     protected $table = 'market_history';
 
     protected $fillable = [
+        'branch_id',
         'customer_id',
         'device_id',
         'catalog_item_id',

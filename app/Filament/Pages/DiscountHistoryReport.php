@@ -43,8 +43,12 @@ class DiscountHistoryReport extends Page implements HasTable
         $defaultUntil = Carbon::today()->toDateString();
 
         return $table
-            ->query(DiscountHistory::query()->latest('id'))
+            ->query(DiscountHistory::query()->with(['branch', 'shift', 'user', 'invoice'])->latest('id'))
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->placeholder('-'),
                 TextColumn::make('invoice_no')
                     ->label('رقم الفاتورة')
                     ->searchable()
@@ -63,6 +67,7 @@ class DiscountHistoryReport extends Page implements HasTable
                     ->placeholder('-'),
                 TextColumn::make('shift_id')
                     ->label('شيفت رقم')
+                    ->formatStateUsing(fn ($state, $record) => $record->shift ? "#{$record->shift->shift_no}" : ($state ? "#{$state}" : '-'))
                     ->placeholder('-')
                     ->sortable(),
                 TextColumn::make('user.name')

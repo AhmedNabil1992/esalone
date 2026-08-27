@@ -4,9 +4,11 @@ namespace App\Filament\Resources\Tenant\CatalogItems\Schemas;
 
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Str;
@@ -33,11 +35,25 @@ class CatalogItemForm
                 TextInput::make('purchase_price')
                     ->label('سعر الشراء')
                     ->numeric()
+                    ->default(0)
                     ->required(),
                 TextInput::make('sale_price')
-                    ->label('سعر البيع')
+                    ->label('السعر الأساسي الافتراضي')
                     ->numeric()
+                    ->default(0)
                     ->required(),
+                TextInput::make('direct_sale_price')
+                    ->label('سعر البيع المباشر')
+                    ->numeric()
+                    ->helperText('يُطبق في مبيعات الكاونتر والسفري (إذا ترك فارغاً يُستخدم السعر الافتراضي)'),
+                TextInput::make('device_sale_price')
+                    ->label('سعر جلسات اللعب والأجهزة')
+                    ->numeric()
+                    ->helperText('يُطبق عند إضافة طلب لغرفة أو جهاز لعب (إذا ترك فارغاً يُستخدم السعر الافتراضي)'),
+                TextInput::make('table_sale_price')
+                    ->label('سعر صالة الترابيزات')
+                    ->numeric()
+                    ->helperText('يُطبق عند إضافة طلب لترابيزة (إذا ترك فارغاً يُستخدم السعر الافتراضي)'),
                 TextInput::make('min_quantity')
                     ->label('حد الأمان (الحد الأدنى)')
                     ->numeric()
@@ -49,6 +65,37 @@ class CatalogItemForm
                 Toggle::make('is_component')
                     ->label('هل هذا صنف مكون؟')
                     ->helperText('حدد هذا الخيار إذا كان الصنف هو مكون يستخدم في تكوين المنتجات.'),
+
+                Section::make('أسعار وإتاحة الفروع المخصصة')
+                    ->description('أدخل أسعار مخصصة لكل فرع إذا كانت تختلف عن الأسعار العامة الافتراضية أعلاه.')
+                    ->schema([
+                        Repeater::make('branchPrices')
+                            ->relationship('branchPrices')
+                            ->schema([
+                                Select::make('branch_id')
+                                    ->label('الفرع')
+                                    ->relationship('branch', 'name')
+                                    ->required()
+                                    ->distinct(),
+                                Toggle::make('is_available')
+                                    ->label('متاح في هذا الفرع؟')
+                                    ->default(true),
+                                TextInput::make('direct_sale_price')
+                                    ->label('سعر البيع المباشر بالفرع')
+                                    ->numeric(),
+                                TextInput::make('device_sale_price')
+                                    ->label('سعر الأجهزة بالفرع')
+                                    ->numeric(),
+                                TextInput::make('table_sale_price')
+                                    ->label('سعر الترابيزات بالفرع')
+                                    ->numeric(),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->columnSpanFull(),
                 FileUpload::make('picture')
                     ->label('صورة الصنف')
                     ->image()

@@ -16,6 +16,12 @@ class OffersTable
     {
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('name')
                     ->label('اسم العرض')
                     ->searchable()

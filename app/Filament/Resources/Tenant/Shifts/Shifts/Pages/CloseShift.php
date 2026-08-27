@@ -48,6 +48,7 @@ class CloseShift extends Page
     public function mount($record): void
     {
         $this->record = $this->resolveRecord($record);
+        $branchId = (int) $this->record->branch_id;
 
         if ($this->record->status === 'close') {
             $this->actual_amount = (float) $this->record->actual_amount;
@@ -55,7 +56,7 @@ class CloseShift extends Page
             $this->cashbox_actuals = $this->record->cashbox_actual_amounts ?? [];
         } else {
             $this->cashbox_actuals = [];
-            foreach (CashBox::query()->where('is_active', true)->pluck('id') as $id) {
+            foreach (CashBox::query()->where('branch_id', $branchId)->where('is_active', true)->pluck('id') as $id) {
                 $this->cashbox_actuals[$id] = null;
             }
         }
@@ -77,9 +78,13 @@ class CloseShift extends Page
     public function calculateStats(): void
     {
         $shiftId = $this->record->id;
+        $branchId = (int) $this->record->branch_id;
 
         // 1. Fetch Invoices closed during this shift
-        $invoicesQuery = Invoice::query()->where('shift_id', $shiftId)->where('status', 'posted');
+        $invoicesQuery = Invoice::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->where('status', 'posted');
         $invoices = $invoicesQuery->get();
 
         $playInvoicesColl = $invoices->where('invoice_type', 'device_sale');
@@ -99,12 +104,16 @@ class CloseShift extends Page
 
         // Payments via customer balance
         $customer_credit_amount = (float) InvoicePayment::query()
+            ->where('branch_id', $branchId)
             ->whereIn('invoice_id', $invoices->pluck('id'))
             ->where('payment_method', 'customer_balance')
             ->sum('amount');
 
         // 2. Ledger cash movements during this shift
-        $ledgerEntries = CashBoxLedgerEntry::query()->where('shift_id', $shiftId)->get();
+        $ledgerEntries = CashBoxLedgerEntry::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->get();
 
         // Customer deposits & withdrawals
         $customer_add_amount = (float) $ledgerEntries->where('operation', 'customer_credit_deposit')->sum('amount');
@@ -155,24 +164,37 @@ class CloseShift extends Page
         ];
 
         // 3. Expected cash per cashbox
-        $cashBoxes = CashBox::query()->where('is_active', true)->get();
+        $cashBoxes = CashBox::query()
+            ->where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->get();
         $this->cashBoxSummaries = [];
+        $isSingleBox = $cashBoxes->count() === 1;
+
         foreach ($cashBoxes as $box) {
             $boxLedger = $ledgerEntries->where('cash_box_id', $box->id);
             $inflow = (float) $boxLedger->where('direction', 'in')->sum('amount');
             $outflow = (float) $boxLedger->where('direction', 'out')->sum('amount');
-            $netChange = $inflow - $outflow;
+
+            if ($isSingleBox) {
+                $netChange = round($expected_cash - $start_amount, 2);
+                $expectedBalance = $expected_cash;
+            } else {
+                $netChange = round($inflow - $outflow, 2);
+                $expectedBalance = round((float) $box->current_balance, 2);
+            }
 
             $this->cashBoxSummaries[] = [
                 'id' => $box->id,
                 'name' => $box->name,
                 'net_change' => $netChange,
-                'current_balance' => (float) $box->current_balance,
+                'current_balance' => $expectedBalance,
             ];
         }
 
         // 4. Load details lists for accordions
         $this->playInvoices = Invoice::query()
+            ->where('branch_id', $branchId)
             ->where('shift_id', $shiftId)
             ->where('invoice_type', 'device_sale')
             ->where('status', 'posted')
@@ -181,6 +203,7 @@ class CloseShift extends Page
             ->toArray();
 
         $this->directSales = Invoice::query()
+            ->where('branch_id', $branchId)
             ->where('shift_id', $shiftId)
             ->where('invoice_type', 'direct_sale')
             ->where('status', 'posted')
@@ -189,12 +212,14 @@ class CloseShift extends Page
             ->toArray();
 
         $this->expenses = ExpenseHistory::query()
+            ->where('branch_id', $branchId)
             ->where('shift_id', $shiftId)
             ->with(['cashBox', 'expenseType'])
             ->get()
             ->toArray();
 
         $this->purchases = Purchase::query()
+            ->where('branch_id', $branchId)
             ->where('shift_id', $shiftId)
             ->with(['cashBox', 'supplier'])
             ->get()

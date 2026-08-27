@@ -2,12 +2,11 @@
 
 namespace App\Filament\Customer\Resources\CustomerPayments;
 
-use App\Filament\Customer\Resources\CustomerPayments\Pages\CreateCustomerPayments;
-use App\Filament\Customer\Resources\CustomerPayments\Pages\EditCustomerPayments;
 use App\Filament\Customer\Resources\CustomerPayments\Pages\ListCustomerPayments;
 use App\Filament\Customer\Resources\CustomerPayments\Schemas\CustomerPaymentsForm;
 use App\Filament\Customer\Resources\CustomerPayments\Tables\CustomerPaymentsTable;
 use App\Models\Tenant\CustomerCredit;
+use App\Scopes\BranchScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -46,7 +45,35 @@ class CustomerPaymentsResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('customer_id', auth()->guard('customer')->id())->orderBy('id', 'desc');
+            ->withoutGlobalScope(BranchScope::class)
+            ->where('customer_id', auth()->guard('customer')->id())
+            ->with(['branch', 'user'])
+            ->orderBy('id', 'desc');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->guard('customer')->check();
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->guard('customer')->check() && (int) $record->customer_id === (int) auth()->guard('customer')->id();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
     }
 
     public static function getRelations(): array
@@ -60,8 +87,6 @@ class CustomerPaymentsResource extends Resource
     {
         return [
             'index' => ListCustomerPayments::route('/'),
-            'create' => CreateCustomerPayments::route('/create'),
-            'edit' => EditCustomerPayments::route('/{record}/edit'),
         ];
     }
 }

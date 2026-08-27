@@ -2,12 +2,18 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DiscountHistory extends Model
 {
+    use BelongsToBranch;
+
+    // protected $table = 'discount_history';
+
     protected $fillable = [
+        'branch_id',
         'invoice_id',
         'invoice_no',
         'amount',

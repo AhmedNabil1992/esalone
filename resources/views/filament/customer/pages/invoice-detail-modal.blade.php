@@ -39,7 +39,7 @@
                     <tbody>
                         @foreach($invoice->playSessionDetails as $play)
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: #e5e7eb;">
-                                <td style="padding: 10px 8px; font-weight: bold; color: #fff;">{{ $play->device?->name ?? 'جهاز خارجي' }}</td>
+                                <td style="padding: 10px 8px; font-weight: bold; color: #fff;">{{ $play->device?->name ?? $invoice->device?->name ?? 'جهاز رئيسي' }}</td>
                                 <td style="padding: 10px 8px;">{{ $play->play_type }}</td>
                                 <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->start_time ? $play->start_time->format('h:i A') : '-' }}</td>
                                 <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->actual_end_time ? $play->actual_end_time->format('h:i A') : '-' }}</td>
@@ -72,7 +72,7 @@
                     <tbody>
                         @foreach($invoice->marketHistories as $order)
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: #e5e7eb;">
-                                <td style="padding: 10px 8px; font-weight: bold; color: #fff;">{{ $order->subject_name }}</td>
+                                <td style="padding: 10px 8px; font-weight: bold; color: #fff;">{{ $order->catalogItem?->name ?? $order->item?->name ?? ($order->subject_name !== $invoice->device?->name ? $order->subject_name : 'منتج ماركت') }}</td>
                                 <td style="padding: 10px 8px; text-align: center; font-weight: 700; color: #f59e0b;">{{ $order->quantity }}</td>
                                 <td style="padding: 10px 8px; text-align: center;">{{ number_format($order->unit_price, 2) }} ج.م</td>
                                 <td style="padding: 10px 8px; text-align: left; font-weight: bold; color: #10b981;">{{ number_format($order->total_amount, 2) }} ج.م</td>
