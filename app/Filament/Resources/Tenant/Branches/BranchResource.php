@@ -14,7 +14,6 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class BranchResource extends Resource
@@ -50,21 +49,12 @@ class BranchResource extends Resource
 
     public static function canCreate(): bool
     {
-        $tenant = tenancy()->tenant;
-        if (! $tenant || ! $tenant->plan_id) {
+        $tenant = tenancy()->tenant ?? (function_exists('tenant') ? tenant() : null);
+        if (! $tenant) {
             return true;
         }
 
-        $limit = DB::table('plan_features')
-            ->where('plan_id', $tenant->plan_id)
-            ->where('feature', 'branches')
-            ->value('limit_value');
-
-        if ($limit !== null && Branch::count() >= (int) $limit) {
-            return false;
-        }
-
-        return true;
+        return $tenant->canCreateBranch(Branch::count());
     }
 
     public static function getRelations(): array

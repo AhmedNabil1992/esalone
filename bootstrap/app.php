@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckTenantBranchLimit;
 use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantProvisioningTokenIsValid;
 use App\Http\Middleware\InitializeTenancyByDomainIfExists;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant.provisioning.token' => EnsureTenantProvisioningTokenIsValid::class,
+            'tenant.branch.limit' => CheckTenantBranchLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
