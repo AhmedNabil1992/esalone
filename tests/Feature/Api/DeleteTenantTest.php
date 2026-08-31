@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -12,6 +13,8 @@ use Tests\TestCase;
 
 class DeleteTenantTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_tenant_can_be_deleted_using_provisioning_token(): void
     {
         Event::fake([TenantDeleted::class]);
