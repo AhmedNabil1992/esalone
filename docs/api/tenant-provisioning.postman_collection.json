@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "8f6c3c52-7b0a-4a21-9e22-38b4f1791a24",
 		"name": "PS-Web Tenant Management API",
-		"description": "API collection for provisioning and deleting tenants in PS-Web.",
+		"description": "API collection for provisioning, checking domain availability, and deleting tenants in PS-Web.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -16,6 +16,38 @@
 		]
 	},
 	"item": [
+		{
+			"name": "Check Domain Availability (فحص توفر الدومين)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{BASE_URL}}/api/tenants/check-domain?domain=client1.ps-web.test",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"tenants",
+						"check-domain"
+					],
+					"query": [
+						{
+							"key": "domain",
+							"value": "client1.ps-web.test"
+						}
+					]
+				},
+				"description": "Checks whether a domain is already registered or available for a new tenant."
+			},
+			"response": []
+		},
 		{
 			"name": "Provision Tenant (إنشاء تينت جديد)",
 			"request": {

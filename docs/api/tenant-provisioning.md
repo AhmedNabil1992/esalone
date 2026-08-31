@@ -21,7 +21,50 @@ TENANT_PROVISIONING_API_TOKEN=your_secure_random_token_here
 
 ## 2. Endpoints (نقاط النهاية)
 
-### 2.1 إنشاء تينت جديد (Provision Tenant)
+### 2.1 التحقق من توفر الدومين (Check Domain Availability)
+
+تُستخدم هذه النقطة للتحقق مسبقاً مما إذا كان اسم الدومين محجوزاً أو متاحاً للتسجيل قبل إرسال طلب إنشاء الـ Tenant.
+
+- **Method:** `GET` أو `POST`
+- **URL:** `https://your-domain.com/api/tenants/check-domain`
+- **Headers:**
+  ```http
+  Authorization: Bearer <TENANT_PROVISIONING_API_TOKEN>
+  Accept: application/json
+  ```
+- **Query Parameter (في حال GET):** `?domain=client1.ps-web.test`
+- **Request Body (في حال POST):**
+  ```json
+  {
+    "domain": "client1.ps-web.test"
+  }
+  ```
+
+#### Responses:
+
+##### عند توفر الدومين (متاح للاستخدام):
+```json
+{
+  "domain": "client1.ps-web.test",
+  "exists": false,
+  "available": true,
+  "message": "الدومين متاح للاستخدام"
+}
+```
+
+##### عند حجز الدومين مسبقاً (مستخدم بالفعل):
+```json
+{
+  "domain": "client1.ps-web.test",
+  "exists": true,
+  "available": false,
+  "message": "الدومين مستخدم بالفعل"
+}
+```
+
+---
+
+### 2.2 إنشاء تينت جديد (Provision Tenant)
 
 تقوم هذه النقطة بالتحقق من البيانات وإرسال مهمة غير متزامنة (Queue Job) لإنشاء قاعدة البيانات الخاصة بالـ Tenant وتهيئتها مع إنشاء الحسابات وإرسال بريد إلكتروني.
 
