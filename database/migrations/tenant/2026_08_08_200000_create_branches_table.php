@@ -22,14 +22,14 @@ return new class extends Migration
         });
 
         // Seed default Main Branch for existing and new tenant DBs
-        DB::table('branches')->insert([
-            'id' => 1,
-            'name' => 'الفرع الرئيسي',
-            'code' => 'MAIN',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // DB::table('branches')->insert([
+        //     'id' => 1,
+        //     'name' => 'الفرع الرئيسي',
+        //     'code' => 'MAIN',
+        //     'is_active' => true,
+        //     'created_at' => now(),
+        //     'updated_at' => now(),
+        // ]);
     }
 
     public function down(): void

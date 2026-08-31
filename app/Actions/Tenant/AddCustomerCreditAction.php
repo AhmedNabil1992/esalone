@@ -69,8 +69,16 @@ class AddCustomerCreditAction
                 throw new RuntimeException('رصيد الخزنة غير كافٍ لإتمام عملية السحب.');
             }
 
+            $branchId = $cashBox->branch_id;
+            if (! $branchId || ! is_numeric($branchId) || (int) $branchId <= 0) {
+                $activeBranchId = session('active_branch_id');
+                $branchId = ($activeBranchId && $activeBranchId !== 'all' && is_numeric($activeBranchId) && (int) $activeBranchId > 0)
+                    ? (int) $activeBranchId
+                    : 1;
+            }
+
             $credit = CustomerCredit::create([
-                'branch_id' => $cashBox->branch_id ?? session('active_branch_id'),
+                'branch_id' => (int) $branchId,
                 'customer_id' => $customer->id,
                 'user_id' => $actor->id,
                 'type' => $payload['type'],

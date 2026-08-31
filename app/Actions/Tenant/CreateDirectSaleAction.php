@@ -142,9 +142,11 @@ class CreateDirectSaleAction
 
             // Create invoice
             $invoiceNo = $this->generateInvoiceNo();
+            $resolvedBranchId = $this->resolveBranchId($actor, $activeShift, $defaultCashBox);
 
             /** @var Invoice $invoice */
             $invoice = Invoice::query()->create([
+                'branch_id' => $resolvedBranchId,
                 'invoice_no' => $invoiceNo,
                 'invoice_type' => 'direct_sale',
                 'customer_id' => $customerId,
@@ -309,7 +311,7 @@ class CreateDirectSaleAction
 
                 // Create MarketHistory record for the sold item (using calculated cost)
                 MarketHistory::query()->create([
-                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
+                    'branch_id' => $invoice->branch_id ?? $resolvedBranchId,
                     'customer_id' => $customerId,
                     'catalog_item_id' => $itemModel->id,
                     'subject_name' => $itemModel->name,
@@ -372,7 +374,7 @@ class CreateDirectSaleAction
                 ]);
 
                 DiscountHistory::query()->create([
-                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
+                    'branch_id' => $invoice->branch_id ?? $resolvedBranchId,
                     'invoice_id' => $invoice->id,
                     'invoice_no' => $invoiceNo,
                     'amount' => $totalDiscount,
@@ -497,7 +499,7 @@ class CreateDirectSaleAction
         }
 
         CustomerCredit::query()->create([
-            'branch_id' => $invoice?->branch_id ?? session('active_branch_id'),
+            'branch_id' => $invoice?->branch_id ?? 1,
             'customer_id' => $customer->id,
             'user_id' => $actor->id,
             'type' => $balanceDelta > 0 ? 'deposit' : 'withdraw',
@@ -534,6 +536,31 @@ class CreateDirectSaleAction
                 }
             }
         }
+    }
+
+    private function resolveBranchId(?User $actor = null, ?Shift $shift = null, ?CashBox $cashBox = null): int
+    {
+        if ($shift?->branch_id && is_numeric($shift->branch_id) && (int) $shift->branch_id > 0) {
+            return (int) $shift->branch_id;
+        }
+
+        if ($cashBox?->branch_id && is_numeric($cashBox->branch_id) && (int) $cashBox->branch_id > 0) {
+            return (int) $cashBox->branch_id;
+        }
+
+        $activeBranchId = session('active_branch_id');
+        if ($activeBranchId && $activeBranchId !== 'all' && is_numeric($activeBranchId) && (int) $activeBranchId > 0) {
+            return (int) $activeBranchId;
+        }
+
+        if ($actor && method_exists($actor, 'assignedBranchIds')) {
+            $assignedIds = $actor->assignedBranchIds();
+            if (! empty($assignedIds)) {
+                return (int) $assignedIds[0];
+            }
+        }
+
+        return 1;
     }
 
     private function resolveAppliedPaidAmount(float $finalAmount, float $enteredPaidAmount): float

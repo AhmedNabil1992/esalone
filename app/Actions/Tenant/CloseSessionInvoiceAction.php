@@ -222,9 +222,11 @@ class CloseSessionInvoiceAction
             }
 
             $invoiceNo = $this->generateInvoiceNo();
+            $resolvedBranchId = $this->resolveBranchId($device, $session, $actor);
 
             /** @var Invoice $invoice */
             $invoice = Invoice::query()->create([
+                'branch_id' => $resolvedBranchId,
                 'invoice_no' => $invoiceNo,
                 'invoice_type' => 'device_sale',
                 'device_id' => $device->id,
@@ -343,7 +345,7 @@ class CloseSessionInvoiceAction
 
             if ((float) $preview['discount_amount'] > 0) {
                 DiscountHistory::query()->create([
-                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
+                    'branch_id' => $invoice->branch_id ?? $resolvedBranchId,
                     'invoice_id' => $invoice->id,
                     'invoice_no' => $invoice->invoice_no,
                     'amount' => $preview['discount_amount'],
@@ -607,7 +609,7 @@ class CloseSessionInvoiceAction
 
         if ($amountDelta !== 0.0) {
             CustomerCredit::query()->create([
-                'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
+                'branch_id' => $invoice->branch_id ?? ($invoice->device?->branch_id ?? 1),
                 'customer_id' => $customer->id,
                 'user_id' => $actor->id,
                 'type' => $amountDelta > 0 ? 'deposit' : 'withdraw',
@@ -837,7 +839,7 @@ class CloseSessionInvoiceAction
             }
 
             PlayHistory::query()->create([
-                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? session('active_branch_id'),
+                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? ($session->device?->branch_id ?? 1),
                 'device_id' => (int) ($detail->device_id ?? 0) ?: null,
                 'play_type' => (string) ($detail->play_type ?? ''),
                 'hour_price' => $detail->play_price,
@@ -1030,7 +1032,7 @@ class CloseSessionInvoiceAction
 
             // Create MarketHistory record for the sold item (using calculated cost)
             MarketHistory::query()->create([
-                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? session('active_branch_id'),
+                'branch_id' => $invoice->branch_id ?? $session->branch_id ?? ($device->branch_id ?? 1),
                 'customer_id' => $session->customer_id,
                 'device_id' => $device->id,
                 'catalog_item_id' => $catalogItem->id,
@@ -1330,5 +1332,30 @@ class CloseSessionInvoiceAction
         }
 
         return ' - خزينة '.$cashBoxName;
+    }
+
+    private function resolveBranchId(Devices $device, PlaySessions $session, ?User $actor = null): int
+    {
+        if ($device->branch_id && is_numeric($device->branch_id) && (int) $device->branch_id > 0) {
+            return (int) $device->branch_id;
+        }
+
+        if ($session->branch_id && is_numeric($session->branch_id) && (int) $session->branch_id > 0) {
+            return (int) $session->branch_id;
+        }
+
+        $activeBranchId = session('active_branch_id');
+        if ($activeBranchId && $activeBranchId !== 'all' && is_numeric($activeBranchId) && (int) $activeBranchId > 0) {
+            return (int) $activeBranchId;
+        }
+
+        if ($actor && method_exists($actor, 'assignedBranchIds')) {
+            $assignedIds = $actor->assignedBranchIds();
+            if (! empty($assignedIds)) {
+                return (int) $assignedIds[0];
+            }
+        }
+
+        return 1;
     }
 }

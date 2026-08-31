@@ -12,11 +12,11 @@ class DefaultSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create default cash box
-        Branch::firstOrCreate(
-            ['code' => '1'],
+        $mainBranch = Branch::firstOrCreate(
+            ['id' => 1],
             [
                 'name' => 'الفرع الرئيسي',
+                'code' => 'MAIN',
                 'is_active' => true,
             ]
         );
@@ -24,6 +24,7 @@ class DefaultSeeder extends Seeder
         CashBox::firstOrCreate(
             ['code' => '1'],
             [
+                'branch_id' => $mainBranch->id,
                 'name' => 'الخزنة الرئيسية',
                 'type' => 'cash',
                 'current_balance' => 0,
@@ -35,6 +36,7 @@ class DefaultSeeder extends Seeder
         Warehouse::firstOrCreate(
             ['code' => '1'],
             [
+                'branch_id' => $mainBranch->id,
                 'name' => 'المخزن الرئيسي',
                 'is_active' => true,
             ]
