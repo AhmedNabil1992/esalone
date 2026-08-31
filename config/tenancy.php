@@ -30,9 +30,7 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-        'ps-web.test',
+        parse_url(config('app.url'), PHP_URL_HOST) ?? parse_url(env('APP_URL'), PHP_URL_HOST),
     ],
 
     /**
@@ -66,7 +64,7 @@ return [
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => 'ps_tenant_',
+        'prefix' => 'ps_',
         'suffix' => '',
 
         /**
