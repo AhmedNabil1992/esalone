@@ -13,8 +13,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // (new DefaultSeeder)->run();
-        // (new SettingSeeder)->run();
+        (new DefaultSeeder)->run();
+        (new SettingSeeder)->run();
     }
 
     /**
