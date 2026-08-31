@@ -25,10 +25,12 @@ class PlaySessions extends Model
         'session_key',
         'status',
         'alert_5min_sent',
+        'alert_ended_sent',
     ];
 
     protected $casts = [
         'alert_5min_sent' => 'boolean',
+        'alert_ended_sent' => 'boolean',
     ];
 
     /**
