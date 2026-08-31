@@ -27,10 +27,27 @@ class CatalogItemsTable
                     ->sortable(),
                 TextColumn::make('purchase_price')
                     ->label('سعر الشراء')
-                    ->money(),
+                    ->money()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('sale_price')
-                    ->label('سعر البيع')
-                    ->money(),
+                    ->label('السعر الافتراضي')
+                    ->money()
+                    ->sortable(),
+                TextColumn::make('direct_sale_price')
+                    ->label('سعر البيع المباشر')
+                    ->getStateUsing(fn ($record) => $record->getEffectiveSalePrice(null, 'direct_sale'))
+                    ->money()
+                    ->sortable(),
+                TextColumn::make('device_sale_price')
+                    ->label('سعر الأجهزة')
+                    ->getStateUsing(fn ($record) => $record->getEffectiveSalePrice(null, 'device_sale'))
+                    ->money()
+                    ->sortable(),
+                TextColumn::make('table_sale_price')
+                    ->label('سعر الترابيزات')
+                    ->getStateUsing(fn ($record) => $record->getEffectiveSalePrice(null, 'table_sale'))
+                    ->money()
+                    ->sortable(),
                 TextColumn::make('min_quantity')
                     ->label('حد الأمان')
                     ->formatStateUsing(fn ($state) => (float) $state)

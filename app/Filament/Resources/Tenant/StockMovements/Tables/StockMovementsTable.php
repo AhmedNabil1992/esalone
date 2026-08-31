@@ -2,19 +2,30 @@
 
 namespace App\Filament\Resources\Tenant\StockMovements\Tables;
 
+use Carbon\Carbon;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class StockMovementsTable
 {
     public static function configure(Table $table): Table
     {
+        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
+        $defaultUntil = Carbon::today()->toDateString();
+
         return $table
             ->columns([
+                TextColumn::make('warehouse.branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable(),
                 TextColumn::make('warehouse.name')
                     ->label('المخزن')
                     ->searchable(),
@@ -33,8 +44,24 @@ class StockMovementsTable
                         'purchase' => 'شراء',
                         'purchase_reverse' => 'عكس شراء',
                         'transfer' => 'تحويل مخزني',
+                        'direct_sale' => 'بيع مباشر',
+                        'sale' => 'مبيعات',
+                        'sale_reverse' => 'عكس مبيعات',
+                        'inventory_adjustment' => 'تعديل مخزني',
                         default => $state,
                     })
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'purchase' => 'info',
+                        'transfer' => 'warning',
+                        'direct_sale', 'sale' => 'success',
+                        'purchase_reverse', 'sale_reverse' => 'danger',
+                        default => 'gray',
+                    })
+                    ->sortable(),
+                TextColumn::make('occurred_at')
+                    ->dateTime()
+                    ->label('تاريخ الحركة')
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -47,12 +74,46 @@ class StockMovementsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('occurred_at', 'desc')
             ->filters([
-                //
+                Filter::make('occurred_at')
+                    ->label('تاريخ الحركة')
+                    ->form([
+                        DatePicker::make('from')
+                            ->label('من تاريخ')
+                            ->default($defaultFrom),
+                        DatePicker::make('until')
+                            ->label('إلى تاريخ')
+                            ->default($defaultUntil),
+                    ])
+                    ->query(function (Builder $query, array $data) use ($defaultFrom, $defaultUntil): Builder {
+                        $from = $data['from'] ?? $defaultFrom;
+                        $until = $data['until'] ?? $defaultUntil;
+
+                        return $query
+                            ->when(
+                                filled($from),
+                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '>=', $from)
+                            )
+                            ->when(
+                                filled($until),
+                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $until)
+                            );
+                    }),
+                SelectFilter::make('movement_type')
+                    ->label('نوع الحركة')
+                    ->options([
+                        'purchase' => 'شراء',
+                        'purchase_reverse' => 'عكس شراء',
+                        'transfer' => 'تحويل مخزني',
+                        'direct_sale' => 'بيع مباشر',
+                        'sale' => 'مبيعات',
+                        'sale_reverse' => 'عكس مبيعات',
+                        'inventory_adjustment' => 'تعديل مخزني',
+                    ]),
             ])
             ->recordActions([
                 ViewAction::make(),
-                // EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

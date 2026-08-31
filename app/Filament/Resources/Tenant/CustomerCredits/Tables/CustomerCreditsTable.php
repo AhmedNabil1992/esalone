@@ -2,16 +2,28 @@
 
 namespace App\Filament\Resources\Tenant\CustomerCredits\Tables;
 
+use Carbon\Carbon;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CustomerCreditsTable
 {
     public static function configure(Table $table): Table
     {
+        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
+        $defaultUntil = Carbon::today()->toDateString();
+
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('customer.name')
                     ->label('العميل')
                     ->searchable()
@@ -32,7 +44,6 @@ class CustomerCreditsTable
                         'redeem' => 'warning',
                         default => 'gray',
                     }),
-
                 TextColumn::make('balance_before')
                     ->label('الرصيد قبل')
                     ->money(),
@@ -45,11 +56,11 @@ class CustomerCreditsTable
                     ->money(),
                 TextColumn::make('user.name')
                     ->label('بواسطة')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 TextColumn::make('description')
                     ->label('ملاحظة')
                     ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('التاريخ')
@@ -57,7 +68,32 @@ class CustomerCreditsTable
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
-            ->filters([])
+            ->filters([
+                Filter::make('created_at')
+                    ->label('تاريخ الحركة')
+                    ->form([
+                        DatePicker::make('from')
+                            ->label('من تاريخ')
+                            ->default($defaultFrom),
+                        DatePicker::make('until')
+                            ->label('إلى تاريخ')
+                            ->default($defaultUntil),
+                    ])
+                    ->query(function (Builder $query, array $data) use ($defaultFrom, $defaultUntil): Builder {
+                        $from = $data['from'] ?? $defaultFrom;
+                        $until = $data['until'] ?? $defaultUntil;
+
+                        return $query
+                            ->when(
+                                filled($from),
+                                fn (Builder $builder): Builder => $builder->whereDate('created_at', '>=', $from)
+                            )
+                            ->when(
+                                filled($until),
+                                fn (Builder $builder): Builder => $builder->whereDate('created_at', '<=', $until)
+                            );
+                    }),
+            ])
             ->recordActions([
                 ViewAction::make(),
             ])

@@ -2,13 +2,17 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 
 class Reservation extends Model
 {
+    use BelongsToBranch;
+
     protected $table = 'reservations';
 
     protected $fillable = [
+        'branch_id',
         'device_id',
         'customer_id',
         'start_time',
@@ -44,23 +48,13 @@ class Reservation extends Model
 
     public static function checkOverlap(int|string $deviceId, string $startTime, string $endTime, int|string|null $excludeId = null): bool
     {
-        return self::query()
+        return self::withoutGlobalScope(BranchScope::class)
             ->where('device_id', $deviceId)
             ->when($excludeId, fn ($query) => $query->where('id', '!=', $excludeId))
             ->where('status', 'active')
             ->where(function ($query) use ($startTime, $endTime) {
-                $query->where(function ($q) use ($startTime, $endTime) {
-                    $q->where('start_time', '>=', $startTime)
-                        ->where('start_time', '<', $endTime);
-                })
-                    ->orWhere(function ($q) use ($startTime, $endTime) {
-                        $q->where('end_time', '>', $startTime)
-                            ->where('end_time', '<=', $endTime);
-                    })
-                    ->orWhere(function ($q) use ($startTime, $endTime) {
-                        $q->where('start_time', '<=', $startTime)
-                            ->where('end_time', '>=', $endTime);
-                    });
+                $query->where('start_time', '<', $endTime)
+                    ->where('end_time', '>', $startTime);
             })
             ->exists();
     }

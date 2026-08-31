@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class PurchaseItemResource extends Resource
@@ -45,6 +46,11 @@ class PurchaseItemResource extends Resource
     public static function table(Table $table): Table
     {
         return PurchaseItemsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereHas('purchase');
     }
 
     public static function getRelations(): array

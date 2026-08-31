@@ -257,15 +257,18 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::USER_MENU_BEFORE,
                 fn (): string => filament()->auth()->check()
                     ? Blade::render('
-                        <button
-                            type="button"
-                            x-data
-                            x-on:click="window.dispatchEvent(new CustomEvent(\'open-quick-navigation\'))"
-                            class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
-                            title="البحث السريع (Ctrl+K)"
-                        >
-                            <x-filament::icon icon="heroicon-o-magnifying-glass" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                        </button>
+                        <div class="flex items-center gap-x-3 me-2">
+                            @livewire(\'branch-switcher\')
+                            <button
+                                type="button"
+                                x-data
+                                x-on:click="window.dispatchEvent(new CustomEvent(\'open-quick-navigation\'))"
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                                title="البحث السريع (Ctrl+K)"
+                            >
+                                <x-filament::icon icon="heroicon-o-magnifying-glass" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                            </button>
+                        </div>
                     ')
                     : '',
             )

@@ -43,8 +43,12 @@ class MarketHistoryReport extends Page implements HasTable
         $defaultUntil = Carbon::today()->toDateString();
 
         return $table
-            ->query(MarketHistory::query()->with(['item', 'device.type', 'customer'])->latest('id'))
+            ->query(MarketHistory::query()->with(['branch', 'item', 'device.type', 'customer', 'createdBy', 'shift'])->latest('id'))
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->placeholder('-'),
                 TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
@@ -97,12 +101,14 @@ class MarketHistoryReport extends Page implements HasTable
                         Sum::make()->label('إجمالي المبيعات')->money(),
                         Count::make()->label('عدد السجلات'),
                     ]),
-                TextColumn::make('created_by')
+                TextColumn::make('createdBy.name')
                     ->label('بواسطة')
+                    ->placeholder('-')
                     ->searchable(),
-                TextColumn::make('shift.shift_no')
+                TextColumn::make('shift_id')
                     ->label('رقم الشيفت')
-                    ->formatStateUsing(fn ($state, $record) => $state ? "#{$state}" : ($record->shift_id ? "#{$record->shift_id}" : '-'))
+                    ->formatStateUsing(fn ($state, $record) => $record->shift ? "#{$record->shift->shift_no}" : ($state ? "#{$state}" : '-'))
+                    ->placeholder('-')
                     ->sortable(),
             ])
             ->filters([
@@ -157,14 +163,9 @@ class MarketHistoryReport extends Page implements HasTable
                     ->preload(),
                 SelectFilter::make('created_by')
                     ->label('بواسطة')
-                    ->options(fn (): array => MarketHistory::query()
-                        ->whereNotNull('created_by')
-                        ->where('created_by', '!=', '')
-                        ->orderBy('created_by')
-                        ->distinct()
-                        ->pluck('created_by', 'created_by')
-                        ->toArray())
-                    ->searchable(),
+                    ->relationship('createdBy', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->filtersLayout(FiltersLayout::Modal)
             ->pluralModelLabel('الصفحات')

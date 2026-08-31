@@ -19,6 +19,9 @@ class CatalogItem extends Model
         'picture',
         'purchase_price',
         'sale_price',
+        'direct_sale_price',
+        'device_sale_price',
+        'table_sale_price',
         'is_product',
         'is_component',
         'is_active',
@@ -28,6 +31,9 @@ class CatalogItem extends Model
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'direct_sale_price' => 'decimal:2',
+        'device_sale_price' => 'decimal:2',
+        'table_sale_price' => 'decimal:2',
         'is_product' => 'boolean',
         'is_component' => 'boolean',
         'is_active' => 'boolean',
@@ -52,5 +58,42 @@ class CatalogItem extends Model
     public function usedInProducts(): HasMany
     {
         return $this->hasMany(ProductComponent::class, 'component_id');
+    }
+
+    public function branchPrices(): HasMany
+    {
+        return $this->hasMany(CatalogItemBranchPrice::class, 'catalog_item_id');
+    }
+
+    public function getEffectiveSalePrice(?int $branchId = null, string $priceType = 'direct_sale'): float
+    {
+        $targetBranchId = $branchId ?? (session('active_branch_id') !== 'all' && session('active_branch_id') !== null ? (int) session('active_branch_id') : null);
+
+        $priceColumn = match ($priceType) {
+            'device_sale', 'device', 'room' => 'device_sale_price',
+            'table_sale', 'table' => 'table_sale_price',
+            default => 'direct_sale_price',
+        };
+
+        if ($targetBranchId) {
+            $branchPriceRecord = $this->branchPrices()
+                ->where('branch_id', $targetBranchId)
+                ->first();
+
+            if ($branchPriceRecord) {
+                if (isset($branchPriceRecord->is_available) && ! $branchPriceRecord->is_available) {
+                    return 0.0;
+                }
+
+                $branchPrice = $branchPriceRecord->{$priceColumn} ?? $branchPriceRecord->sale_price;
+                if ($branchPrice !== null && (float) $branchPrice > 0) {
+                    return (float) $branchPrice;
+                }
+            }
+        }
+
+        $defaultPrice = $this->{$priceColumn} ?? $this->sale_price;
+
+        return (float) ($defaultPrice ?: $this->sale_price);
     }
 }

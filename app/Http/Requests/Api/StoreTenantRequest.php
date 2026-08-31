@@ -26,6 +26,7 @@ class StoreTenantRequest extends FormRequest
             'ended_at' => ['required', 'date'],
             'user_id' => ['required', 'integer'],
             'auto_renew' => ['required', 'boolean'],
+            'branches_limit' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

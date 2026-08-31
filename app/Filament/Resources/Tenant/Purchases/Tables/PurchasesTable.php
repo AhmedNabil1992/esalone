@@ -23,11 +23,14 @@ class PurchasesTable
 
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('فرع'),
                 TextColumn::make('reference')
                     ->label('المرجع')
                     ->searchable(),
                 TextColumn::make('shift.shift_no')
                     ->label('رقم الشيفت')
+                    ->formatStateUsing(fn ($state) => $state ? "#{$state}" : '-')
                     ->sortable(),
                 TextColumn::make('warehouse.name')
                     ->label('المخزن')
@@ -49,7 +52,19 @@ class PurchasesTable
                     ]),
                 TextColumn::make('status')
                     ->label('الحالة')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'posted' => 'مكتملة',
+                        'draft' => 'مسودة',
+                        'cancelled' => 'ملغاة',
+                        default => $state ?? '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'posted' => 'success',
+                        'draft' => 'gray',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('purchased_at')
                     ->label('تاريخ الشراء')
                     ->dateTime()
@@ -80,6 +95,13 @@ class PurchasesTable
                                 fn (Builder $builder): Builder => $builder->whereDate('purchased_at', '<=', $until)
                             );
                     }),
+                SelectFilter::make('status')
+                    ->label('الحالة')
+                    ->options([
+                        'posted' => 'مكتملة',
+                        'draft' => 'مسودة',
+                        'cancelled' => 'ملغاة',
+                    ]),
                 SelectFilter::make('warehouse_id')
                     ->label('المخزن')
                     ->relationship('warehouse', 'name')

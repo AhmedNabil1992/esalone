@@ -21,6 +21,7 @@ class CashBoxesTable
     {
         return $table
             ->columns([
+                TextColumn::make('branch.name')->label('الفرع')->badge()->sortable()->toggleable(),
                 TextColumn::make('name')->label('الإسم')->searchable()->sortable(),
                 TextColumn::make('code')->label('الرمز')->searchable()->sortable(),
                 TextColumn::make('type')->label('النوع')->searchable()->sortable()

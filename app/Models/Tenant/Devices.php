@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,12 +11,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Devices extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     /**
      * الحقول المسموح بتعبئتها دفعة واحدة (Mass Assignment).
      */
     protected $fillable = [
+        'branch_id',
         'devices_type_id',
         'name',
         'ip_address',

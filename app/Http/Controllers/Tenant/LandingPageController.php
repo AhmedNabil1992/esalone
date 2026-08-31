@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\Branch;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\InventoryGroup;
@@ -55,8 +56,14 @@ class LandingPageController extends Controller
         ));
     }
 
-    public function menu(): View
+    public function menu(Request $request): View
     {
+        $branches = Branch::query()
+            ->where('is_active', true)
+            ->get();
+
+        $selectedBranchId = (int) $request->input('branch_id', $branches->first()?->id);
+
         $groups = InventoryGroup::where('is_active', true)
             ->where('name', '!=', 'مكونات')
             ->with(['items' => function ($q) {
@@ -64,9 +71,16 @@ class LandingPageController extends Controller
             }])
             ->get();
 
+        // Calculate effective price per selected branch for each item
+        foreach ($groups as $group) {
+            foreach ($group->items as $item) {
+                $item->effective_price = $item->getEffectiveSalePrice($selectedBranchId, 'direct_sale');
+            }
+        }
+
         $title = SystemConfig::get('landing_title', SystemConfig::get('sys_shop_name', 'صالة ألعاب بلاي ستيشن'));
 
-        return view('tenant.menu', compact('groups', 'title'));
+        return view('tenant.menu', compact('groups', 'title', 'branches', 'selectedBranchId'));
     }
 
     public function convertPoints(Request $request)

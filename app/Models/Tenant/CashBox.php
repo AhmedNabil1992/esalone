@@ -2,12 +2,16 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CashBox extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'name',
         'code',
         'type',
@@ -21,6 +25,16 @@ class CashBox extends Model
         'current_balance' => 'decimal:2',
         'is_active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (CashBox $cashBox): void {
+            if (blank($cashBox->code)) {
+                $maxCode = static::withoutGlobalScopes()->max('code');
+                $cashBox->code = (string) (((int) $maxCode) + 1);
+            }
+        });
+    }
 
     public function purchases(): HasMany
     {

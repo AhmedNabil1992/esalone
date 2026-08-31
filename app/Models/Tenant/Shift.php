@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Shift extends Model
 {
+    use BelongsToBranch;
+
     protected $fillable = [
+        'branch_id',
         'shift_no',
         'shift_date',
         'shift_from',
@@ -87,28 +91,42 @@ class Shift extends Model
         return $query->where('is_active', true);
     }
 
-    public static function nextShiftNumber(): int
+    public static function nextShiftNumber(?int $branchId = null): int
     {
-        return (int) (static::query()->max('shift_no') ?? 0) + 1;
+        $query = static::query();
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        } elseif (session('active_branch_id') && session('active_branch_id') !== 'all') {
+            $query->where('branch_id', (int) session('active_branch_id'));
+        }
+
+        return (int) ($query->max('shift_no') ?? 0) + 1;
     }
 
-    public static function currentOpenShift(): ?self
+    public static function currentOpenShift(?int $branchId = null): ?self
     {
-        return static::query()
+        $query = static::query()
             ->open()
-            ->active()
-            ->orderByDesc('shift_no')
-            ->first();
+            ->active();
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        } elseif (session('active_branch_id') && session('active_branch_id') !== 'all') {
+            $query->where('branch_id', (int) session('active_branch_id'));
+        }
+
+        return $query->orderByDesc('id')->first();
     }
 
-    public static function currentOpenShiftId(): ?int
+    public static function currentOpenShiftId(?int $branchId = null): ?int
     {
-        return static::currentOpenShift()?->id;
+        return static::currentOpenShift($branchId)?->id;
     }
 
-    public static function currentOpenShiftNumber(): ?int
+    public static function currentOpenShiftNumber(?int $branchId = null): ?int
     {
-        return static::currentOpenShift()?->shift_no;
+        return static::currentOpenShift($branchId)?->shift_no;
     }
 
     public function getRemainAmountAttribute(): float

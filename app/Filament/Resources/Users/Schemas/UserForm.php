@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\Tenant\Branch;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -37,7 +38,7 @@ class UserForm
                     ->columns(2),
 
                 Section::make('التحكم في الوصول')
-                    ->description('تعيين الأدوار والصلاحيات المباشرة لهذا المستخدم')
+                    ->description('تعيين الأدوار والصلاحيات المباشرة والفروع المسموح بها لهذا المستخدم')
                     ->schema([
                         Select::make('roles')
                             ->relationship('roles', 'name')
@@ -45,12 +46,25 @@ class UserForm
                             ->preload()
                             ->searchable()
                             ->label('الأدوار'),
+                        Select::make('branches')
+                            ->relationship('branches', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->label('الفروع المصرح بها')
+                            ->default(function (): array {
+                                $branchIds = Branch::pluck('id')->toArray();
+
+                                return count($branchIds) === 1 ? $branchIds : [];
+                            })
+                            ->helperText('اختر الفروع التي يمكن لهذا المستخدم العمل عليها.'),
                         Select::make('permissions')
                             ->relationship('permissions', 'name')
                             ->multiple()
                             ->preload()
                             ->searchable()
-                            ->label('الصلاحيات المباشرة'),
+                            ->label('الصلاحيات المباشرة')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 

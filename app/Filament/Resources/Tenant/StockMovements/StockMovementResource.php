@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class StockMovementResource extends Resource
@@ -45,6 +46,13 @@ class StockMovementResource extends Resource
     public static function table(Table $table): Table
     {
         return StockMovementsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('warehouse')
+            ->with(['warehouse.branch', 'destinationWarehouse.branch', 'item']);
     }
 
     public static function getRelations(): array

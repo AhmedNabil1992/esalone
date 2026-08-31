@@ -41,7 +41,8 @@ class ExpenseHistoryResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('category', 'expense')
-            ->where('direction', 'out');
+            ->where('direction', 'out')
+            ->with(['cashBox', 'expenseType', 'createdBy', 'shift', 'branch']);
     }
 
     public static function form(Schema $schema): Schema

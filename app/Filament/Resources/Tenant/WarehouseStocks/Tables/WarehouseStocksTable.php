@@ -15,9 +15,15 @@ class WarehouseStocksTable
     {
         return $table
             ->columns([
+                TextColumn::make('warehouse.branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('warehouse.name')
                     ->label('المخزن')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('item.inventoryGroup.name')
                     ->label('مجموعة المخزون')
                     ->searchable(),

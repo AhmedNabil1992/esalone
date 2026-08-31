@@ -21,6 +21,7 @@ class EnsureTenantHasOpenShift
     protected array $routesRequiringOpenShift = [
         'filament.admin.resources.tenant.purchases.create',
         'filament.admin.resources.tenant.financial-transactions.create',
+        'filament.admin.resources.tenant.expense-histories.create',
     ];
 
     public function handle(Request $request, Closure $next): Response

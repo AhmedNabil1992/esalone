@@ -70,6 +70,7 @@ class AddCustomerCreditAction
             }
 
             $credit = CustomerCredit::create([
+                'branch_id' => $cashBox->branch_id ?? session('active_branch_id'),
                 'customer_id' => $customer->id,
                 'user_id' => $actor->id,
                 'type' => $payload['type'],

@@ -16,7 +16,12 @@ class PlayPricesTable
     {
         return $table
             ->columns([
-                TextColumn::make('device.deviceType.name')
+                TextColumn::make('device.branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('device.type.name')
                     ->label('نوع الجهاز')
                     ->sortable()
                     ->searchable(),

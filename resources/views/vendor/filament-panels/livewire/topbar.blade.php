@@ -106,17 +106,46 @@
                 }
             }
 
-            /* Dark mode styles for Navigation Grid App Switcher */
-            html.dark .app-switcher-grid {
-                background-color: #18181b !important;
+            /* Navigation Grid App Switcher Styles - Light Mode */
+            .app-switcher-grid,
+            div[class*="fi-dropdown-panel"]:has(.app-switcher-grid),
+            .fi-dropdown-panel:has(.app-switcher-grid) {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+            }
+            .app-switcher-grid .app-switcher-item-label {
+                color: #0f172a !important;
+            }
+            .app-switcher-grid a:hover {
+                background-color: #f1f5f9 !important;
+            }
+
+            /* Navigation Grid App Switcher Styles - Dark Mode */
+            html.dark .app-switcher-grid,
+            html.dark div[class*="fi-dropdown-panel"],
+            html.dark .fi-dropdown-panel,
+            .dark .app-switcher-grid,
+            .dark div[class*="fi-dropdown-panel"],
+            .dark .fi-dropdown-panel,
+            body.dark .app-switcher-grid,
+            body.dark div[class*="fi-dropdown-panel"],
+            [class~="dark"] .app-switcher-grid,
+            [class~="dark"] div[class*="fi-dropdown-panel"] {
+                background-color: #0d1423 !important;
+                border: 1px solid rgba(255, 255, 255, 0.12) !important;
                 color: #ffffff !important;
             }
-            html.dark .app-switcher-grid .app-switcher-item-label {
+            html.dark .app-switcher-grid .app-switcher-item-label,
+            .dark .app-switcher-grid .app-switcher-item-label,
+            body.dark .app-switcher-grid .app-switcher-item-label,
+            [class~="dark"] .app-switcher-grid .app-switcher-item-label {
                 color: #ffffff !important;
             }
-            html.dark .fi-dropdown-panel {
-                background-color: #18181b !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            html.dark .app-switcher-grid a:hover,
+            .dark .app-switcher-grid a:hover,
+            body.dark .app-switcher-grid a:hover,
+            [class~="dark"] .app-switcher-grid a:hover {
+                background-color: rgba(255, 255, 255, 0.08) !important;
             }
         </style>
     @endif
@@ -159,7 +188,7 @@
 
                     <div
                         style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px; width: 100%; direction: rtl;"
-                        class="app-switcher-grid bg-white dark:bg-zinc-900! rounded-2xl"
+                        class="app-switcher-grid rounded-2xl"
                     >
                         @foreach ($navigation as $group)
                             @php
@@ -176,7 +205,7 @@
                             <a
                                 href="{{ $itemUrl }}"
                                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 16px; text-decoration: none; transition: all 0.2s;"
-                                class="hover:bg-gray-100 dark:hover:bg-white/10! hover:scale-105 active:scale-95 group"
+                                class="hover:scale-105 active:scale-95 group"
                             >
                                 <div
                                     style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, {{ $colors['from'] }}, {{ $colors['to'] }}); box-shadow: 0 4px 12px {{ $colors['shadow'] }}; transition: transform 0.2s;"
@@ -188,7 +217,7 @@
                                     />
                                 </div>
 
-                                <span style="font-size: 0.75rem; font-weight: bold; text-align: center;" class="app-switcher-item-label text-gray-900 dark:text-white! dark:text-zinc-100!">
+                                <span style="font-size: 0.75rem; font-weight: bold; text-align: center;" class="app-switcher-item-label">
                                     {{ $groupLabel }}
                                 </span>
                             </a>

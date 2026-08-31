@@ -552,7 +552,7 @@
             </button>
             <button class="nav-btn" onclick="showTab('modules', this)">
                 <div class="nav-btn-left"><span>&#128230;</span> <span>API Modules</span></div>
-                <span class="nav-count">6</span>
+                <span class="nav-count">5</span>
             </button>
             <button class="nav-btn" onclick="showTab('sysarch', this)">
                 <div class="nav-btn-left"><span>&#127963;</span> <span>System Architecture</span></div>
@@ -592,8 +592,8 @@
     <!-- 1. OVERVIEW -->
     <div class="section active" id="sec-overview">
         <div class="stats">
-            <div class="stat"><div class="stat-num">6</div><div class="stat-lbl">API Modules</div></div>
-            <div class="stat"><div class="stat-num">12</div><div class="stat-lbl">Total Endpoints</div></div>
+            <div class="stat"><div class="stat-num">5</div><div class="stat-lbl">API Modules</div></div>
+            <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Total Endpoints</div></div>
             <div class="stat"><div class="stat-num">3</div><div class="stat-lbl">Docker Services</div></div>
             <div class="stat"><div class="stat-num">6</div><div class="stat-lbl">Permissions</div></div>
             <div class="stat"><div class="stat-num">2</div><div class="stat-lbl">SQL Queries</div></div>
@@ -711,36 +711,6 @@
             </div>
 
             <div class="card mod-card">
-                <div class="color-bar" style="background: #8b5cf6"></div>
-                <div class="chead">
-                    <span style="font-size:22px">⚡</span>
-                    <div>
-                        <div class="card-title">Offline Cashier Sync</div>
-                        <div class="card-sub" style="font-family: var(--font-code);">/tenant/offline</div>
-                    </div>
-                </div>
-                <div class="card-desc">Enables local offline POS operation and batch sync to tenant DB when connectivity resumes.</div>
-                <div style="margin-bottom:10px"><span class="tag tp">pos:sell</span></div>
-                
-                <div class="endpoint">
-                    <span class="method GET">GET</span>
-                    <div>
-                        <div class="ep-path">/tenant/offline/init<span class="lock">🔒 pos:sell</span></div>
-                        <div class="ep-desc">Retrieves cached catalog, price lists, and session states for offline client init</div>
-                    </div>
-                </div>
-
-                <div class="endpoint">
-                    <span class="method POST">POST</span>
-                    <div>
-                        <div class="ep-path">/tenant/offline/sync<span class="lock">🔒 pos:sell</span></div>
-                        <div class="ep-desc">Batch processes offline completed sales, session logs, and stock deductions</div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="card mod-card">
                 <div class="color-bar" style="background: #ec4899"></div>
                 <div class="chead">
                     <span style="font-size:22px">🏢</span>
@@ -849,7 +819,6 @@ flowchart TB
         session_engine["PlaySession  Device Controller"]
         shift_manager["Shift  Multi-Safe Manager"]
         pos_engine["POS  Multi-Warehouse Deduction"]
-        offline_sync_engine["Offline POS Sync Engine"]
     end
 
     subgraph sg_data_layer["Multi-Database Persistence"]
@@ -863,13 +832,12 @@ flowchart TB
     auth_middleware -->|"Device Session Management"| session_engine
     auth_middleware -->|"Active Shift Check"| shift_manager
     auth_middleware -->|"Invoice  Safe Transactions"| pos_engine
-    auth_middleware -->|"Offline Payload Sync"| offline_sync_engine
     tenancy_router -->|"Lookup Tenant Domain"| landlord_storage
     session_engine -->|"Query Tenant Session Data"| tenant_storage
     shift_manager -->|"Audit Shift  Cash Drawer"| tenant_storage
     pos_engine -->|"Stock Deduction  Sales Invoices"| tenant_storage
 
-    class cashier_pos,customer_portal,admin_panel,tenancy_router,auth_middleware,session_engine,shift_manager,pos_engine,offline_sync_engine app;
+    class cashier_pos,customer_portal,admin_panel,tenancy_router,auth_middleware,session_engine,shift_manager,pos_engine app;
     class landlord_storage,tenant_storage database;
 
                 </script>
@@ -927,7 +895,7 @@ flowchart TD
                 <span style="font-size:28px">&#9889;</span>
                 <div>
                     <div class="card-title">Swagger & OpenAPI 3.0 API Specification & Explorer</div>
-                    <div class="card-sub">Interactive REST API documentation generated from architecture manifest (12 Endpoints)</div>
+                    <div class="card-sub">Interactive REST API documentation generated from architecture manifest (10 Endpoints)</div>
                 </div>
                 <span class="badge badge-green" style="margin-left:auto; font-size: 12px; padding: 6px 12px;">STATUS: VERIFIED PARITY (11/11 ENDPOINTS)</span>
             </div>
@@ -955,7 +923,7 @@ flowchart TD
         <!-- View Mode Selector -->
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
             <button class="sub-tab-btn active" onclick="switchSwaggerView('ui', this)">&#9889; Interactive Swagger UI</button>
-            <button class="sub-tab-btn" onclick="switchSwaggerView('catalog', this)">&#128216; API Endpoint Catalog & cURL (12)</button>
+            <button class="sub-tab-btn" onclick="switchSwaggerView('catalog', this)">&#128216; API Endpoint Catalog & cURL (10)</button>
             <button class="sub-tab-btn" onclick="switchSwaggerView('json', this)">&#128220; OpenAPI 3.0 JSON Spec</button>
         </div>
 
@@ -1061,46 +1029,6 @@ flowchart TD
                         <div style="margin-top: 8px;">
                             <div style="font-size: 10px; color: var(--muted); margin-bottom: 2px;">cURL Snippet:</div>
                             <code style="display: block; font-size: 11px; color: var(--accent); background: var(--bg); padding: 6px 10px; border-radius: 4px; overflow-x: auto;">curl -X GET &quot;http://localhost:3000/tenant/invoices/tenant/invoices/{invoice}/print&quot; -H &quot;Authorization: Bearer $JWT_TOKEN&quot;</code>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom: 20px;">
-                <div class="chead" style="margin-bottom: 12px;">
-                    <span style="font-size: 22px;">⚡</span>
-                    <div>
-                        <div class="card-title">Offline Cashier Sync API Module</div>
-                        <div class="card-sub">Base Path: <code>/tenant/offline</code> | 2 Endpoints</div>
-                    </div>
-                </div>
-
-                <div class="grid1" style="gap: 12px;">
-
-                    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <span class="tag tg" style="font-weight: 700; font-size: 11px;">GET</span>
-                            <span style="font-family: var(--font-code); font-weight: 600; font-size: 13px; color: var(--text);">/tenant/offline/tenant/offline/init</span>
-                            <span class="tag tb" style="font-size:10px; margin-left:auto;">&#128273; pos:sell</span>
-                        </div>
-                        <div style="font-size: 12px; color: var(--muted); margin-top: 6px;">Retrieves cached catalog, price lists, and session states for offline client init</div>
-                        <div style="margin-top: 8px;">
-                            <div style="font-size: 10px; color: var(--muted); margin-bottom: 2px;">cURL Snippet:</div>
-                            <code style="display: block; font-size: 11px; color: var(--accent); background: var(--bg); padding: 6px 10px; border-radius: 4px; overflow-x: auto;">curl -X GET &quot;http://localhost:3000/tenant/offline/tenant/offline/init&quot; -H &quot;Authorization: Bearer $JWT_TOKEN&quot;</code>
-                        </div>
-                    </div>
-
-                    <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <span class="tag tb" style="font-weight: 700; font-size: 11px;">POST</span>
-                            <span style="font-family: var(--font-code); font-weight: 600; font-size: 13px; color: var(--text);">/tenant/offline/tenant/offline/sync</span>
-                            <span class="tag tb" style="font-size:10px; margin-left:auto;">&#128273; pos:sell</span>
-                        </div>
-                        <div style="font-size: 12px; color: var(--muted); margin-top: 6px;">Batch processes offline completed sales, session logs, and stock deductions</div>
-                        <div style="margin-top: 8px;">
-                            <div style="font-size: 10px; color: var(--muted); margin-bottom: 2px;">cURL Snippet:</div>
-                            <code style="display: block; font-size: 11px; color: var(--accent); background: var(--bg); padding: 6px 10px; border-radius: 4px; overflow-x: auto;">curl -X POST &quot;http://localhost:3000/tenant/offline/tenant/offline/sync&quot; -H &quot;Authorization: Bearer $JWT_TOKEN&quot; -H &quot;Content-Type: application/json&quot; -d &#x27;{&quot;key&quot;:&quot;value&quot;}&#x27;</code>
                         </div>
                     </div>
 
@@ -1238,10 +1166,6 @@ flowchart TD
     {
       &quot;name&quot;: &quot;Multi-Safe POS &amp; Invoicing&quot;,
       &quot;description&quot;: &quot;Cashier POS billing, invoice generation, multi-safe transaction logging, and public tokenized viewing.&quot;
-    },
-    {
-      &quot;name&quot;: &quot;Offline Cashier Sync&quot;,
-      &quot;description&quot;: &quot;Enables local offline POS operation and batch sync to tenant DB when connectivity resumes.&quot;
     },
     {
       &quot;name&quot;: &quot;Multi-Tenant API Provisioning&quot;,
@@ -1451,105 +1375,6 @@ flowchart TD
             &quot;bearerAuth&quot;: []
           }
         ]
-      }
-    },
-    &quot;/tenant/offline/tenant/offline/init&quot;: {
-      &quot;get&quot;: {
-        &quot;tags&quot;: [
-          &quot;Offline Cashier Sync&quot;
-        ],
-        &quot;summary&quot;: &quot;Retrieves cached catalog, price lists, and session states for offline client init&quot;,
-        &quot;description&quot;: &quot;Retrieves cached catalog, price lists, and session states for offline client init | Required Permission: `pos:sell`&quot;,
-        &quot;parameters&quot;: [],
-        &quot;responses&quot;: {
-          &quot;200&quot;: {
-            &quot;description&quot;: &quot;Successful Request&quot;,
-            &quot;content&quot;: {
-              &quot;application/json&quot;: {
-                &quot;example&quot;: {
-                  &quot;success&quot;: true,
-                  &quot;data&quot;: {}
-                }
-              }
-            }
-          },
-          &quot;400&quot;: {
-            &quot;description&quot;: &quot;Invalid payload parameters&quot;
-          },
-          &quot;401&quot;: {
-            &quot;description&quot;: &quot;Missing or expired JWT Bearer token&quot;
-          },
-          &quot;403&quot;: {
-            &quot;description&quot;: &quot;Forbidden - Insufficient permissions&quot;
-          },
-          &quot;422&quot;: {
-            &quot;description&quot;: &quot;Validation error&quot;
-          },
-          &quot;500&quot;: {
-            &quot;description&quot;: &quot;Internal server error&quot;
-          }
-        },
-        &quot;security&quot;: [
-          {
-            &quot;bearerAuth&quot;: []
-          }
-        ]
-      }
-    },
-    &quot;/tenant/offline/tenant/offline/sync&quot;: {
-      &quot;post&quot;: {
-        &quot;tags&quot;: [
-          &quot;Offline Cashier Sync&quot;
-        ],
-        &quot;summary&quot;: &quot;Batch processes offline completed sales, session logs, and stock deductions&quot;,
-        &quot;description&quot;: &quot;Batch processes offline completed sales, session logs, and stock deductions | Required Permission: `pos:sell`&quot;,
-        &quot;parameters&quot;: [],
-        &quot;responses&quot;: {
-          &quot;200&quot;: {
-            &quot;description&quot;: &quot;Successful Request&quot;,
-            &quot;content&quot;: {
-              &quot;application/json&quot;: {
-                &quot;example&quot;: {
-                  &quot;success&quot;: true,
-                  &quot;data&quot;: {}
-                }
-              }
-            }
-          },
-          &quot;400&quot;: {
-            &quot;description&quot;: &quot;Invalid payload parameters&quot;
-          },
-          &quot;401&quot;: {
-            &quot;description&quot;: &quot;Missing or expired JWT Bearer token&quot;
-          },
-          &quot;403&quot;: {
-            &quot;description&quot;: &quot;Forbidden - Insufficient permissions&quot;
-          },
-          &quot;422&quot;: {
-            &quot;description&quot;: &quot;Validation error&quot;
-          },
-          &quot;500&quot;: {
-            &quot;description&quot;: &quot;Internal server error&quot;
-          }
-        },
-        &quot;security&quot;: [
-          {
-            &quot;bearerAuth&quot;: []
-          }
-        ],
-        &quot;requestBody&quot;: {
-          &quot;required&quot;: true,
-          &quot;content&quot;: {
-            &quot;application/json&quot;: {
-              &quot;schema&quot;: {
-                &quot;type&quot;: &quot;object&quot;,
-                &quot;example&quot;: {
-                  &quot;exampleField&quot;: &quot;exampleValue&quot;
-                }
-              }
-            }
-          }
-        }
       }
     },
     &quot;/api/tenants/api/tenants&quot;: {
@@ -2021,13 +1846,6 @@ flowchart TD
                 <div class="card-sub" style="margin-bottom:8px;">app/Models/Tenant/Shift.php</div>
                 <div class="card-desc">Service model managing shift quick open, status resolution, and cash audit</div>
                 <div style="margin-top:8px"><span class="tag tb" style="font-family:var(--font-code); font-size:11px">currentOpenShift()</span><span class="tag tb" style="font-family:var(--font-code); font-size:11px">nextShiftNumber()</span></div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">OfflineSyncController</div>
-                <div class="card-sub" style="margin-bottom:8px;">app/Http/Controllers/Tenant/OfflineSyncController.php</div>
-                <div class="card-desc">Handles transaction reconciliation from local offline store</div>
-                <div style="margin-top:8px"><span class="tag tb" style="font-family:var(--font-code); font-size:11px">init()</span><span class="tag tb" style="font-family:var(--font-code); font-size:11px">sync()</span></div>
             </div>
 
         </div>

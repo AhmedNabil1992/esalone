@@ -29,6 +29,11 @@ class ShiftsTable
 
         return $table
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('shift_no')
                     ->label('رقم الشيفت')
                     ->sortable()

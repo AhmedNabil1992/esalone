@@ -43,8 +43,12 @@ class PlayHistoryReport extends Page implements HasTable
         $defaultUntil = Carbon::today()->toDateString();
 
         return $table
-            ->query(PlayHistory::query()->with(['device.type'])->latest('id'))
+            ->query(PlayHistory::query()->with(['branch', 'device.type', 'shift'])->latest('id'))
             ->columns([
+                TextColumn::make('branch.name')
+                    ->label('الفرع')
+                    ->badge()
+                    ->placeholder('-'),
                 TextColumn::make('trx_date')
                     ->label('التاريخ')
                     ->date()
@@ -106,9 +110,9 @@ class PlayHistoryReport extends Page implements HasTable
                     ->label('بواسطة')
                     ->searchable()
                     ->placeholder('-'),
-                TextColumn::make('shift.shift_no')
+                TextColumn::make('shift_id')
                     ->label('رقم الشيفت')
-                    ->formatStateUsing(fn ($state, $record) => $state ? "#{$state}" : ($record->shift_id ? "#{$record->shift_id}" : '-'))
+                    ->formatStateUsing(fn ($state, $record) => $record->shift ? "#{$record->shift->shift_no}" : ($state ? "#{$state}" : '-'))
                     ->sortable()
                     ->placeholder('-'),
             ])

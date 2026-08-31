@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Tenant\Branch;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
@@ -18,6 +20,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     protected $guarded = [];
 
     protected $fillable = [
+        'id',
         'user_id',
         'plan_id',
         'started_at',
@@ -26,6 +29,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'is_active',
         'has_ai_subscription',
         'ai_requests_limit',
+        'branches_limit',
     ];
 
     protected $casts = [
@@ -35,6 +39,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'is_active' => 'boolean',
         'has_ai_subscription' => 'boolean',
         'ai_requests_limit' => 'integer',
+        'branches_limit' => 'integer',
     ];
 
     public static function getCustomColumns(): array
@@ -49,7 +54,41 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'is_active',
             'has_ai_subscription',
             'ai_requests_limit',
+            'branches_limit',
         ];
+    }
+
+    /**
+     * Get allowed branches limit for this tenant.
+     */
+    public function getBranchesLimit(): int
+    {
+        if ($this->branches_limit !== null) {
+            return (int) $this->branches_limit;
+        }
+
+        if ($this->plan_id) {
+            $limit = DB::table('plan_features')
+                ->where('plan_id', $this->plan_id)
+                ->where('feature', 'branches')
+                ->value('limit_value');
+
+            if ($limit !== null) {
+                return (int) $limit;
+            }
+        }
+
+        return 1;
+    }
+
+    /**
+     * Check if tenant can create a new branch.
+     */
+    public function canCreateBranch(?int $currentCount = null): bool
+    {
+        $count = $currentCount ?? Branch::count();
+
+        return $count < $this->getBranchesLimit();
     }
 
     /**

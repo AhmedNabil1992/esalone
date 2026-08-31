@@ -9,6 +9,7 @@ use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
+use App\Models\Tenant\DiscountHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\InvoicePayment;
 use App\Models\Tenant\MarketHistory;
@@ -232,6 +233,7 @@ class CreateDirectSaleAction
                         // Create StockMovement for the component
                         if ($defaultWarehouse) {
                             StockMovement::query()->create([
+                                'branch_id' => $defaultWarehouse->branch_id ?? $activeShift?->branch_id,
                                 'warehouse_id' => $defaultWarehouse->id,
                                 'catalog_item_id' => $componentRelation->component_id,
                                 'invoice_id' => $invoice->id,
@@ -288,6 +290,7 @@ class CreateDirectSaleAction
                         }
 
                         StockMovement::query()->create([
+                            'branch_id' => $defaultWarehouse->branch_id ?? $activeShift?->branch_id,
                             'warehouse_id' => $defaultWarehouse->id,
                             'catalog_item_id' => $itemModel->id,
                             'invoice_id' => $invoice->id,
@@ -306,6 +309,7 @@ class CreateDirectSaleAction
 
                 // Create MarketHistory record for the sold item (using calculated cost)
                 MarketHistory::query()->create([
+                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
                     'customer_id' => $customerId,
                     'catalog_item_id' => $itemModel->id,
                     'subject_name' => $itemModel->name,
@@ -317,7 +321,7 @@ class CreateDirectSaleAction
                     'transaction_date' => $now->toDateString(),
                     'transaction_time' => $now->toTimeString(),
                     'created_by' => $actor->id,
-                    'shift_id' => $shiftNo,
+                    'shift_id' => $activeShift->id,
                     'invoice_no' => $invoiceNo,
                 ]);
             }
@@ -350,6 +354,33 @@ class CreateDirectSaleAction
                     'payment_method' => 'cash',
                     'amount' => $enteredPaidAmount,
                     'notes' => null,
+                ]);
+            }
+
+            if ($totalDiscount > 0 && $defaultCashBox) {
+                $discountLedger = CashBoxLedgerEntry::query()->create([
+                    'shift_id' => $activeShift->id,
+                    'cash_box_id' => $defaultCashBox->id,
+                    'created_by_user_id' => $actor->id,
+                    'reference_type' => Invoice::class,
+                    'reference_id' => $invoice->id,
+                    'direction' => 'out',
+                    'operation' => 'direct_sale_discount',
+                    'amount' => $totalDiscount,
+                    'description' => 'خصم مبيعات مباشرة - '.$invoiceNo,
+                    'occurred_at' => now(),
+                ]);
+
+                DiscountHistory::query()->create([
+                    'branch_id' => $invoice->branch_id ?? session('active_branch_id'),
+                    'invoice_id' => $invoice->id,
+                    'invoice_no' => $invoiceNo,
+                    'amount' => $totalDiscount,
+                    'reason' => $invoice->discount_reason ?? 'خصم مبيعات مباشرة',
+                    'shift_id' => $activeShift->id,
+                    'user_id' => $actor->id,
+                    'ledger_entry_id' => $discountLedger->id,
+                    'occurred_at' => now(),
                 ]);
             }
 
@@ -466,6 +497,7 @@ class CreateDirectSaleAction
         }
 
         CustomerCredit::query()->create([
+            'branch_id' => $invoice?->branch_id ?? session('active_branch_id'),
             'customer_id' => $customer->id,
             'user_id' => $actor->id,
             'type' => $balanceDelta > 0 ? 'deposit' : 'withdraw',

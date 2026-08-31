@@ -46,7 +46,7 @@ class OrderSessionDetailsRelationManager extends RelationManager
                     ->label('الإجمالي')
                     ->money()
                     ->placeholder('-'),
-                TextColumn::make('created_by')
+                TextColumn::make('createdBy.name')
                     ->label('المستخدم')
                     ->placeholder('-')
                     ->searchable(),
