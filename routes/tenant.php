@@ -6,6 +6,7 @@ use App\Http\Controllers\Tenant\LandingPageController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Http\Controllers\Tenant\PublicInvoiceController;
+use App\Models\Tenant\Branch;
 use App\Models\Tenant\Shift;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
@@ -53,16 +54,22 @@ Route::middleware([
         ->name('tenant.order-prepares.print');
 
     Route::middleware('auth')->get('/tenant/shifts/quick-open', function () {
-        if (! Shift::currentOpenShift()) {
-            DB::transaction(function (): void {
+        $branchId = (int) ((session('active_branch_id') && session('active_branch_id') !== 'all')
+            ? (int) session('active_branch_id')
+            : (Auth::user()?->branches()->first()?->id ?? Branch::where('is_active', true)->orderBy('id')->value('id') ?? 1));
+
+        if (! Shift::currentOpenShift($branchId)) {
+            DB::transaction(function () use ($branchId): void {
                 $lastClosedShift = Shift::query()
+                    ->where('branch_id', $branchId)
                     ->where('status', 'close')
                     ->orderByDesc('shift_no')
                     ->first();
                 $startAmount = $lastClosedShift ? (float) $lastClosedShift->actual_amount : 0.0;
 
                 Shift::query()->create([
-                    'shift_no' => Shift::nextShiftNumber(),
+                    'branch_id' => $branchId,
+                    'shift_no' => Shift::nextShiftNumber($branchId),
                     'opened_by_user_id' => Auth::id(),
                     'shift_date' => now()->toDateString(),
                     'shift_from' => now()->toDateTimeString(),

@@ -27,6 +27,8 @@ class StoreTenantRequest extends FormRequest
             'user_id' => ['required', 'integer'],
             'auto_renew' => ['required', 'boolean'],
             'branches_limit' => ['nullable', 'integer', 'min:1'],
+            'has_ai_subscription' => ['nullable', 'boolean'],
+            'ai_requests_limit' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

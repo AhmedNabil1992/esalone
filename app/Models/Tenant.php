@@ -19,6 +19,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'has_ai_subscription' => true,
+        'ai_requests_limit' => 10,
+    ];
+
     protected $fillable = [
         'id',
         'user_id',

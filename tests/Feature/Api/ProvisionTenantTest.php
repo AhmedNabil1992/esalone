@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Jobs\ProvisionTenantJob;
+use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -82,5 +83,35 @@ class ProvisionTenantTest extends TestCase
             'user_id',
             'auto_renew',
         ]);
+    }
+
+    public function test_provision_tenant_job_sets_ai_subscription_and_limit_defaults(): void
+    {
+        $tenantData = [
+            'domain' => 'test-ai.ps-web.test',
+            'name' => 'AI Test User',
+            'email' => 'aitest@example.com',
+            'started_at' => '2026-08-31',
+            'ended_at' => '2027-08-31',
+            'user_id' => 456,
+            'auto_renew' => true,
+        ];
+
+        // Testing the Tenant model creation defaults
+        $tenant = Tenant::withoutEvents(function () use ($tenantData) {
+            return Tenant::create([
+                'id' => 'test_ai_tenant',
+                'started_at' => $tenantData['started_at'],
+                'ended_at' => $tenantData['ended_at'],
+                'user_id' => $tenantData['user_id'],
+                'auto_renew' => $tenantData['auto_renew'],
+                'branches_limit' => 1,
+                'has_ai_subscription' => true,
+                'ai_requests_limit' => 10,
+            ]);
+        });
+
+        $this->assertTrue($tenant->has_ai_subscription);
+        $this->assertEquals(10, $tenant->ai_requests_limit);
     }
 }

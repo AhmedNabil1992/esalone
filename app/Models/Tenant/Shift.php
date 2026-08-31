@@ -95,10 +95,12 @@ class Shift extends Model
     {
         $query = static::query();
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        } elseif (session('active_branch_id') && session('active_branch_id') !== 'all') {
-            $query->where('branch_id', (int) session('active_branch_id'));
+        $resolvedBranchId = $branchId
+            ?? (session('active_branch_id') && session('active_branch_id') !== 'all' ? (int) session('active_branch_id') : null)
+            ?? (Auth::user()?->branches()->first()?->id ?? Branch::where('is_active', true)->orderBy('id')->value('id') ?? 1);
+
+        if ($resolvedBranchId) {
+            $query->where('branch_id', (int) $resolvedBranchId);
         }
 
         return (int) ($query->max('shift_no') ?? 0) + 1;

@@ -28,13 +28,40 @@ class AIAssistantTest extends TestCase
     {
         parent::setUp();
 
-        // Create tenant on central DB
-        $this->tenant = Tenant::create([
-            'id' => 'test_tenant',
-            'has_ai_subscription' => false,
-            'ai_requests_limit' => 50,
-        ]);
-        tenancy()->initialize($this->tenant);
+        // Create tenant without events to avoid tenant DB creation during unit tests
+        $id = 'test_tenant_'.uniqid();
+        $this->tenant = Tenant::withoutEvents(function () use ($id) {
+            return Tenant::create([
+                'id' => $id,
+                'has_ai_subscription' => false,
+                'ai_requests_limit' => 10,
+            ]);
+        });
+        tenancy()->tenant = $this->tenant;
+    }
+
+    protected function tearDown(): void
+    {
+        if (tenancy()->initialized) {
+            tenancy()->end();
+        }
+        if ($this->tenant) {
+            $this->tenant->delete();
+        }
+
+        parent::tearDown();
+    }
+
+    public function test_tenant_creation_defaults_to_ai_subscription_with_ten_requests_limit(): void
+    {
+        $newTenant = Tenant::withoutEvents(function () {
+            return Tenant::create([
+                'id' => 'default_ai_tenant_'.uniqid(),
+            ]);
+        });
+
+        $this->assertTrue($newTenant->has_ai_subscription);
+        $this->assertEquals(10, $newTenant->ai_requests_limit);
     }
 
     public function test_ai_fails_if_no_subscription(): void

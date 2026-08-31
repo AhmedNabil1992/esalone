@@ -35,11 +35,14 @@ class SendInvoiceWhatsAppAction
             return;
         }
 
-        $countryCode = SystemConfig::get('sys_country_code', '');
-        $countryCode = preg_replace('/\D/', '', $countryCode);
+        $countryCode = SystemConfig::get('sys_country_code', '2');
+        $countryCode = preg_replace('/\D/', '', (string) $countryCode);
+        if (empty($countryCode)) {
+            $countryCode = '2';
+        }
 
         // Smart helper: if country code is '2' and it's an Egyptian mobile number, correct it to '20'
-        if ($countryCode === '2' && (str_starts_with($phone, '01') || str_starts_with($phone, '1'))) {
+        if ($countryCode === '2' && (str_starts_with($phone, '01') || (strlen($phone) === 10 && str_starts_with($phone, '1')))) {
             $countryCode = '20';
         }
 

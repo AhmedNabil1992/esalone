@@ -7,6 +7,7 @@ namespace App\Filament\Customer\Pages;
 use App\Models\Tenant\Branch;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Devices;
+use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Scopes\BranchScope;
@@ -154,10 +155,15 @@ class CustomerReservations extends Page implements HasTable
                         return;
                     }
 
+                    $device = Devices::withoutGlobalScope(BranchScope::class)->find((int) $data['device_id']);
+                    $playPriceId = PlayPrice::where('device_id', (int) $data['device_id'])->value('id')
+                        ?? PlayPrice::where('device_type_id', $device?->devices_type_id)->value('id');
+
                     Reservation::query()->create([
                         'branch_id' => (int) $data['branch_id'],
                         'device_id' => (int) $data['device_id'],
                         'customer_id' => $customer->id,
+                        'play_price_id' => $playPriceId,
                         'start_time' => $startTime,
                         'end_time' => $endTime,
                         'duration_minutes' => $duration,

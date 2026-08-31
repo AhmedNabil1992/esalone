@@ -50,7 +50,7 @@ class AIAssistantService
 
         // 2. التحقق من الحد اليومي
         $today = now()->toDateString();
-        $requestsLimit = $tenant->ai_requests_limit ?? 50;
+        $requestsLimit = $tenant->ai_requests_limit ?? 10;
 
         if ($tenant->ai_last_request_date !== $today) {
             $tenant->ai_requests_today = 0;

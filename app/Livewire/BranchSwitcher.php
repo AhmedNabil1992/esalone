@@ -49,10 +49,17 @@ class BranchSwitcher extends Component
 
         $sessionBranchId = session('active_branch_id');
 
-        if ($sessionBranchId !== null && ($sessionBranchId === 'all' || $this->branches->contains('id', (int) $sessionBranchId))) {
+        if ($this->branches->count() === 1) {
+            // Exactly one branch: ALWAYS select that branch (never 'all')
+            $defaultBranchId = $this->branches->first()->id;
+            $this->activeBranchId = $defaultBranchId;
+            session(['active_branch_id' => $defaultBranchId]);
+        } elseif ($sessionBranchId !== null && ($sessionBranchId === 'all' || $this->branches->contains('id', (int) $sessionBranchId))) {
+            // User had manually selected a branch or 'all' in session
             $this->activeBranchId = $sessionBranchId;
         } else {
-            $defaultBranchId = $this->isOwner ? 'all' : ($this->branches->first()?->id ?? 'all');
+            // Default on first login/session for multi-branch: select first branch
+            $defaultBranchId = $this->branches->first()?->id ?? 'all';
             $this->activeBranchId = $defaultBranchId;
             session(['active_branch_id' => $defaultBranchId]);
         }
@@ -61,6 +68,11 @@ class BranchSwitcher extends Component
     public function switchBranch(string|int $branchId): void
     {
         if (! Auth::check()) {
+            return;
+        }
+
+        // When there is only 1 branch, 'all' is not allowed
+        if ($this->branches->count() <= 1 && $branchId === 'all') {
             return;
         }
 

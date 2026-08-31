@@ -29,7 +29,7 @@ class AIAssistant extends Page
 
     public int $requestsToday = 0;
 
-    public int $requestsLimit = 50;
+    public int $requestsLimit = 10;
 
     public bool $hasAiSubscription = false;
 
@@ -57,7 +57,7 @@ class AIAssistant extends Page
     public function mount(): void
     {
         $tenant = tenant();
-        $this->requestsLimit = $tenant->ai_requests_limit ?? 50;
+        $this->requestsLimit = $tenant->ai_requests_limit ?? 10;
         $this->hasAiSubscription = (bool) ($tenant->has_ai_subscription ?? false);
 
         // Reset daily counter if day changed

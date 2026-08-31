@@ -45,6 +45,8 @@ class ProvisionTenantJob implements ShouldQueue
                 'user_id' => $this->data['user_id'] ?? null,
                 'auto_renew' => $this->data['auto_renew'] ?? null,
                 'branches_limit' => $this->data['branches_limit'] ?? 1,
+                'has_ai_subscription' => $this->data['has_ai_subscription'] ?? true,
+                'ai_requests_limit' => $this->data['ai_requests_limit'] ?? 10,
             ]);
 
             $tenant->domains()->create([

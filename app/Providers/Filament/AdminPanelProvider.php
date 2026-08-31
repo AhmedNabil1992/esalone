@@ -105,15 +105,15 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => route('tenant.shifts.quick-open', ['redirect' => request()->fullUrl()]))
                     ->icon('heroicon-o-lock-open')
                     ->color('success')
-                    ->visible(fn (): bool => ! Shift::query()->where('status', 'open')->exists()),
+                    ->visible(fn (): bool => ! Shift::currentOpenShift()),
                 MenuItem::make()
                     ->label('غلق الوردية الحالية')
                     ->url(fn (): string => route('filament.admin.resources.tenant.shifts.shifts.close', [
-                        'record' => Shift::query()->where('status', 'open')->latest()->value('id') ?? 0,
+                        'record' => Shift::currentOpenShift()?->id ?? 0,
                     ]))
                     ->icon('heroicon-o-lock-closed')
                     ->color('danger')
-                    ->visible(fn (): bool => Shift::query()->where('status', 'open')->exists()),
+                    ->visible(fn (): bool => (bool) Shift::currentOpenShift()),
                 'quick-navigation' => Action::make('quick-navigation')
                     ->label('البحث السريع')
                     ->icon('heroicon-o-magnifying-glass')

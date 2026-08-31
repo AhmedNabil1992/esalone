@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Tenant\Shifts\Shifts\Pages;
 
 use App\Filament\Resources\Tenant\Shifts\Shifts\ShiftResource;
 use App\Mail\ShiftClosedMail;
+use App\Models\Tenant\Branch;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\ExpenseHistory;
@@ -48,7 +49,11 @@ class CloseShift extends Page
     public function mount($record): void
     {
         $this->record = $this->resolveRecord($record);
-        $branchId = (int) $this->record->branch_id;
+        $branchId = (int) ($this->record->branch_id ?: (Branch::where('is_active', true)->orderBy('id')->value('id') ?? 1));
+
+        if (! $this->record->branch_id) {
+            $this->record->update(['branch_id' => $branchId]);
+        }
 
         if ($this->record->status === 'close') {
             $this->actual_amount = (float) $this->record->actual_amount;
@@ -78,7 +83,7 @@ class CloseShift extends Page
     public function calculateStats(): void
     {
         $shiftId = $this->record->id;
-        $branchId = (int) $this->record->branch_id;
+        $branchId = (int) ($this->record->branch_id ?: (Branch::where('is_active', true)->orderBy('id')->value('id') ?? 1));
 
         // 1. Fetch Invoices closed during this shift
         $invoicesQuery = Invoice::query()

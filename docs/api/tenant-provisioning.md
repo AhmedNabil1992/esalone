@@ -89,6 +89,8 @@ TENANT_PROVISIONING_API_TOKEN=your_secure_random_token_here
 | `user_id` | `integer` | **نعم** | معرّف العميل في النظام الخارجي (User ID). | `105` |
 | `auto_renew` | `boolean` | **نعم** | هل يتم التجديد تلقائياً؟ (`true` أو `false`). | `true` |
 | `branches_limit`| `integer` | *اختياري*| الحد الأقصى لعدد الفروع المسموح بها (الافتراضي: 1). | `3` |
+| `has_ai_subscription` | `boolean` | *اختياري* | تفعيل اشتراك المساعد الذكي AI (الافتراضي: `true`). | `true` |
+| `ai_requests_limit` | `integer` | *اختياري* | الحد اليومي لعدد رسائل المساعد الذكي (الافتراضي: `10`). | `10` |
 
 #### Request Payload Example:
 ```json
@@ -100,7 +102,9 @@ TENANT_PROVISIONING_API_TOKEN=your_secure_random_token_here
   "ended_at": "2027-08-31",
   "user_id": 42,
   "auto_renew": true,
-  "branches_limit": 2
+  "branches_limit": 2,
+  "has_ai_subscription": true,
+  "ai_requests_limit": 10
 }
 ```
 
