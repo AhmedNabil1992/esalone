@@ -17,3 +17,7 @@ Schedule::command('tenants:run tenants:send-session-expiry-alerts')
     ->everyMinute()
     ->runInBackground()
     ->withoutOverlapping();
+
+Schedule::command('tenants:cleanup-expired')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();

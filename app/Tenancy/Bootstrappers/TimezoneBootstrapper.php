@@ -10,8 +10,11 @@ use Stancl\Tenancy\Contracts\Tenant;
 
 class TimezoneBootstrapper implements TenancyBootstrapper
 {
+    private string $originalTimezone;
+
     public function bootstrap(Tenant $tenant): void
     {
+        $this->originalTimezone = date_default_timezone_get();
         $timezone = 'UTC';
 
         try {
@@ -34,6 +37,7 @@ class TimezoneBootstrapper implements TenancyBootstrapper
 
     public function revert(): void
     {
+        date_default_timezone_set($this->originalTimezone);
         // إرجاع الإعدادات للوضع الافتراضي عند انتهاء الاتصال بالعميل
         FilamentTimezone::set('UTC');
     }

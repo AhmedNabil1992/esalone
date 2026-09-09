@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Tenant;
 
+use App\Filament\Resources\Tenant\Reservations\ReservationsResource;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
@@ -20,6 +21,10 @@ class SendBookingAlertsCommand extends Command
 
     public function handle(): int
     {
+        if (! tenant()?->isReadyForScheduledTasks()) {
+            return self::SUCCESS;
+        }
+
         // 1. Get the configured alert lead time (in minutes)
         $alertLeadTime = (int) SystemConfig::get('sys_booking_alert_time', '30');
         if ($alertLeadTime <= 0) {
@@ -76,7 +81,7 @@ class SendBookingAlertsCommand extends Command
                     ->actions([
                         Action::make('view')
                             ->label('عرض الحجوزات')
-                            ->url(route('filament.admin.resources.tenant.reservations.reservations.index')),
+                            ->url(ReservationsResource::getUrl('index', panel: 'admin', isAbsolute: false)),
                     ])
                     ->sendToDatabase($users);
 

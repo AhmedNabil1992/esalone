@@ -12,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -46,22 +47,28 @@ class GenerateTenantPermissionsJob implements ShouldQueue
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            Artisan::call('shield:generate', [
+            $exitCode = Artisan::call('shield:generate', [
                 '--all' => true,
                 '--option' => 'permissions',
                 '--panel' => 'admin',
                 '--no-interaction' => true,
             ]);
 
+            if ($exitCode !== 0) {
+                throw new RuntimeException('Shield permission generation failed: '.Artisan::output());
+            }
+
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             $superAdminRoleName = (string) config('filament-shield.super_admin.name', 'super_admin');
             $superAdminRole = Role::findOrCreate($superAdminRoleName, 'web');
-            $permissionNames = Permission::query()->pluck('name')->all();
+            $permissionNames = Permission::query()->where('guard_name', 'web')->pluck('name')->all();
 
-            if ($permissionNames !== []) {
-                $superAdminRole->syncPermissions($permissionNames);
+            if ($permissionNames === []) {
+                throw new RuntimeException('Shield generated no web permissions: '.Artisan::output());
             }
+
+            $superAdminRole->syncPermissions($permissionNames);
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         } catch (Throwable $throwable) {

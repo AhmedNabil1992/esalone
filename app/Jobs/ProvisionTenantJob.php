@@ -38,8 +38,9 @@ class ProvisionTenantJob implements ShouldQueue
         $tenantId = (string) Str::ulid();
 
         try {
-            $tenant = Tenant::create([
+            $tenant = new Tenant([
                 'id' => $tenantId,
+                'provisioning_status' => 'provisioning',
                 'started_at' => $this->data['started_at'] ?? null,
                 'ended_at' => $this->data['ended_at'] ?? null,
                 'user_id' => $this->data['user_id'] ?? null,
@@ -48,6 +49,7 @@ class ProvisionTenantJob implements ShouldQueue
                 'has_ai_subscription' => $this->data['has_ai_subscription'] ?? true,
                 'ai_requests_limit' => $this->data['ai_requests_limit'] ?? 10,
             ]);
+            $tenant->save();
 
             $tenant->domains()->create([
                 'domain' => $this->data['domain'],
@@ -96,25 +98,28 @@ class ProvisionTenantJob implements ShouldQueue
 
             Tenancy::end();
 
-            // Run generate permissions in background
-            GenerateTenantPermissionsJob::dispatch($tenant->getTenantKey())
-                ->onConnection('database')
-                ->onQueue('tenant-provisioning');
-
-            // Send Mail to customer
-            Mail::to($this->data['email'])->send(
-                new TenantProvisionedMail($this->data['name'], $this->data['domain'])
-            );
+            app()->call([new GenerateTenantPermissionsJob((string) $tenant->getTenantKey()), 'handle']);
+            $tenant->update(['provisioning_status' => 'ready']);
 
         } catch (Throwable $throwable) {
             Tenancy::end();
 
-            if ($tenant) {
+            if ($tenant?->exists) {
                 $tenant->delete();
             }
 
             report($throwable);
             throw $throwable;
+        }
+
+        try {
+            Mail::to($this->data['email'])->queue(
+                (new TenantProvisionedMail($this->data['name'], $this->data['domain']))
+                    ->onConnection('database')
+                    ->onQueue('default')
+            );
+        } catch (Throwable $throwable) {
+            report($throwable);
         }
     }
 }

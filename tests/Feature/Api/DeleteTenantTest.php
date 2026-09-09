@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Stancl\Tenancy\Events\TenantDeleted;
+use Stancl\Tenancy\Events\DeletingTenant;
 use Tests\TestCase;
 
 class DeleteTenantTest extends TestCase
@@ -17,7 +17,7 @@ class DeleteTenantTest extends TestCase
 
     public function test_tenant_can_be_deleted_using_provisioning_token(): void
     {
-        Event::fake([TenantDeleted::class]);
+        Event::fake([DeletingTenant::class]);
 
         config()->set('services.tenant_provisioning.token', 'test-token');
 
