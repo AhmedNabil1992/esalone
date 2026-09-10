@@ -13,6 +13,7 @@ use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\Features\CrossDomainRedirect;
 use Stancl\Tenancy\Features\TenantConfig;
 use Stancl\Tenancy\Features\UniversalRoutes;
+use Stancl\Tenancy\Features\UserImpersonation;
 use Stancl\Tenancy\Features\ViteBundler;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
@@ -179,7 +180,7 @@ return [
      * understand which ones you want to enable.
      */
     'features' => [
-        // Stancl\Tenancy\Features\UserImpersonation::class,
+        UserImpersonation::class,
         // Stancl\Tenancy\Features\TelescopeTags::class,
         UniversalRoutes::class,
         TenantConfig::class, // https://tenancyforlaravel.com/docs/v3/features/tenant-config

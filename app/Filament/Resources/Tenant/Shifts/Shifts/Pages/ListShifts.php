@@ -17,8 +17,9 @@ class ListShifts extends ListRecords
         return [
             CreateAction::make()
                 ->label('فتح وردية جديدة')
-                ->url(fn (): string => route('tenant.shifts.quick-open', ['redirect' => ShiftResource::getUrl('index')]))
-                ->visible(fn (): bool => ! Shift::currentOpenShift()),
+                ->url(fn (): string => route('tenant.shifts.quick-open', ['redirect' => ShiftResource::getUrl('index', isAbsolute: false)]))
+                ->postToUrl()
+                ->visible(fn (): bool => ShiftResource::canCreate() && ! Shift::currentOpenShift()),
             Action::make('closeActiveShift')
                 ->label('تقفيل الوردية الحالية')
                 ->color('danger')

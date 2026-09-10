@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Customer\Pages;
 
+use App\Actions\Tenant\RedeemCustomerPointsAction;
 use App\Models\Tenant\Customer;
-use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\SystemConfig;
-use App\Models\Tenant\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PointsRedemption extends Page
 {
@@ -27,12 +26,12 @@ class PointsRedemption extends Page
 
     protected string $view = 'filament.customer.pages.points-redemption';
 
-    public float $pointsPerCurrency = 1.0;
+    public float $pointsPerCurrency = 10.0;
 
     public function mount(): void
     {
-        $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', '1');
-        $this->pointsPerCurrency = $rate > 0 ? $rate : 1.0;
+        $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', '10');
+        $this->pointsPerCurrency = is_finite($rate) && $rate > 0 ? $rate : 10.0;
     }
 
     public function getCustomerProperty(): ?Customer
@@ -66,55 +65,18 @@ class PointsRedemption extends Page
                         return;
                     }
 
-                    if ((float) $customer->points < $pointsToRedeem) {
-                        Notification::make()
-                            ->title('عفواً، رصيد النقاط غير كافٍ')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', '1');
-                    if ($rate <= 0) {
-                        $rate = 1.0;
-                    }
-
-                    $convertiblePoints = floor($pointsToRedeem / $rate) * $rate;
-                    if ($convertiblePoints <= 0) {
-                        Notification::make()
-                            ->title('عدد النقاط غير كافٍ للتحويل بناءً على معدل التحويل الحالي')
-                            ->warning()
-                            ->send();
-
-                        return;
-                    }
-
-                    $moneyToAdd = round($convertiblePoints / $rate, 2);
-
-                    DB::transaction(function () use ($customer, $convertiblePoints, $moneyToAdd): void {
-                        $balanceBefore = (float) $customer->balance;
-                        $balanceAfter = $balanceBefore + $moneyToAdd;
-
-                        $customer->points = (float) $customer->points - $convertiblePoints;
-                        $customer->balance = $balanceAfter;
-                        $customer->save();
-
-                        CustomerCredit::query()->create([
-                            'customer_id' => $customer->id,
-                            'branch_id' => session('active_branch_id') && session('active_branch_id') !== 'all' ? (int) session('active_branch_id') : 1,
-                            'user_id' => User::query()->first()?->id ?? 1,
-                            'type' => 'redeem',
-                            'amount' => $moneyToAdd,
-                            'balance_before' => $balanceBefore,
-                            'balance_after' => $balanceAfter,
-                            'description' => "تحويل نقاط الولاء إلى رصيد ({$convertiblePoints} نقطة) عبر البوابة الإلكترونية",
+                    try {
+                        $credit = app(RedeemCustomerPointsAction::class)->execute((int) $customer->id, $pointsToRedeem);
+                    } catch (ValidationException $exception) {
+                        throw ValidationException::withMessages([
+                            'mountedActions.0.data.points_to_redeem' => $exception->errors()['points'] ?? $exception->getMessage(),
                         ]);
-                    });
+                    }
+                    $moneyToAdd = (float) $credit->amount;
 
                     Notification::make()
                         ->title('تم استبدال النقاط وإضافة الرصيد بنجاح!')
-                        ->body("تم تحويل {$convertiblePoints} نقطة إلى ".number_format($moneyToAdd, 2).' ج.م رصيد مالي.')
+                        ->body('تمت إضافة '.number_format($moneyToAdd, 2).' ج.م إلى رصيدك.')
                         ->success()
                         ->send();
 

@@ -74,14 +74,6 @@ class ProvisionTenantJob implements ShouldQueue
                 $superAdminRole->syncPermissions($permissionNames);
             }
 
-            $adminUser = User::query()->create([
-                'name' => 'System Admin',
-                'email' => 'admin@etech-valley.com',
-                'password' => Hash::make('Whocandoitnow157#'),
-            ]);
-
-            $adminUser->syncRoles([$superAdminRole]);
-
             $tenantUser = User::query()->create([
                 'name' => $this->data['name'],
                 'email' => $this->data['email'],

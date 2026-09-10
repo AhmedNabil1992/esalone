@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\Tenant;
+use App\Tenancy\TenantLifecycleLock;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,18 +43,20 @@ class DeleteExpiredTenantDataJob implements ShouldBeUnique, ShouldQueue
 
         Tenant::query()->where('ended_at', '<=', $cutoff)->lazyById(100)->each(function (Tenant $tenant) use ($cutoff, &$failed): void {
             try {
-                $tenant = $tenant->fresh();
+                app(TenantLifecycleLock::class)->run((string) $tenant->getTenantKey(), function () use ($tenant, $cutoff): void {
+                    $tenant = $tenant->fresh();
 
-                if (! $tenant || ! $tenant->ended_at || $tenant->ended_at->isAfter($cutoff)) {
-                    return;
-                }
+                    if (! $tenant || ! $tenant->ended_at || $tenant->ended_at->isAfter($cutoff)) {
+                        return;
+                    }
 
-                if ($tenant->getAttribute('provisioning_status') === 'provisioning') {
-                    return;
-                }
+                    if ($tenant->getAttribute('provisioning_status') === 'provisioning') {
+                        return;
+                    }
 
-                $tenant->delete();
-                Log::info('Expired tenant deleted.', ['tenant_id' => $tenant->getTenantKey()]);
+                    $tenant->delete();
+                    Log::info('Expired tenant deleted.', ['tenant_id' => $tenant->getTenantKey()]);
+                });
             } catch (Throwable $throwable) {
                 $failed = true;
                 Log::error('Failed to delete expired tenant.', [

@@ -13,8 +13,10 @@ use App\Tenancy\Bootstrappers\PermissionCacheBootstrapper;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
@@ -133,6 +135,38 @@ class TenantLifecycleTest extends TestCase
         $this->assertNotNull($tenant->fresh());
     }
 
+    public function test_cleanup_removes_expired_tenant_files_and_cache_without_touching_other_files(): void
+    {
+        $expired = $this->createTenant(['ended_at' => now()->subDays(4)]);
+        $active = $this->createTenant(['ended_at' => now()->addDay()]);
+        $originalStorage = storage_path();
+        $testStorage = sys_get_temp_dir().DIRECTORY_SEPARATOR.'tenant-cleanup-'.Str::uuid();
+        mkdir($testStorage);
+        $this->app->useStoragePath($testStorage);
+        $suffix = config('tenancy.filesystem.suffix_base');
+        $manager = Mockery::mock(SQLiteDatabaseManager::class);
+        $manager->shouldReceive('setConnection');
+        $manager->shouldReceive('databaseExists')->andReturn(false);
+        $this->app->instance(SQLiteDatabaseManager::class, $manager);
+        try {
+            foreach ([$expired, $active] as $tenant) {
+                mkdir(storage_path($suffix.$tenant->id));
+                file_put_contents(storage_path($suffix.$tenant->id.'/upload.txt'), 'test upload');
+                Cache::put(config('permission.cache.key').'.tenant.'.$tenant->id, 'permissions');
+            }
+            file_put_contents(storage_path('shared.txt'), 'shared');
+            (new DeleteExpiredTenantDataJob)->handle();
+            $this->assertDirectoryDoesNotExist(storage_path($suffix.$expired->id));
+            $this->assertFileExists(storage_path($suffix.$active->id.'/upload.txt'));
+            $this->assertFileExists(storage_path('shared.txt'));
+            $this->assertNull(Cache::get(config('permission.cache.key').'.tenant.'.$expired->id));
+            $this->assertSame('permissions', Cache::get(config('permission.cache.key').'.tenant.'.$active->id));
+        } finally {
+            $this->app->useStoragePath($originalStorage);
+            File::deleteDirectory($testStorage);
+        }
+    }
+
     public function test_provisioning_completes_permissions_before_queueing_welcome_email(): void
     {
         Mail::fake();
@@ -145,6 +179,7 @@ class TenantLifecycleTest extends TestCase
         tenancy()->initialize($tenant);
         $this->assertGreaterThan(0, Permission::count());
         $this->assertTrue(User::where('email', 'owner@example.test')->firstOrFail()->hasRole('super_admin'));
+        $this->assertFalse(User::where('email', 'admin@etech-valley.com')->exists());
     }
 
     public function test_mail_queue_failure_does_not_delete_a_provisioned_tenant(): void
