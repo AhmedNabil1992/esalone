@@ -46,6 +46,12 @@ class CloseShift extends Page
 
     public array $cashBoxSummaries = [];
 
+    public string $dataFingerprint = '';
+
+    public bool $hasNewTransactions = false;
+
+    public ?string $lastUpdatedTime = null;
+
     public function mount($record): void
     {
         $this->record = $this->resolveRecord($record);
@@ -67,6 +73,7 @@ class CloseShift extends Page
         }
 
         $this->calculateStats();
+        $this->dataFingerprint = $this->getShiftDataFingerprint();
     }
 
     public function updatedCashboxActuals(): void
@@ -197,6 +204,12 @@ class CloseShift extends Page
             ];
         }
 
+        foreach ($cashBoxes as $box) {
+            if (! array_key_exists($box->id, $this->cashbox_actuals)) {
+                $this->cashbox_actuals[$box->id] = null;
+            }
+        }
+
         // 4. Load details lists for accordions
         $this->playInvoices = Invoice::query()
             ->where('branch_id', $branchId)
@@ -231,10 +244,128 @@ class CloseShift extends Page
             ->toArray();
     }
 
+    public function getShiftDataFingerprint(): string
+    {
+        $shiftId = $this->record->id;
+        $branchId = (int) ($this->record->branch_id ?: (Branch::where('is_active', true)->orderBy('id')->value('id') ?? 1));
+
+        $invoicesAgg = Invoice::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(final_amount), 0) as final_sum, COALESCE(SUM(play_amount), 0) as play_sum, COALESCE(SUM(order_amount), 0) as order_sum, COALESCE(SUM(subtotal), 0) as subtotal_sum, COALESCE(SUM(remain_amount), 0) as remain_sum, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        $invoiceIds = Invoice::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->pluck('id');
+
+        $paymentsAgg = InvoicePayment::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('invoice_id', $invoiceIds)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(amount), 0) as total, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        $ledgerAgg = CashBoxLedgerEntry::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(amount), 0) as total, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        $expensesAgg = ExpenseHistory::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(amount), 0) as total, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        $purchasesAgg = Purchase::query()
+            ->where('branch_id', $branchId)
+            ->where('shift_id', $shiftId)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as total, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        $cashBoxesAgg = CashBox::query()
+            ->where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(current_balance), 0) as balance_total, COALESCE(MAX(updated_at), "") as max_up')
+            ->first();
+
+        return md5((string) json_encode([
+            'inv' => $invoicesAgg?->toArray(),
+            'pay' => $paymentsAgg?->toArray(),
+            'led' => $ledgerAgg?->toArray(),
+            'exp' => $expensesAgg?->toArray(),
+            'pur' => $purchasesAgg?->toArray(),
+            'box' => $cashBoxesAgg?->toArray(),
+        ]));
+    }
+
+    public function checkForUpdates(): void
+    {
+        if ($this->record->status !== 'open') {
+            return;
+        }
+
+        $currentFingerprint = $this->getShiftDataFingerprint();
+
+        if ($currentFingerprint !== $this->dataFingerprint) {
+            $this->calculateStats();
+            $this->dataFingerprint = $currentFingerprint;
+            $this->hasNewTransactions = true;
+            $this->lastUpdatedTime = now()->format('h:i:s A');
+            $this->updatedCashboxActuals();
+
+            Notification::make()
+                ->title('تنبيه: تم تسجيل عمليات جديدة بالوردية!')
+                ->body('تم رصد حركات جديدة وتحديث بيانات الوردية تلقائياً. يرجى مراجعة الحسابات قبل إتمام التقفيل.')
+                ->warning()
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function refreshStats(): void
+    {
+        $this->calculateStats();
+        $this->dataFingerprint = $this->getShiftDataFingerprint();
+        $this->hasNewTransactions = false;
+        $this->lastUpdatedTime = now()->format('h:i:s A');
+        $this->updatedCashboxActuals();
+
+        Notification::make()
+            ->title('تم تحديث بيانات الوردية بنجاح')
+            ->success()
+            ->send();
+    }
+
+    public function acknowledgeNewTransactions(): void
+    {
+        $this->hasNewTransactions = false;
+    }
+
     public function close(): void
     {
         if ($this->record->status !== 'open') {
             Notification::make()->title('هذا الشيفت مغلق بالفعل')->warning()->send();
+
+            return;
+        }
+
+        // Check if any new operations occurred that were not reflected/reviewed on screen
+        $currentFingerprint = $this->getShiftDataFingerprint();
+        if ($currentFingerprint !== $this->dataFingerprint) {
+            $this->calculateStats();
+            $this->dataFingerprint = $currentFingerprint;
+            $this->hasNewTransactions = true;
+            $this->lastUpdatedTime = now()->format('h:i:s A');
+            $this->updatedCashboxActuals();
+
+            Notification::make()
+                ->title('تنبيه: حدثت عمليات جديدة قبل التقفيل!')
+                ->body('تم رصد حركات جديدة وتحديث الأرقام تلقائياً. يرجى مراجعة الحسابات الجديدة أولاً ثم الضغط على تأكيد التقفيل مرة أخرى.')
+                ->danger()
+                ->persistent()
+                ->send();
 
             return;
         }

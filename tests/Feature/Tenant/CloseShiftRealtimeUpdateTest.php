@@ -1,0 +1,500 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Tenant;
+
+use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CloseShift;
+use App\Models\Tenant\Branch;
+use App\Models\Tenant\CashBox;
+use App\Models\Tenant\CashBoxLedgerEntry;
+use App\Models\Tenant\ExpenseHistory;
+use App\Models\Tenant\Invoice;
+use App\Models\Tenant\Shift;
+use App\Models\Tenant\User;
+use App\Scopes\BranchScope;
+use Filament\Facades\Filament;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+class CloseShiftRealtimeUpdateTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        BranchScope::resetCache();
+        $this->setUpDatabaseSchema();
+    }
+
+    protected function tearDown(): void
+    {
+        BranchScope::resetCache();
+        $this->tearDownDatabaseSchema();
+
+        parent::tearDown();
+    }
+
+    private function setUpDatabaseSchema(): void
+    {
+        $this->tearDownDatabaseSchema();
+
+        Schema::create('branches', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('users', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps();
+        });
+
+        Schema::create('roles', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('guard_name')->default('web');
+            $table->timestamps();
+        });
+
+        Schema::create('permissions', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('guard_name')->default('web');
+            $table->timestamps();
+        });
+
+        Schema::create('role_has_permissions', function (Blueprint $table): void {
+            $table->foreignId('permission_id')->constrained('permissions')->cascadeOnDelete();
+            $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
+            $table->primary(['permission_id', 'role_id']);
+        });
+
+        Schema::create('model_has_permissions', function (Blueprint $table): void {
+            $table->foreignId('permission_id')->constrained('permissions')->cascadeOnDelete();
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+            $table->primary(['permission_id', 'model_id', 'model_type']);
+        });
+
+        Schema::create('model_has_roles', function (Blueprint $table): void {
+            $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+            $table->primary(['role_id', 'model_id', 'model_type']);
+        });
+
+        Schema::create('shifts', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->unsignedBigInteger('opened_by_user_id')->nullable();
+            $table->unsignedBigInteger('closed_by_user_id')->nullable();
+            $table->integer('shift_no')->default(1);
+            $table->date('shift_date')->nullable();
+            $table->dateTime('shift_from')->nullable();
+            $table->dateTime('shift_to')->nullable();
+            $table->string('status')->default('open');
+            $table->boolean('is_active')->default(true);
+            $table->boolean('notify')->default(false);
+            $table->decimal('start_amount', 11, 2)->default(0);
+            $table->decimal('actual_amount', 11, 2)->default(0);
+            $table->decimal('expected_amount', 11, 2)->default(0);
+            $table->decimal('playstation_amount', 11, 2)->default(0);
+            $table->decimal('sales_amount', 11, 2)->default(0);
+            $table->decimal('tax_amount', 11, 2)->default(0);
+            $table->decimal('service_amount', 11, 2)->default(0);
+            $table->decimal('expenses_amount', 11, 2)->default(0);
+            $table->decimal('purchase_amount', 11, 2)->default(0);
+            $table->decimal('discount_amount', 11, 2)->default(0);
+            $table->decimal('customer_add_amount', 11, 2)->default(0);
+            $table->decimal('customer_minus_amount', 11, 2)->default(0);
+            $table->decimal('customer_credit_amount', 11, 2)->default(0);
+            $table->decimal('credit_amount', 11, 2)->default(0);
+            $table->decimal('income_history_amount', 11, 2)->default(0);
+            $table->text('notes')->nullable();
+            $table->json('cashbox_actual_amounts')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('cash_boxes', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->string('name');
+            $table->string('code')->nullable();
+            $table->string('type')->default('cash');
+            $table->decimal('current_balance', 11, 2)->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('invoices', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->foreignId('shift_id')->nullable()->constrained('shifts');
+            $table->string('invoice_no')->nullable();
+            $table->string('invoice_type')->default('direct_sale');
+            $table->string('status')->default('posted');
+            $table->decimal('play_amount', 11, 2)->default(0);
+            $table->decimal('order_amount', 11, 2)->default(0);
+            $table->decimal('subtotal', 11, 2)->default(0);
+            $table->decimal('tax_amount', 11, 2)->default(0);
+            $table->decimal('service_amount', 11, 2)->default(0);
+            $table->decimal('discount_amount', 11, 2)->default(0);
+            $table->decimal('remain_amount', 11, 2)->default(0);
+            $table->decimal('final_amount', 11, 2)->default(0);
+            $table->decimal('paid_amount', 11, 2)->default(0);
+            $table->unsignedBigInteger('customer_id')->nullable();
+            $table->unsignedBigInteger('device_id')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('invoice_payments', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
+            $table->string('payment_method')->default('cash');
+            $table->decimal('amount', 11, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('cash_box_ledger_entries', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->foreignId('shift_id')->nullable()->constrained('shifts');
+            $table->foreignId('cash_box_id')->nullable()->constrained('cash_boxes');
+            $table->string('operation')->default('expense');
+            $table->string('direction')->default('in');
+            $table->decimal('amount', 11, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('expense_types', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('expense_histories', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->foreignId('shift_id')->nullable()->constrained('shifts');
+            $table->foreignId('cash_box_id')->nullable()->constrained('cash_boxes');
+            $table->foreignId('expense_type_id')->nullable()->constrained('expense_types');
+            $table->decimal('amount', 11, 2)->default(0);
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('suppliers', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('purchases', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('branch_id')->nullable()->constrained('branches');
+            $table->foreignId('shift_id')->nullable()->constrained('shifts');
+            $table->foreignId('cash_box_id')->nullable()->constrained('cash_boxes');
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers');
+            $table->decimal('total_amount', 11, 2)->default(0);
+            $table->string('reference')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('system_configs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->string('group')->default('general');
+            $table->timestamps();
+        });
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $viewAnyPerm = Permission::create(['name' => 'ViewAny:Shift', 'guard_name' => 'web']);
+        $viewPerm = Permission::create(['name' => 'View:Shift', 'guard_name' => 'web']);
+        $updatePerm = Permission::create(['name' => 'Update:Shift', 'guard_name' => 'web']);
+        $role = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
+        $role->givePermissionTo([$viewAnyPerm, $viewPerm, $updatePerm]);
+    }
+
+    private function tearDownDatabaseSchema(): void
+    {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('system_configs');
+        Schema::dropIfExists('purchases');
+        Schema::dropIfExists('suppliers');
+        Schema::dropIfExists('expense_histories');
+        Schema::dropIfExists('expense_types');
+        Schema::dropIfExists('cash_box_ledger_entries');
+        Schema::dropIfExists('invoice_payments');
+        Schema::dropIfExists('invoices');
+        Schema::dropIfExists('cash_boxes');
+        Schema::dropIfExists('shifts');
+        Schema::dropIfExists('model_has_roles');
+        Schema::dropIfExists('model_has_permissions');
+        Schema::dropIfExists('role_has_permissions');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('branches');
+        Schema::enableForeignKeyConstraints();
+    }
+
+    public function test_page_mounts_and_computes_initial_fingerprint(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 100]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+        $component->assertSet('hasNewTransactions', false);
+        $this->assertNotEmpty($component->get('dataFingerprint'));
+    }
+
+    public function test_check_for_updates_detects_new_invoice_and_refreshes_stats_with_notification(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 0]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 50,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+        $initialFingerprint = $component->get('dataFingerprint');
+
+        // Initially expected cash is 50
+        $this->assertEquals(50.0, (float) $component->get('stats')['expected_cash']);
+
+        // A new direct sale invoice occurs in this shift while the page is open
+        Invoice::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'invoice_no' => 'INV-001',
+            'invoice_type' => 'direct_sale',
+            'status' => 'posted',
+            'subtotal' => 120,
+            'final_amount' => 120,
+            'paid_amount' => 120,
+        ]);
+
+        // Trigger polling / checkForUpdates
+        $component->call('checkForUpdates')
+            ->assertSet('hasNewTransactions', true)
+            ->assertNotified('تنبيه: تم تسجيل عمليات جديدة بالوردية!');
+
+        $this->assertNotEquals($initialFingerprint, $component->get('dataFingerprint'));
+
+        // Verify stats refreshed
+        $this->assertEquals(120.0, (float) $component->get('stats')['sales_amount']);
+        $this->assertEquals(170.0, (float) $component->get('stats')['expected_cash']); // 50 start + 120 sales
+    }
+
+    public function test_close_prevents_closing_if_new_operations_occurred_unreviewed(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 0]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+        $component->set('cashbox_actuals.'.$box->id, 100);
+
+        // Before user clicks close, an expense happens in the background
+        ExpenseHistory::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'cash_box_id' => $box->id,
+            'amount' => 30,
+            'description' => 'شراء بنزين',
+        ]);
+        CashBoxLedgerEntry::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'cash_box_id' => $box->id,
+            'operation' => 'expense',
+            'direction' => 'out',
+            'amount' => 30,
+        ]);
+
+        // Attempt to close
+        $component->call('close')
+            ->assertSet('hasNewTransactions', true)
+            ->assertNotified('تنبيه: حدثت عمليات جديدة قبل التقفيل!');
+
+        // Shift MUST NOT be closed yet!
+        $this->assertEquals('open', $shift->fresh()->status);
+        $this->assertTrue((bool) $shift->fresh()->is_active);
+
+        // Verify stats updated to reflect the new expense
+        $this->assertEquals(30.0, (float) $component->get('stats')['expenses_amount']);
+        $this->assertEquals(70.0, (float) $component->get('stats')['expected_cash']);
+
+        // Now user reviews and updates actual amount if necessary, and closes
+        $component->set('cashbox_actuals.'.$box->id, 70);
+        $component->call('close');
+
+        // Now shift is closed successfully
+        $this->assertEquals('close', $shift->fresh()->status);
+        $this->assertFalse((bool) $shift->fresh()->is_active);
+        $this->assertEquals(70.0, (float) $shift->fresh()->expected_amount);
+        $this->assertEquals(70.0, (float) $shift->fresh()->actual_amount);
+    }
+
+    public function test_manual_refresh_updates_stats_and_fingerprint(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 0]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+
+        Invoice::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'invoice_no' => 'INV-002',
+            'invoice_type' => 'device_sale',
+            'status' => 'posted',
+            'play_amount' => 80,
+            'final_amount' => 80,
+            'paid_amount' => 80,
+        ]);
+
+        $component->call('refreshStats')
+            ->assertSet('hasNewTransactions', false)
+            ->assertNotified('تم تحديث بيانات الوردية بنجاح');
+
+        $this->assertEquals(80.0, (float) $component->get('stats')['playstation_amount']);
+        $this->assertEquals(180.0, (float) $component->get('stats')['expected_cash']);
+    }
+
+    public function test_acknowledge_new_transactions_resets_flag(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 0]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+        $component->set('hasNewTransactions', true);
+
+        $component->call('acknowledgeNewTransactions')
+            ->assertSet('hasNewTransactions', false);
+    }
+
+    public function test_check_for_updates_does_nothing_if_shift_already_closed(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'B1']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $box = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'الدرج الرئيسي', 'current_balance' => 0]);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'close',
+            'is_active' => false,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+        $initialFingerprint = $component->get('dataFingerprint');
+
+        // Add an invoice
+        Invoice::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'invoice_no' => 'INV-003',
+            'invoice_type' => 'direct_sale',
+            'status' => 'posted',
+            'subtotal' => 50,
+            'final_amount' => 50,
+        ]);
+
+        $component->call('checkForUpdates')
+            ->assertSet('hasNewTransactions', false);
+
+        $this->assertEquals($initialFingerprint, $component->get('dataFingerprint'));
+    }
+}

@@ -36,12 +36,65 @@
                         الوردية مغلقة
                     </div>
                 @else
-                    <div style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 6px 16px; border-radius: 99px; font-weight: 800; font-size: 0.85rem;">
-                        الوردية مفتوحة
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button 
+                            type="button" 
+                            wire:click="refreshStats" 
+                            class="flex items-center gap-1.5 text-xs text-slate-200 hover:text-white bg-slate-800/90 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 transition shadow-sm cursor-pointer"
+                            title="تحديث البيانات يدويّاً"
+                        >
+                            <svg wire:loading.class="animate-spin" class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                            </svg>
+                            <span>تحديث الأرقام</span>
+                        </button>
+                        <div style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 6px 16px; border-radius: 99px; font-weight: 800; font-size: 0.85rem;">
+                            الوردية مفتوحة
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
+
+        @if($record->status === 'open')
+            <div wire:poll.4s.visible="checkForUpdates"></div>
+        @endif
+
+        @if($hasNewTransactions)
+            <div class="p-4 rounded-2xl border-2 border-amber-400 bg-amber-50 dark:!bg-amber-950/40 text-amber-900 dark:!text-amber-200 shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="p-2.5 bg-amber-500/20 text-amber-600 dark:!text-amber-400 rounded-xl">
+                        <svg class="w-7 h-7 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-black text-base m-0 text-amber-950 dark:!text-amber-100">
+                                تنبيه: تم تسجيل عمليات جديدة أثناء فتح هذه الصفحة!
+                            </h4>
+                            @if($lastUpdatedTime)
+                                <span class="text-xs px-2 py-0.5 rounded-md bg-amber-200/60 dark:!bg-amber-900/60 text-amber-900 dark:!text-amber-200 font-bold">
+                                    تحديث: {{ $lastUpdatedTime }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs text-amber-800 dark:!text-amber-300 mt-1 mb-0 leading-relaxed font-medium">
+                            تم تحديث الحسابات والقوائم المالية تلقائياً لتعكس العمليات الجديدة. يرجى مراجعة الأرقام قبل تأكيد تقفيل الوردية.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        type="button" 
+                        wire:click="acknowledgeNewTransactions" 
+                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                    >
+                        تمت المراجعة
+                    </button>
+                </div>
+            </div>
+        @endif
 
         @if(auth()->user()->can('update', $record))
             <!-- 2. Financial Breakdown Grid -->
@@ -246,7 +299,7 @@
 
             <!-- 5. Discrepancy & Close Submission Form -->
             <div 
-                x-data="{ expected: {{ $stats['expected_cash'] }}, actual: @entangle('actual_amount') }" 
+                x-data="{ expected: @entangle('stats.expected_cash'), actual: @entangle('actual_amount') }" 
                 class="bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 rounded-2xl p-6 shadow-sm text-slate-900 dark:!text-zinc-100"
             >
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
