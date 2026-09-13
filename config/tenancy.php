@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\Tenancy\Bootstrappers\PermissionCacheBootstrapper;
 use App\Tenancy\Bootstrappers\TimezoneBootstrapper;
 use Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
@@ -12,6 +13,7 @@ use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\Features\CrossDomainRedirect;
 use Stancl\Tenancy\Features\TenantConfig;
 use Stancl\Tenancy\Features\UniversalRoutes;
+use Stancl\Tenancy\Features\UserImpersonation;
 use Stancl\Tenancy\Features\ViteBundler;
 use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
 use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
@@ -42,6 +44,7 @@ return [
     'bootstrappers' => [
         DatabaseTenancyBootstrapper::class,
         CacheTenancyBootstrapper::class,
+        PermissionCacheBootstrapper::class,
         FilesystemTenancyBootstrapper::class,
         QueueTenancyBootstrapper::class,
         TimezoneBootstrapper::class,
@@ -177,7 +180,7 @@ return [
      * understand which ones you want to enable.
      */
     'features' => [
-        // Stancl\Tenancy\Features\UserImpersonation::class,
+        UserImpersonation::class,
         // Stancl\Tenancy\Features\TelescopeTags::class,
         UniversalRoutes::class,
         TenantConfig::class, // https://tenancyforlaravel.com/docs/v3/features/tenant-config
@@ -193,6 +196,8 @@ return [
      * storage (e.g. S3 / Dropbox) or have a custom asset controller.
      */
     'routes' => true,
+
+    'expiration_grace_days' => max(1, (int) env('TENANT_EXPIRATION_GRACE_DAYS', 3)),
 
     /**
      * Parameters used by the tenants:migrate command.

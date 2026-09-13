@@ -2,11 +2,13 @@
 
 namespace App\Models\Tenant;
 
+use App\Scopes\BranchScope;
 use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Shift extends Model
 {
@@ -93,7 +95,7 @@ class Shift extends Model
 
     public static function nextShiftNumber(?int $branchId = null): int
     {
-        $query = static::query();
+        $query = static::query()->withoutGlobalScope(BranchScope::class);
 
         $resolvedBranchId = $branchId
             ?? (session('active_branch_id') && session('active_branch_id') !== 'all' ? (int) session('active_branch_id') : null)

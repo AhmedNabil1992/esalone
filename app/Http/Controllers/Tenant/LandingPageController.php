@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\Tenant\RedeemCustomerPointsAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Branch;
-use App\Models\Tenant\Customer;
-use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\Offer;
 use App\Models\Tenant\SystemConfig;
-use App\Models\Tenant\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LandingPageController extends Controller
@@ -91,49 +88,15 @@ class LandingPageController extends Controller
         }
 
         $request->validate([
-            'points' => 'required|numeric|min:1|max:'.(float) $customer->points,
+            'points' => 'required|numeric|min:1',
         ], [
             'points.max' => 'النقاط المدخلة أكبر من رصيد نقاطك المتاحة.',
             'points.min' => 'يجب إدخال نقطة واحدة على الأقل.',
             'points.required' => 'يرجى تحديد عدد النقاط المراد استبدالها.',
         ]);
 
-        $pointsToRedeem = (float) $request->input('points');
+        $credit = app(RedeemCustomerPointsAction::class)->execute((int) $customer->id, (float) $request->input('points'));
 
-        $rate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', 10);
-        if ($rate <= 0) {
-            $rate = 10;
-        }
-
-        $convertiblePoints = floor($pointsToRedeem / $rate) * $rate;
-
-        if ($convertiblePoints <= 0) {
-            return redirect()->back()->with('error', "يجب استبدال عدد نقاط من مضاعفات الـ {$rate} (بحد أدنى {$rate} نقطة).");
-        }
-
-        $moneyToAdd = round($convertiblePoints / $rate, 2);
-
-        DB::transaction(function () use ($customer, $convertiblePoints, $moneyToAdd) {
-            $balanceBefore = (float) $customer->balance;
-            $balanceAfter = $balanceBefore + $moneyToAdd;
-
-            // Update customer balance & points
-            $customer->points = (float) $customer->points - $convertiblePoints;
-            $customer->balance = $balanceAfter;
-            $customer->save();
-
-            // Record transaction history under customer credits
-            CustomerCredit::create([
-                'customer_id' => $customer->id,
-                'user_id' => auth()->id() ?? User::first()?->id,
-                'type' => 'redeem',
-                'amount' => $moneyToAdd,
-                'balance_before' => $balanceBefore,
-                'balance_after' => $balanceAfter,
-                'description' => 'تحويل نقاط الولاء إلى رصيد ('.$convertiblePoints.' نقطة) عبر البوابة الإلكترونية',
-            ]);
-        });
-
-        return redirect()->back()->with('success', "تم تحويل {$convertiblePoints} نقطة بنجاح إلى رصيد بقيمة {$moneyToAdd} جنيه!");
+        return redirect()->back()->with('success', "تم تحويل النقاط بنجاح إلى رصيد بقيمة {$credit->amount} جنيه!");
     }
 }

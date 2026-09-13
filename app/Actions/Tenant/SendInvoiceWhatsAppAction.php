@@ -4,6 +4,7 @@ namespace App\Actions\Tenant;
 
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\SystemConfig;
+use App\Support\Tenant\PublicInvoiceToken;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -68,7 +69,7 @@ class SendInvoiceWhatsAppAction
         $dateTimeString = now()->format('Y-m-d h:i A');
         $currency = SystemConfig::get('sys_locale_currency', 'EGP');
 
-        $token = substr(hash_hmac('sha256', (string) $invoice->id, (string) config('app.key')), 0, 16);
+        $token = app(PublicInvoiceToken::class)->generate($invoice->getKey());
         $domain = tenant('domains')?->first()?->domain;
         $publicUrl = $domain
             ? tenant_route($domain, 'tenant.invoices.public-view', ['invoice' => $invoice->id, 'token' => $token])

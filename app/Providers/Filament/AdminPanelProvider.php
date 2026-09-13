@@ -102,10 +102,10 @@ class AdminPanelProvider extends PanelProvider
             ->userMenuItems([
                 MenuItem::make()
                     ->label('فتح وردية جديدة')
-                    ->url(fn (): string => route('tenant.shifts.quick-open', ['redirect' => request()->fullUrl()]))
+                    ->postAction(fn (): string => route('tenant.shifts.quick-open', ['redirect' => request()->getRequestUri()]))
                     ->icon('heroicon-o-lock-open')
                     ->color('success')
-                    ->visible(fn (): bool => ! Shift::currentOpenShift()),
+                    ->visible(fn (): bool => auth()->user()?->can('create', Shift::class) && ! Shift::currentOpenShift()),
                 MenuItem::make()
                     ->label('غلق الوردية الحالية')
                     ->url(fn (): string => route('filament.admin.resources.tenant.shifts.shifts.close', [

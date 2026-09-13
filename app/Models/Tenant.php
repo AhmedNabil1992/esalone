@@ -35,6 +35,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'has_ai_subscription',
         'ai_requests_limit',
         'branches_limit',
+        'provisioning_status',
     ];
 
     protected $casts = [
@@ -114,6 +115,12 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function hasActiveSubscription(): bool
     {
         return $this->is_active && ! $this->isSubscriptionExpired();
+    }
+
+    public function isReadyForScheduledTasks(): bool
+    {
+        return $this->getAttribute('provisioning_status') !== 'provisioning'
+            && $this->hasActiveSubscription();
     }
 
     /**

@@ -16,6 +16,10 @@ class SendSessionExpiryAlertsCommand extends Command
 
     public function handle(): int
     {
+        if (! tenant()?->isReadyForScheduledTasks()) {
+            return self::SUCCESS;
+        }
+
         $activeSessions = PlaySessions::query()
             ->with(['device', 'latestDetail'])
             ->where('status', 'active')
@@ -59,7 +63,7 @@ class SendSessionExpiryAlertsCommand extends Command
                         ->actions([
                             Action::make('view')
                                 ->label('التحكم بالأجهزة')
-                                ->url(route('filament.admin.pages.device-control')),
+                                ->url(route('filament.admin.pages.device-control', [], false)),
                         ])
                         ->sendToDatabase($users);
 
@@ -90,7 +94,7 @@ class SendSessionExpiryAlertsCommand extends Command
                     ->actions([
                         Action::make('view')
                             ->label('التحكم بالأجهزة')
-                            ->url(route('filament.admin.pages.device-control')),
+                            ->url(route('filament.admin.pages.device-control', [], false)),
                     ])
                     ->sendToDatabase($users);
 

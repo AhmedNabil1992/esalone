@@ -40,6 +40,15 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        if (tenancy()->initialized) {
+            return 'tenant.'.tenant()->getTenantKey().'.users.'.$this->getKey();
+        }
+
+        return 'App.Models.Tenant.User.'.$this->getKey();
+    }
+
     protected string $guard_name = 'web';
 
     /**

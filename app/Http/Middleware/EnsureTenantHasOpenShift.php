@@ -45,9 +45,7 @@ class EnsureTenantHasOpenShift
         }
 
         if ($request->isMethod('get')) {
-            $quickOpenUrl = url('/tenant/shifts/quick-open').'?'.http_build_query([
-                'redirect' => $request->fullUrl(),
-            ]);
+            $quickOpenUrl = route('tenant.shifts.quick-open', ['redirect' => $request->getRequestUri()]);
             $cancelUrl = url('/admin');
 
             Notification::make()
@@ -60,7 +58,9 @@ class EnsureTenantHasOpenShift
                         ->label('موافق')
                         ->button()
                         ->color('primary')
-                        ->url($quickOpenUrl),
+                        ->url($quickOpenUrl)
+                        ->postToUrl()
+                        ->visible(fn (): bool => Auth::user()->can('create', Shift::class)),
                     Action::make('cancelOpenShift')
                         ->label('إلغاء')
                         ->color('gray')

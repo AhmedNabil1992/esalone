@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\TenantDeletionController;
 use App\Http\Controllers\Api\TenantDomainCheckController;
+use App\Http\Controllers\Api\TenantImpersonationController;
 use App\Http\Controllers\Api\TenantProvisioningController;
+use App\Http\Controllers\Api\TenantRenewalController;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['GET', 'POST'], '/tenants/check-domain', TenantDomainCheckController::class)
@@ -18,3 +20,11 @@ Route::post('/tenants', TenantProvisioningController::class)
 Route::delete('/tenants/{tenant}', TenantDeletionController::class)
     ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning'])
     ->name('api.tenants.destroy');
+
+Route::post('/tenants/{tenant}/renew', TenantRenewalController::class)
+    ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning'])
+    ->name('api.tenants.renew');
+
+Route::post('/tenants/{tenant}/impersonation', TenantImpersonationController::class)
+    ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning'])
+    ->name('api.tenants.impersonation.store');

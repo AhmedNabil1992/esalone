@@ -1,60 +1,73 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\Tenant;
+use App\Tenancy\TenantLifecycleLock;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Throwable;
 
-class DeleteExpiredTenantDataJob implements ShouldQueue
+class DeleteExpiredTenantDataJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function handle(): void
+    public int $tries = 3;
+
+    public int $timeout = 300;
+
+    public int $uniqueFor = 3600;
+
+    public function __construct()
     {
-        // ابحث عن Tenants التي انتهت اشتراكاتها من 3 أيام فما فوق
-        $expiredTenants = Tenant::where('ended_at', '<=', now()->subDays(3))->get();
-
-        foreach ($expiredTenants as $tenant) {
-            try {
-                tenancy()->initialize($tenant);
-
-                // حذف جميع بيانات الـ tenant من قاعدة البيانات الخاصة به
-                $this->deleteAllTenantData();
-
-                // حذف الـ tenant من الـ central database
-                $tenant->forceDelete();
-
-                // تسجيل عملية الحذف
-                Log::info("Tenant {$tenant->id} data deleted successfully after expiry period");
-            } catch (\Exception $e) {
-                Log::error("Failed to delete tenant {$tenant->id}: {$e->getMessage()}");
-            } finally {
-                tenancy()->end();
-            }
-        }
+        $this->onConnection('database');
+        $this->onQueue('tenant-provisioning');
     }
 
-    private function deleteAllTenantData(): void
+    public function handle(): void
     {
-        $tables = DB::connection(tenancy()->connection())->getSchemaBuilder()->getTables();
+        if (tenancy()->initialized) {
+            throw new RuntimeException('Expired tenant cleanup must run in the central context.');
+        }
 
-        foreach ($tables as $table) {
-            // تجنب حذف جداول النظام
-            if (in_array($table['name'], ['migrations', 'failed_jobs'])) {
-                continue;
-            }
+        $cutoff = now()->subDays((int) config('tenancy.expiration_grace_days', 3));
+        $failed = false;
 
+        Tenant::query()->where('ended_at', '<=', $cutoff)->lazyById(100)->each(function (Tenant $tenant) use ($cutoff, &$failed): void {
             try {
-                DB::connection(tenancy()->connection())->table($table['name'])->truncate();
-            } catch (\Exception $e) {
-                Log::warning("Could not truncate table {$table['name']}: {$e->getMessage()}");
+                app(TenantLifecycleLock::class)->run((string) $tenant->getTenantKey(), function () use ($tenant, $cutoff): void {
+                    $tenant = $tenant->fresh();
+
+                    if (! $tenant || ! $tenant->ended_at || $tenant->ended_at->isAfter($cutoff)) {
+                        return;
+                    }
+
+                    if ($tenant->getAttribute('provisioning_status') === 'provisioning') {
+                        return;
+                    }
+
+                    $tenant->delete();
+                    Log::info('Expired tenant deleted.', ['tenant_id' => $tenant->getTenantKey()]);
+                });
+            } catch (Throwable $throwable) {
+                $failed = true;
+                Log::error('Failed to delete expired tenant.', [
+                    'tenant_id' => $tenant?->getTenantKey(),
+                    'error' => $throwable->getMessage(),
+                ]);
             }
+        });
+
+        if ($failed) {
+            throw new RuntimeException('Some expired tenants could not be deleted; see the application log.');
         }
     }
 }

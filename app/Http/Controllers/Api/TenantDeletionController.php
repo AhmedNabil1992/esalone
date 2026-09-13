@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Models\Tenant;
+use App\Tenancy\TenantLifecycleLock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Throwable;
@@ -17,7 +18,9 @@ class TenantDeletionController extends Controller
 
         try {
 
-            $tenant->delete();
+            app(TenantLifecycleLock::class)->run($tenantId, function () use ($tenant): void {
+                $tenant->fresh()?->delete();
+            });
 
             return response()->json([
                 'message' => 'Tenant deleted successfully.',
