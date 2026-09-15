@@ -21,13 +21,19 @@ return new class extends Migration
             });
 
             // Backfill branch_id from invoices, devices, or shifts, fallback to Main Branch (1)
-            DB::statement('
-                UPDATE play_history
-                LEFT JOIN invoices ON play_history.invoice_no = invoices.invoice_no
-                LEFT JOIN devices ON play_history.device_id = devices.id
-                LEFT JOIN shifts ON play_history.shift_id = shifts.id
-                SET play_history.branch_id = COALESCE(invoices.branch_id, devices.branch_id, shifts.branch_id, 1)
-            ');
+            DB::table('play_history')
+                ->select(['id', 'invoice_no', 'device_id', 'shift_id'])
+                ->orderBy('id')
+                ->chunkById(500, function ($rows): void {
+                    foreach ($rows as $row) {
+                        $branchId = DB::table('invoices')->where('invoice_no', $row->invoice_no)->value('branch_id')
+                            ?? DB::table('devices')->where('id', $row->device_id)->value('branch_id')
+                            ?? DB::table('shifts')->where('id', $row->shift_id)->value('branch_id')
+                            ?? 1;
+
+                        DB::table('play_history')->where('id', $row->id)->update(['branch_id' => $branchId]);
+                    }
+                });
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Subscription;
 
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class SubscriptionExpiryTest extends TestCase
@@ -17,6 +18,8 @@ class SubscriptionExpiryTest extends TestCase
 
     public function test_cleanup_command_is_available(): void
     {
+        Queue::fake();
+
         // تحقق من أن أمر التنظيف مسجل
         $this->artisan('tenants:cleanup-expired')
             ->expectsOutput('Cleanup job dispatched successfully.')

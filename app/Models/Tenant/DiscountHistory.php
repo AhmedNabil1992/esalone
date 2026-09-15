@@ -10,7 +10,7 @@ class DiscountHistory extends Model
 {
     use BelongsToBranch;
 
-    // protected $table = 'discount_history';
+    protected $table = 'discount_histories';
 
     protected $fillable = [
         'branch_id',

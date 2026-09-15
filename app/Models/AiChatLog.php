@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class AiChatLog extends Model
 {
-    protected $connection = 'mysql'; // explicitly use central database connection
-
     protected $table = 'ai_chat_logs';
 
     protected $fillable = [
@@ -23,4 +21,9 @@ class AiChatLog extends Model
     protected $casts = [
         'was_routed' => 'boolean',
     ];
+
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
 }

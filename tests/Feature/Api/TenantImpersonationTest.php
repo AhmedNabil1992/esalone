@@ -36,6 +36,7 @@ class TenantImpersonationTest extends TestCase
         config()->set('tenancy.database.central_connection', 'sqlite');
         config()->set('tenancy.database.template_tenant_connection', 'sqlite');
         config()->set('tenancy.bootstrappers', [DatabaseTenancyBootstrapper::class, PermissionCacheBootstrapper::class]);
+        config()->set('auth.providers.users.model', User::class);
 
         $databaseName = 'impersonation-test-'.Str::uuid().'.sqlite';
         $this->databaseFile = database_path($databaseName);

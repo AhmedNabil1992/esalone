@@ -330,9 +330,9 @@ class CreateDirectSaleAction
 
             // Update cash box balance and record ledger entry
             $cashBoxToUpdate = CashBox::query()->whereKey($defaultCashBox->id)->first();
-            if ($cashBoxToUpdate && $enteredPaidAmount > 0) {
+            if ($cashBoxToUpdate && $appliedPaidAmount > 0) {
                 $cashBoxToUpdate->update([
-                    'current_balance' => $cashBoxToUpdate->current_balance + $enteredPaidAmount,
+                    'current_balance' => $cashBoxToUpdate->current_balance + $appliedPaidAmount,
                 ]);
 
                 // Record cash box ledger entry
@@ -344,7 +344,7 @@ class CreateDirectSaleAction
                     'reference_id' => $invoice->id,
                     'direction' => 'in',
                     'operation' => 'direct_sale',
-                    'amount' => $enteredPaidAmount,
+                    'amount' => $appliedPaidAmount,
                     'description' => 'بيع مباشر - '.$invoiceNo,
                     'occurred_at' => now(),
                 ]);
@@ -354,7 +354,7 @@ class CreateDirectSaleAction
                     'cash_box_id' => $defaultCashBox->id,
                     'created_by_user_id' => $actor->id,
                     'payment_method' => 'cash',
-                    'amount' => $enteredPaidAmount,
+                    'amount' => $appliedPaidAmount,
                     'notes' => null,
                 ]);
             }
@@ -404,6 +404,7 @@ class CreateDirectSaleAction
                 $enteredPaidAmount,
                 $depositRemainderToCustomerBalance,
                 $invoiceNo,
+                $resolvedBranchId,
             );
 
             return [
@@ -472,6 +473,7 @@ class CreateDirectSaleAction
         float $enteredPaidAmount,
         bool $depositRemainderToCustomerBalance,
         string $invoiceNo,
+        int $branchId,
     ): void {
         if (! $customerId) {
             return;
@@ -499,7 +501,7 @@ class CreateDirectSaleAction
         }
 
         CustomerCredit::query()->create([
-            'branch_id' => $invoice?->branch_id ?? 1,
+            'branch_id' => $branchId,
             'customer_id' => $customer->id,
             'user_id' => $actor->id,
             'type' => $balanceDelta > 0 ? 'deposit' : 'withdraw',
@@ -610,6 +612,6 @@ class CreateDirectSaleAction
             return 0.0;
         }
 
-        return round(($finalAmount * $ratio), 2);
+        return round(($finalAmount * $ratio) / 100, 2);
     }
 }

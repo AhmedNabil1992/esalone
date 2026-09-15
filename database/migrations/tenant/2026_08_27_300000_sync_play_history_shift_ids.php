@@ -11,12 +11,19 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('play_history') && Schema::hasTable('invoices')) {
-            DB::statement('
-                UPDATE play_history
-                INNER JOIN invoices ON play_history.invoice_no = invoices.invoice_no
-                SET play_history.shift_id = invoices.shift_id
-                WHERE invoices.shift_id IS NOT NULL
-            ');
+            DB::table('play_history')
+                ->whereNotNull('invoice_no')
+                ->select(['id', 'invoice_no'])
+                ->orderBy('id')
+                ->chunkById(500, function ($rows): void {
+                    foreach ($rows as $row) {
+                        $shiftId = DB::table('invoices')->where('invoice_no', $row->invoice_no)->value('shift_id');
+
+                        if ($shiftId !== null) {
+                            DB::table('play_history')->where('id', $row->id)->update(['shift_id' => $shiftId]);
+                        }
+                    }
+                });
         }
     }
 

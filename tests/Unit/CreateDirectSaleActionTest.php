@@ -26,6 +26,20 @@ class CreateDirectSaleActionTest extends TestCase
     {
         parent::setUp();
 
+        $this->ensureTable('branches', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        DB::table('branches')->insert([
+            'name' => 'Main Branch',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->ensureTable('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
@@ -36,6 +50,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('customers', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('name');
             $table->decimal('balance', 12, 2)->default(0);
             $table->decimal('points', 12, 2)->default(0);
@@ -45,6 +60,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('shifts', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedInteger('shift_no')->nullable()->unique();
             $table->string('status')->default('open');
             $table->boolean('is_active')->default(true);
@@ -53,6 +69,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('cash_boxes', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('name');
             $table->string('code')->nullable();
             $table->decimal('current_balance', 12, 2)->default(0);
@@ -62,6 +79,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('cash_box_ledger_entries', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('shift_id')->nullable();
             $table->unsignedBigInteger('cash_box_id');
             $table->unsignedBigInteger('created_by_user_id')->nullable();
@@ -77,6 +95,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('customer_credits', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('user_id');
             $table->string('type');
@@ -89,6 +108,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('inventory_groups', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
@@ -97,6 +117,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('catalog_items', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('inventory_group_id')->nullable();
             $table->string('name');
             $table->text('description')->nullable();
@@ -108,8 +129,19 @@ class CreateDirectSaleActionTest extends TestCase
             $table->timestamps();
         });
 
+        $this->ensureTable('product_components', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('component_id');
+            $table->decimal('quantity', 12, 3)->default(1);
+            $table->string('notes')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->timestamps();
+        });
+
         $this->ensureTable('invoices', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('invoice_no')->unique();
             $table->string('invoice_type')->default('device_sale');
             $table->unsignedBigInteger('device_id')->nullable();
@@ -133,8 +165,23 @@ class CreateDirectSaleActionTest extends TestCase
             $table->timestamps();
         });
 
+        $this->ensureTable('discount_histories', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
+            $table->unsignedBigInteger('invoice_id');
+            $table->string('invoice_no');
+            $table->decimal('amount', 12, 2)->default(0);
+            $table->string('reason')->nullable();
+            $table->unsignedBigInteger('shift_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('ledger_entry_id')->nullable();
+            $table->timestamp('occurred_at')->nullable();
+            $table->timestamps();
+        });
+
         $this->ensureTable('invoice_payments', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('invoice_id');
             $table->unsignedBigInteger('cash_box_id')->nullable();
             $table->unsignedBigInteger('created_by_user_id')->nullable();
@@ -146,16 +193,20 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('market_history', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('customer_id')->nullable();
             $table->unsignedBigInteger('catalog_item_id')->nullable();
             $table->string('subject_name')->nullable();
             $table->decimal('unit_price', 12, 2)->default(0);
             $table->decimal('total_amount', 12, 2)->default(0);
+            $table->decimal('unit_cost', 12, 2)->default(0);
+            $table->decimal('total_cost', 12, 2)->default(0);
             $table->integer('quantity')->default(1);
             $table->date('transaction_date')->nullable();
             $table->time('transaction_time')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedInteger('shift_no')->nullable();
+            $table->unsignedBigInteger('shift_id')->nullable();
             $table->string('invoice_no')->nullable();
             $table->timestamps();
         });
@@ -170,6 +221,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('warehouses', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('name');
             $table->string('code')->nullable();
             $table->string('address')->nullable();
@@ -179,15 +231,18 @@ class CreateDirectSaleActionTest extends TestCase
 
         $this->ensureTable('warehouse_stocks', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('warehouse_id')->nullable();
             $table->unsignedBigInteger('catalog_item_id')->nullable();
             $table->decimal('quantity', 12, 3)->default(0);
+            $table->decimal('amount', 12, 2)->default(0);
             $table->decimal('min_quantity', 12, 3)->default(0);
             $table->timestamps();
         });
 
         $this->ensureTable('stock_movements', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('warehouse_id')->nullable();
             $table->unsignedBigInteger('catalog_item_id')->nullable();
             $table->unsignedBigInteger('invoice_id')->nullable();
@@ -220,7 +275,7 @@ class CreateDirectSaleActionTest extends TestCase
         // Explicitly truncate all tables in reverse order to respect foreign keys
         Schema::disableForeignKeyConstraints();
 
-        foreach (['stock_movements', 'warehouse_stocks', 'warehouses', 'market_history', 'invoice_payments', 'customer_credits', 'cash_box_ledger_entries', 'invoices', 'catalog_items', 'inventory_groups', 'customers', 'shifts', 'cash_boxes', 'users', 'system_configs'] as $table) {
+        foreach (['stock_movements', 'warehouse_stocks', 'warehouses', 'market_history', 'discount_histories', 'invoice_payments', 'customer_credits', 'cash_box_ledger_entries', 'invoices', 'product_components', 'catalog_items', 'inventory_groups', 'customers', 'shifts', 'cash_boxes', 'users', 'system_configs', 'branches'] as $table) {
             if (Schema::hasTable($table)) {
                 DB::table($table)->truncate();
             }

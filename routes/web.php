@@ -7,6 +7,10 @@ foreach (config('tenancy.central_domains', []) as $centralDomain) {
     Route::domain($centralDomain)->group(function () use ($centralDomain) {
         $landingRoute = Route::view('/', 'landing');
 
+        Route::redirect('/dashboard', '/admin')->name('dashboard');
+
+        require __DIR__.'/settings.php';
+
         if ($centralDomain === config('tenancy.central_domains.0')) {
             $landingRoute->name('home');
         }

@@ -22,6 +22,20 @@ class TransferCashBetweenCashBoxesActionTest extends TestCase
     {
         parent::setUp();
 
+        $this->ensureTable('branches', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        DB::table('branches')->insert([
+            'name' => 'Main Branch',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->ensureTable('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
@@ -32,6 +46,7 @@ class TransferCashBetweenCashBoxesActionTest extends TestCase
 
         $this->ensureTable('cash_boxes', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->string('name');
             $table->string('code')->nullable();
             $table->string('type')->default('cash');
@@ -43,6 +58,7 @@ class TransferCashBetweenCashBoxesActionTest extends TestCase
 
         $this->ensureTable('cash_box_ledger_entries', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('shift_id')->nullable();
             $table->unsignedBigInteger('cash_box_id');
             $table->unsignedBigInteger('created_by_user_id')->nullable();
@@ -58,6 +74,7 @@ class TransferCashBetweenCashBoxesActionTest extends TestCase
 
         $this->ensureTable('shifts', function (Blueprint $table): void {
             $table->id();
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedInteger('shift_no')->nullable();
             $table->string('status')->default('open');
             $table->boolean('is_active')->default(true);

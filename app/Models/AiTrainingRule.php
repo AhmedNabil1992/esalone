@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class AiTrainingRule extends Model
 {
-    protected $connection = 'mysql'; // explicitly use central database connection
-
     protected $table = 'ai_training_rules';
 
     protected $fillable = [
@@ -20,4 +18,9 @@ class AiTrainingRule extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection');
+    }
 }

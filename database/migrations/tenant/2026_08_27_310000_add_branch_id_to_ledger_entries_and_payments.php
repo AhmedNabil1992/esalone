@@ -20,12 +20,18 @@ return new class extends Migration
                     ->nullOnDelete();
             });
 
-            DB::statement('
-                UPDATE cash_box_ledger_entries
-                LEFT JOIN cash_boxes ON cash_box_ledger_entries.cash_box_id = cash_boxes.id
-                LEFT JOIN shifts ON cash_box_ledger_entries.shift_id = shifts.id
-                SET cash_box_ledger_entries.branch_id = COALESCE(cash_boxes.branch_id, shifts.branch_id, 1)
-            ');
+            DB::table('cash_box_ledger_entries')
+                ->select(['id', 'cash_box_id', 'shift_id'])
+                ->orderBy('id')
+                ->chunkById(500, function ($rows): void {
+                    foreach ($rows as $row) {
+                        $branchId = DB::table('cash_boxes')->where('id', $row->cash_box_id)->value('branch_id')
+                            ?? DB::table('shifts')->where('id', $row->shift_id)->value('branch_id')
+                            ?? 1;
+
+                        DB::table('cash_box_ledger_entries')->where('id', $row->id)->update(['branch_id' => $branchId]);
+                    }
+                });
         }
 
         if (Schema::hasTable('invoice_payments') && ! Schema::hasColumn('invoice_payments', 'branch_id')) {
@@ -37,12 +43,18 @@ return new class extends Migration
                     ->nullOnDelete();
             });
 
-            DB::statement('
-                UPDATE invoice_payments
-                LEFT JOIN invoices ON invoice_payments.invoice_id = invoices.id
-                LEFT JOIN cash_boxes ON invoice_payments.cash_box_id = cash_boxes.id
-                SET invoice_payments.branch_id = COALESCE(invoices.branch_id, cash_boxes.branch_id, 1)
-            ');
+            DB::table('invoice_payments')
+                ->select(['id', 'invoice_id', 'cash_box_id'])
+                ->orderBy('id')
+                ->chunkById(500, function ($rows): void {
+                    foreach ($rows as $row) {
+                        $branchId = DB::table('invoices')->where('id', $row->invoice_id)->value('branch_id')
+                            ?? DB::table('cash_boxes')->where('id', $row->cash_box_id)->value('branch_id')
+                            ?? 1;
+
+                        DB::table('invoice_payments')->where('id', $row->id)->update(['branch_id' => $branchId]);
+                    }
+                });
         }
     }
 

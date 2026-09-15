@@ -15,7 +15,11 @@ use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\PlayType;
 use App\Services\AIAssistantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 use Tests\TestCase;
 
 class AIAssistantTest extends TestCase
@@ -24,12 +28,24 @@ class AIAssistantTest extends TestCase
 
     protected $tenant;
 
+    private static string $tenantDatabasePath;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create tenant without events to avoid tenant DB creation during unit tests
-        $id = 'test_tenant_'.uniqid();
+        config()->set('tenancy.database.central_connection', 'sqlite');
+        config()->set('tenancy.database.template_tenant_connection', 'sqlite');
+        config()->set('tenancy.bootstrappers', [DatabaseTenancyBootstrapper::class]);
+
+        $id = (string) Str::ulid();
+        $databaseName = 'ai-test-'.getmypid().'.sqlite';
+        self::$tenantDatabasePath = database_path($databaseName);
+
+        if (! is_file(self::$tenantDatabasePath)) {
+            touch(self::$tenantDatabasePath);
+        }
+
         $this->tenant = Tenant::withoutEvents(function () use ($id) {
             return Tenant::create([
                 'id' => $id,
@@ -37,19 +53,45 @@ class AIAssistantTest extends TestCase
                 'ai_requests_limit' => 10,
             ]);
         });
-        tenancy()->tenant = $this->tenant;
+        $this->tenant->setInternal('db_name', $databaseName);
+        $this->tenant->save();
+
+        tenancy()->initialize($this->tenant);
+
+        if (! DB::connection('tenant')->getSchemaBuilder()->hasTable('migrations')) {
+            Artisan::call('migrate', [
+                '--database' => 'tenant',
+                '--path' => database_path('migrations/tenant'),
+                '--realpath' => true,
+                '--force' => true,
+            ]);
+        }
     }
 
     protected function tearDown(): void
     {
         if (tenancy()->initialized) {
+            foreach (['play_prices', 'play_types', 'devices', 'devices_types', 'catalog_items', 'inventory_groups'] as $table) {
+                DB::connection('tenant')->table($table)->delete();
+            }
+
             tenancy()->end();
         }
+        DB::purge('tenant');
         if ($this->tenant) {
-            $this->tenant->delete();
+            $this->tenant->deleteQuietly();
         }
 
         parent::tearDown();
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        if (isset(self::$tenantDatabasePath) && is_file(self::$tenantDatabasePath)) {
+            unlink(self::$tenantDatabasePath);
+        }
+
+        parent::tearDownAfterClass();
     }
 
     public function test_tenant_creation_defaults_to_ai_subscription_with_ten_requests_limit(): void
