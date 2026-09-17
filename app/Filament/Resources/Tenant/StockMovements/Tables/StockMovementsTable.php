@@ -61,16 +61,16 @@ class StockMovementsTable
                     })
                     ->sortable(),
                 TextColumn::make('occurred_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->label('تاريخ الحركة')
                     ->sortable(),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->label('تاريخ الإنشاء')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->label('تاريخ التحديث')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

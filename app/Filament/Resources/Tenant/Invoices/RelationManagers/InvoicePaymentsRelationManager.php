@@ -46,7 +46,7 @@ class InvoicePaymentsRelationManager extends RelationManager
                     ->limit(50),
                 TextColumn::make('created_at')
                     ->label('وقت التسجيل')
-                    ->dateTime(),
+                    ->dateTime('Y-m-d h:i A'),
             ])
             ->defaultSort('id', 'asc')
             ->headerActions([])

@@ -31,12 +31,12 @@ class PlayTypesTable
                     ->getStateUsing(static fn ($record): ?string => filled($record->picture) ? tenant_asset($record->picture) : null)
                     ->visibility('public'),
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->label('تاريخ الإنشاء')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->label('تاريخ التحديث')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

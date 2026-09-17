@@ -68,7 +68,7 @@ class PurchasesTable
                     }),
                 TextColumn::make('purchased_at')
                     ->label('تاريخ الشراء')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
             ])
             ->filters([

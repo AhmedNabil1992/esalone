@@ -42,7 +42,7 @@ class BranchesTable
                     ->boolean(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

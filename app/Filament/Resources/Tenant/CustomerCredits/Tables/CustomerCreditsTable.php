@@ -65,7 +65,7 @@ class CustomerCreditsTable
 
                 TextColumn::make('created_at')
                     ->label('التاريخ')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')

@@ -39,11 +39,12 @@ class UsersTable
                 //     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإضافة')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('تاريخ التعديل')
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

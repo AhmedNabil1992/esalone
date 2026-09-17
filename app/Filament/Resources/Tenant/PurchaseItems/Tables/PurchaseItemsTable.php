@@ -82,12 +82,12 @@ class PurchaseItemsTable
 
                 TextColumn::make('purchase.purchased_at')
                     ->label('تاريخ الشراء')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
 
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')
-                    ->dateTime('Y-m-d H:i:s')
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

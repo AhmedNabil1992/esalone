@@ -21,7 +21,7 @@ class CustomerCreditInfolist
             TextEntry::make('balance_after')->label('الرصيد بعد')->money(),
             TextEntry::make('description')->label('ملاحظة'),
             TextEntry::make('user.name')->label('بواسطة'),
-            TextEntry::make('created_at')->label('التاريخ')->dateTime(),
+            TextEntry::make('created_at')->label('التاريخ')->dateTime('Y-m-d h:i A'),
         ]);
     }
 }

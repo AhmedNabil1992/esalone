@@ -26,12 +26,12 @@ class ExpensesTypesTable
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('تاريخ التحديث')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

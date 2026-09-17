@@ -28,7 +28,7 @@ class ExpenseHistoryInfolist
                     ->placeholder('-'),
                 TextEntry::make('occurred_at')
                     ->label('تاريخ العملية')
-                    ->dateTime(),
+                    ->dateTime('Y-m-d h:i A'),
             ]);
     }
 }

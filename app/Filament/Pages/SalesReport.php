@@ -53,7 +53,7 @@ class SalesReport extends Page implements HasTable
             ->columns([
                 TextColumn::make('issued_at')
                     ->label('تاريخ الفاتورة')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
                 TextColumn::make('invoice_no')
                     ->label('رقم الفاتورة')

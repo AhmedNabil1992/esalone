@@ -41,7 +41,7 @@ class InvoicesTable
                     ->color(fn (?string $state): string => $state === 'direct_sale' ? 'success' : 'primary'),
                 TextColumn::make('issued_at')
                     ->label('التاريخ')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
                 TextColumn::make('device.name')
                     ->label('الجهاز')

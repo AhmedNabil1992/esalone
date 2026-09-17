@@ -44,11 +44,11 @@ class ShiftsTable
                     ->sortable(),
                 TextColumn::make('shift_from')
                     ->label('من')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
                 TextColumn::make('shift_to')
                     ->label('إلى')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->placeholder('-'),
                 TextColumn::make('opener.name')

@@ -20,7 +20,7 @@ class CustomerInfolist
                 ->money()
                 ->color(fn ($state) => $state < 0 ? 'danger' : ($state > 0 ? 'success' : 'gray')),
             IconEntry::make('is_active')->label('مفعّل')->boolean(),
-            TextEntry::make('created_at')->label('تاريخ الإضافة')->dateTime(),
+            TextEntry::make('created_at')->label('تاريخ الإضافة')->dateTime('Y-m-d h:i A'),
         ]);
     }
 }

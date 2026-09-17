@@ -59,7 +59,7 @@ class ExpenseHistoriesTable
                     ->sortable(),
                 TextColumn::make('occurred_at')
                     ->label('تاريخ العملية')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable(),
             ])
             ->defaultSort('occurred_at', 'desc')

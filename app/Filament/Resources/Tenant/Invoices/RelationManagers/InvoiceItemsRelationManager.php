@@ -43,7 +43,7 @@ class InvoiceItemsRelationManager extends RelationManager
                     ->sortable(),
                 TextColumn::make('transaction_time')
                     ->label('وقت العملية')
-                    ->time('h:i A', timezone: 'Africa/Cairo')
+                    ->time('h:i A')
                     ->placeholder('-'),
                 TextColumn::make('createdBy.name')
                     ->label('بواسطة')

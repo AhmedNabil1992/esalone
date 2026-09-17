@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Tenant\DefaultCatalogSeeder;
 use Database\Seeders\Tenant\DefaultSeeder;
 use Database\Seeders\Tenant\SettingSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -19,6 +20,7 @@ class DatabaseSeeder extends Seeder
         if (tenancy()->initialized) {
             $this->call([
                 DefaultSeeder::class,
+                DefaultCatalogSeeder::class,
                 SettingSeeder::class,
             ]);
         }

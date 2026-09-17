@@ -46,12 +46,12 @@ class PlaySessionDetailsRelationManager extends RelationManager
                     ->placeholder('-'),
                 TextColumn::make('start_time')
                     ->label('بداية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->placeholder('-'),
                 TextColumn::make('end_time')
                     ->label('نهاية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->timezone(SystemConfig::get('sys_system_time_zone', 'UTC'))
                     ->placeholder('-'),
                 TextColumn::make('user.name')

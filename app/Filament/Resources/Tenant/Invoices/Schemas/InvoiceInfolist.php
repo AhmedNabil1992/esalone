@@ -22,7 +22,7 @@ class InvoiceInfolist
                             ->color('primary'),
                         TextEntry::make('issued_at')
                             ->label('التاريخ')
-                            ->dateTime(),
+                            ->dateTime('Y-m-d h:i A'),
                         TextEntry::make('status')
                             ->label('الحالة')
                             ->badge()

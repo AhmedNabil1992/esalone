@@ -36,10 +36,10 @@ class PlaySessionDetailInfolist
                     ->placeholder('-'),
                 TextEntry::make('start_time')
                     ->label('بداية الوقت')
-                    ->dateTime(),
+                    ->dateTime('Y-m-d h:i A'),
                 TextEntry::make('end_time')
                     ->label('نهاية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-'),
                 TextEntry::make('shift_id')
                     ->label('رقم الشيفت')

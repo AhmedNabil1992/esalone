@@ -77,18 +77,18 @@ class DiscountHistoryReport extends Page implements HasTable
                     ->searchable(),
                 TextColumn::make('occurred_at')
                     ->label('تاريخ الخصم')
-                    // ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-')
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('تاريخ الإنشاء')
-                    // ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->label('تاريخ التحديث')
-                    // ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

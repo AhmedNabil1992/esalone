@@ -93,17 +93,17 @@ class PlayHistoryReport extends Page implements HasTable
                     ]),
                 TextColumn::make('start_time')
                     ->label('بداية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->placeholder('-'),
                 TextColumn::make('end_time')
                     ->label('نهاية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->placeholder('-'),
                 TextColumn::make('actual_end_time')
                     ->label('إقفال فعلي')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->sortable()
                     ->placeholder('-'),
                 TextColumn::make('username')

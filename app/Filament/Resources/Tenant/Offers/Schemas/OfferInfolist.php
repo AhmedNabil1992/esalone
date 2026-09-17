@@ -20,7 +20,7 @@ class OfferInfolist
             TextEntry::make('time_to')->label('إلى وقت')->time(),
             TextEntry::make('remark')->label('ملاحظات')->placeholder('—'),
             IconEntry::make('is_active')->label('مفعّل')->boolean(),
-            TextEntry::make('created_at')->label('تاريخ الإضافة')->dateTime(),
+            TextEntry::make('created_at')->label('تاريخ الإضافة')->dateTime('Y-m-d h:i A'),
         ]);
     }
 }

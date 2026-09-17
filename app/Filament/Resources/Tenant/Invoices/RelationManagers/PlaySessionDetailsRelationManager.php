@@ -43,11 +43,11 @@ class PlaySessionDetailsRelationManager extends RelationManager
                     ->placeholder('-'),
                 TextColumn::make('start_time')
                     ->label('بداية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-'),
                 TextColumn::make('end_time')
                     ->label('نهاية الوقت')
-                    ->dateTime()
+                    ->dateTime('Y-m-d h:i A')
                     ->placeholder('-'),
                 TextColumn::make('username')
                     ->label('بواسطة')

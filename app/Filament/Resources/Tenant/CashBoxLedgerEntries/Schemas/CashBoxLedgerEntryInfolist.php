@@ -42,10 +42,10 @@ class CashBoxLedgerEntryInfolist
                     ->placeholder('-'),
                 TextEntry::make('occurred_at')
                     ->label('تاريخ العملية')
-                    ->dateTime(),
+                    ->dateTime('Y-m-d h:i A'),
                 TextEntry::make('created_at')
                     ->label('وقت التسجيل')
-                    ->dateTime(),
+                    ->dateTime('Y-m-d h:i A'),
             ]);
     }
 

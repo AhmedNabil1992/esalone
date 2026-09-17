@@ -31,7 +31,7 @@ class BranchInfolist
                             ->boolean(),
                         TextEntry::make('created_at')
                             ->label('تاريخ الإنشاء')
-                            ->dateTime(),
+                            ->dateTime('Y-m-d h:i A'),
                     ])
                     ->columns(2),
             ]);
