@@ -664,9 +664,14 @@ class DeviceControl extends Page
 
         return app(CloseSessionInvoiceAction::class)->preview(
             (int) $this->selectedBusyDeviceId,
-            (float) ($this->busyActionDiscountAmount ?? 0),
+            $this->canApplyDeviceControlDiscount ? (float) ($this->busyActionDiscountAmount ?? 0) : 0.0,
             $paidAmount,
         );
+    }
+
+    public function getCanApplyDeviceControlDiscountProperty(): bool
+    {
+        return Auth::user()?->can(CloseSessionInvoiceAction::DISCOUNT_PERMISSION) ?? false;
     }
 
     /** @return Collection<int, CashBox> */
@@ -754,6 +759,11 @@ class DeviceControl extends Page
 
     public function updatedBusyActionDiscountAmount(): void
     {
+        if (! $this->canApplyDeviceControlDiscount) {
+            $this->busyActionDiscountAmount = 0;
+            $this->busyActionDiscountReason = null;
+        }
+
         $this->syncSingleClosePaymentAmount();
         $this->syncBusyCloseDepositToggle();
         $this->refreshBusyClosePreview();
@@ -1273,6 +1283,12 @@ class DeviceControl extends Page
 
         if (trim((string) $this->busyActionDiscountAmount) === '') {
             $this->busyActionDiscountAmount = 0;
+        }
+
+        if (! $this->canApplyDeviceControlDiscount && (float) $this->busyActionDiscountAmount > 0) {
+            $this->setCloseInvoiceError('غير مصرح لك بإضافة خصم.');
+
+            return;
         }
 
         if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {

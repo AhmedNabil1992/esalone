@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Actions\Tenant\CloseSessionInvoiceAction;
 use App\Actions\Tenant\ManageSessionOrderAction;
 use App\Models\Tenant\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -99,6 +100,19 @@ class ManageSessionOrderActionTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         (new ManageSessionOrderAction)->updateQuantity(1, 0, $actor);
+    }
+
+    public function test_manual_close_discount_requires_device_control_discount_permission(): void
+    {
+        $actor = Mockery::mock(User::class);
+        $actor->shouldReceive('can')
+            ->once()
+            ->with(CloseSessionInvoiceAction::DISCOUNT_PERMISSION)
+            ->andReturnFalse();
+
+        $this->expectException(AuthorizationException::class);
+
+        (new CloseSessionInvoiceAction)->execute(1, $actor, 100, 10, 'خصم اختباري');
     }
 
     public function test_update_recalculates_total_for_pending_order_in_active_session(): void

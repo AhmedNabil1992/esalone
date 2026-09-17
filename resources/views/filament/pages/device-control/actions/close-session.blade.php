@@ -137,14 +137,16 @@
                             @endif
 
                             <div class="device-control-form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;">
-                                <div>
-                                    <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">قيمة الخصم</label>
-                                    <input type="number" min="0" max="999" step="0.01" wire:model.live="busyActionDiscountAmount" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">سبب الخصم (إجباري عند وجود خصم)</label>
-                                    <input type="text" wire:model.live="busyActionDiscountReason" placeholder="اكتب سبب الخصم" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
-                                </div>
+                                @if ($this->canApplyDeviceControlDiscount)
+                                    <div>
+                                        <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">قيمة الخصم</label>
+                                        <input type="number" min="0" max="999" step="0.01" wire:model.live="busyActionDiscountAmount" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:.74rem;margin-bottom:4px;" class="text-slate-700 dark:!text-zinc-300">سبب الخصم (إجباري عند وجود خصم)</label>
+                                        <input type="text" wire:model.live="busyActionDiscountReason" placeholder="اكتب سبب الخصم" style="width:100%;border-radius:10px;padding:8px 10px;font-size:.84rem;" class="bg-white dark:!bg-zinc-950 border border-slate-300 dark:!border-zinc-700 text-slate-900 dark:!text-zinc-100 placeholder-slate-400 dark:!placeholder-zinc-500" />
+                                    </div>
+                                @endif
                                 <div style="grid-column:1/-1;display:grid;gap:6px;">
                                     <label style="display:block;font-size:.74rem;" class="text-slate-700 dark:!text-zinc-300">تعيين عميل (لازم لو فيه متبقي على الحساب)</label>
 

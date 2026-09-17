@@ -42,6 +42,7 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertStringContainsString('deleteBusySessionOrder', $deviceDetails);
         $this->assertStringContainsString('updateBusySessionOrderQuantity', $closeSession);
         $this->assertStringContainsString('deleteBusySessionOrder', $closeSession);
+        $this->assertStringContainsString('@if ($this->canApplyDeviceControlDiscount)', $closeSession);
     }
 
     public function test_device_control_is_composed_from_focused_partials(): void

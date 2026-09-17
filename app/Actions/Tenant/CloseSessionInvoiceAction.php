@@ -27,6 +27,7 @@ use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
 use App\Support\Tenant\TenantClock;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,8 @@ use RuntimeException;
 
 class CloseSessionInvoiceAction
 {
+    public const string DISCOUNT_PERMISSION = 'Discount:DeviceControl';
+
     public ?Carbon $customCloseTime = null;
 
     /**
@@ -86,6 +89,10 @@ class CloseSessionInvoiceAction
     public function execute(int $deviceId, User $actor, float $paidAmount, float $discountAmount = 0, ?string $discountReason = null, ?array $paymentAllocations = null, ?int $customerId = null, bool $depositRemainderToCustomerBalance = false): Invoice
     {
         return DB::transaction(function () use ($deviceId, $actor, $paidAmount, $discountAmount, $discountReason, $paymentAllocations, $customerId, $depositRemainderToCustomerBalance): Invoice {
+            if ($discountAmount > 0 && ! $actor->can(self::DISCOUNT_PERMISSION)) {
+                throw new AuthorizationException('غير مصرح لك بإضافة خصم.');
+            }
+
             if ($paidAmount < 0) {
                 throw new RuntimeException('المبلغ المدفوع لا يمكن أن يكون سالباً.');
             }

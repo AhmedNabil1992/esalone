@@ -231,6 +231,7 @@ return [
     'custom_permissions' => [
         'Update:DeviceControl',
         'Delete:DeviceControl',
+        'Discount:DeviceControl',
     ],
 
     /*
