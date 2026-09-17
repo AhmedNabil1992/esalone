@@ -52,6 +52,21 @@ class CloseShift extends Page
 
     public ?string $lastUpdatedTime = null;
 
+    public static function authorizeResourceAccess(): void
+    {
+        abort_unless(static::canCloseShift(), 403);
+    }
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return static::canCloseShift();
+    }
+
+    public function getCanViewFullShiftDetailsProperty(): bool
+    {
+        return Auth::user()?->can('Update:Shift') ?? false;
+    }
+
     public function mount($record): void
     {
         $this->record = $this->resolveRecord($record);
@@ -345,6 +360,8 @@ class CloseShift extends Page
 
     public function close(): void
     {
+        abort_unless(static::canCloseShift(), 403);
+
         if ($this->record->status !== 'open') {
             Notification::make()->title('هذا الشيفت مغلق بالفعل')->warning()->send();
 
@@ -422,5 +439,12 @@ class CloseShift extends Page
     public function getTitle(): string
     {
         return 'تقفيل الشيفت رقم '.$this->record->shift_no;
+    }
+
+    private static function canCloseShift(): bool
+    {
+        $user = Auth::user();
+
+        return $user?->can('Create:Shift') === true || $user?->can('Update:Shift') === true;
     }
 }

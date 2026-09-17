@@ -112,7 +112,8 @@ class AdminPanelProvider extends PanelProvider
                     ]))
                     ->icon('heroicon-o-lock-closed')
                     ->color('danger')
-                    ->visible(fn (): bool => (bool) Shift::currentOpenShift()),
+                    ->visible(fn (): bool => (bool) Shift::currentOpenShift()
+                        && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
                 'quick-navigation' => Action::make('quick-navigation')
                     ->label('البحث السريع')
                     ->icon('heroicon-o-magnifying-glass')
@@ -196,7 +197,8 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-banknotes')
                     ->group('الشيفتات')
                     ->sort(2)
-                    ->visible(fn (): bool => Shift::query()->open()->active()->exists()),
+                    ->visible(fn (): bool => Shift::query()->open()->active()->exists()
+                        && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
             ])
             ->plugins([
                 FilamentShieldPlugin::make()

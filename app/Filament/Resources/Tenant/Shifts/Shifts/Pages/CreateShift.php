@@ -14,6 +14,11 @@ class CreateShift extends CreateRecord
 {
     protected static string $resource = ShiftResource::class;
 
+    public static function authorizeResourceAccess(): void
+    {
+        abort_unless(ShiftResource::canCreate(), 403);
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         return app(OpenShiftAction::class)->execute(Auth::user(), $data);

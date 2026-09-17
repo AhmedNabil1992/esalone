@@ -96,7 +96,7 @@
             </div>
         @endif
 
-        @if(auth()->user()->can('update', $record))
+        @if($this->canViewFullShiftDetails)
             <!-- 2. Financial Breakdown Grid -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                 

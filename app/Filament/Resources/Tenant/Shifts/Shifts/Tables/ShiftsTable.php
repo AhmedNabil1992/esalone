@@ -190,7 +190,9 @@ class ShiftsTable
                     ->color('danger')
                     ->icon('heroicon-o-lock-closed')
                     ->url(fn ($record) => ShiftResource::getUrl('close', ['record' => $record]))
-                    ->visible(fn ($record) => $record->status === 'open' && $record->is_active),
+                    ->visible(fn ($record): bool => $record->status === 'open'
+                        && $record->is_active
+                        && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

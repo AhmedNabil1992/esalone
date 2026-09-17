@@ -59,6 +59,12 @@ class CloseShiftRealtimeUpdateTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('branch_user', function (Blueprint $table): void {
+            $table->foreignId('branch_id')->constrained('branches')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->primary(['branch_id', 'user_id']);
+        });
+
         Schema::create('roles', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
@@ -224,6 +230,7 @@ class CloseShiftRealtimeUpdateTest extends TestCase
         $viewAnyPerm = Permission::create(['name' => 'ViewAny:Shift', 'guard_name' => 'web']);
         $viewPerm = Permission::create(['name' => 'View:Shift', 'guard_name' => 'web']);
         $updatePerm = Permission::create(['name' => 'Update:Shift', 'guard_name' => 'web']);
+        Permission::create(['name' => 'Create:Shift', 'guard_name' => 'web']);
         $role = Role::create(['name' => 'super_admin', 'guard_name' => 'web']);
         $role->givePermissionTo([$viewAnyPerm, $viewPerm, $updatePerm]);
     }
@@ -246,6 +253,7 @@ class CloseShiftRealtimeUpdateTest extends TestCase
         Schema::dropIfExists('role_has_permissions');
         Schema::dropIfExists('permissions');
         Schema::dropIfExists('roles');
+        Schema::dropIfExists('branch_user');
         Schema::dropIfExists('users');
         Schema::dropIfExists('branches');
         Schema::enableForeignKeyConstraints();
@@ -274,6 +282,67 @@ class CloseShiftRealtimeUpdateTest extends TestCase
         $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
         $component->assertSet('hasNewTransactions', false);
         $this->assertNotEmpty($component->get('dataFingerprint'));
+    }
+
+    public function test_create_permission_allows_blind_close_without_view_permissions(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'BLIND']);
+        $user = User::query()->create([
+            'name' => 'Cashier',
+            'email' => 'blind-close@test.com',
+            'password' => bcrypt('password'),
+        ]);
+        $user->givePermissionTo('Create:Shift');
+        $user->branches()->attach($branch->id);
+        $this->actingAs($user);
+
+        CashBox::query()->create([
+            'branch_id' => $branch->id,
+            'name' => 'الخزنة الرئيسية',
+            'current_balance' => 100,
+            'is_active' => true,
+        ]);
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        Livewire::test(CloseShift::class, ['record' => $shift->id])
+            ->assertOk()
+            ->assertSee('تقفيل وتسوية الوردية')
+            ->assertDontSee('تفاصيل الإيرادات');
+    }
+
+    public function test_user_without_create_or_update_permission_cannot_access_close_shift(): void
+    {
+        $branch = Branch::query()->create(['name' => 'الفرع 1', 'code' => 'DENIED']);
+        $user = User::query()->create([
+            'name' => 'No Shift Permission',
+            'email' => 'no-shift-permission@test.com',
+            'password' => bcrypt('password'),
+        ]);
+        $user->branches()->attach($branch->id);
+        $this->actingAs($user);
+
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 0,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+
+        Livewire::test(CloseShift::class, ['record' => $shift->id])
+            ->assertForbidden();
     }
 
     public function test_check_for_updates_detects_new_invoice_and_refreshes_stats_with_notification(): void
