@@ -15,10 +15,16 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $view = file_get_contents(resource_path('views/filament/pages/device-control.blade.php'));
         $styles = file_get_contents(resource_path('views/filament/pages/device-control/styles.blade.php'));
         $closeSession = file_get_contents(resource_path('views/filament/pages/device-control/actions/close-session.blade.php'));
+        $addOrders = file_get_contents(resource_path('views/filament/pages/device-control/actions/add-orders.blade.php'));
+        $deviceDetails = file_get_contents(resource_path('views/filament/pages/device-control/actions/device-details.blade.php'));
+        $detailsModal = file_get_contents(resource_path('views/filament/pages/device-control/busy-action-details-modal.blade.php'));
 
         $this->assertIsString($view);
         $this->assertIsString($styles);
         $this->assertIsString($closeSession);
+        $this->assertIsString($addOrders);
+        $this->assertIsString($deviceDetails);
+        $this->assertIsString($detailsModal);
         $this->assertStringContainsString('class="device-control-page"', $view);
         $this->assertStringContainsString('.dark .device-control-page [style*="background:#fff"]', $styles);
         $this->assertStringContainsString('.dark .device-control-modal-panel', $styles);
@@ -28,6 +34,15 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertStringContainsString('class="device-control-close-grid"', $closeSession);
         $this->assertStringContainsString('class="device-control-payment-row"', $closeSession);
         $this->assertStringContainsString('device-control-close-error', $closeSession);
+        $this->assertStringContainsString('wire:model.live.debounce.250ms="orderItemSearch"', $addOrders);
+        $this->assertStringContainsString('class="device-control-order-items-grid"', $addOrders);
+        $this->assertStringContainsString("'min(96vw, 1040px)'", $detailsModal);
+        $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));', $styles);
+        $this->assertStringContainsString('updateBusySessionOrderQuantity', $deviceDetails);
+        $this->assertStringContainsString('deleteBusySessionOrder', $deviceDetails);
+        $this->assertStringContainsString('updateBusySessionOrderQuantity', $closeSession);
+        $this->assertStringContainsString('deleteBusySessionOrder', $closeSession);
+        $this->assertStringContainsString('@if ($this->canApplyDeviceControlDiscount)', $closeSession);
     }
 
     public function test_device_control_is_composed_from_focused_partials(): void
@@ -62,6 +77,17 @@ class DeviceControlResponsiveThemeTest extends TestCase
         ] as $actionPartial) {
             $this->assertStringContainsString("filament.pages.device-control.actions.{$actionPartial}", $detailsModal);
         }
+    }
+
+    public function test_order_management_is_exposed_in_current_orders_report(): void
+    {
+        $table = file_get_contents(app_path('Filament/Resources/OrderSessionDetails/Tables/OrderSessionDetailsTable.php'));
+
+        $this->assertIsString($table);
+        $this->assertStringContainsString("Action::make('update_quantity')", $table);
+        $this->assertStringContainsString("Action::make('delete_order')", $table);
+        $this->assertStringContainsString('ManageSessionOrderAction::UPDATE_PERMISSION', $table);
+        $this->assertStringContainsString('ManageSessionOrderAction::DELETE_PERMISSION', $table);
     }
 
     public function test_all_split_view_livewire_bindings_still_target_public_component_api(): void

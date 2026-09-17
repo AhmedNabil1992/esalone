@@ -8,6 +8,7 @@ use App\Actions\Tenant\AddSessionTimeAction;
 use App\Actions\Tenant\CloseSessionInvoiceAction;
 use App\Actions\Tenant\DispatchDeviceControlCommandAction;
 use App\Actions\Tenant\LimitSessionTimeAction;
+use App\Actions\Tenant\ManageSessionOrderAction;
 use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Url;
 use RuntimeException;
+use Throwable;
 
 class DeviceControl extends Page
 {
@@ -121,6 +123,8 @@ class DeviceControl extends Page
     public $selectedSwitchDeviceId = null;
 
     public ?int $selectedOrderGroupId = null;
+
+    public string $orderItemSearch = '';
 
     public ?int $selectedCatalogItemId = null;
 
@@ -374,6 +378,7 @@ class DeviceControl extends Page
         $this->selectedSwitchPlayPriceId = null;
         $this->selectedSwitchDeviceId = null;
         $this->selectedCatalogItemId = null;
+        $this->orderItemSearch = '';
         $this->orderItemQuantity = 1;
         $this->orderItemNotes = null;
 
@@ -524,6 +529,7 @@ class DeviceControl extends Page
         $this->selectedSwitchPlayPriceId = null;
         $this->selectedSwitchDeviceId = null;
         $this->selectedOrderGroupId = null;
+        $this->orderItemSearch = '';
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
         $this->orderItemNotes = null;
@@ -658,9 +664,14 @@ class DeviceControl extends Page
 
         return app(CloseSessionInvoiceAction::class)->preview(
             (int) $this->selectedBusyDeviceId,
-            (float) ($this->busyActionDiscountAmount ?? 0),
+            $this->canApplyDeviceControlDiscount ? (float) ($this->busyActionDiscountAmount ?? 0) : 0.0,
             $paidAmount,
         );
+    }
+
+    public function getCanApplyDeviceControlDiscountProperty(): bool
+    {
+        return Auth::user()?->can(CloseSessionInvoiceAction::DISCOUNT_PERMISSION) ?? false;
     }
 
     /** @return Collection<int, CashBox> */
@@ -748,6 +759,11 @@ class DeviceControl extends Page
 
     public function updatedBusyActionDiscountAmount(): void
     {
+        if (! $this->canApplyDeviceControlDiscount) {
+            $this->busyActionDiscountAmount = 0;
+            $this->busyActionDiscountReason = null;
+        }
+
         $this->syncSingleClosePaymentAmount();
         $this->syncBusyCloseDepositToggle();
         $this->refreshBusyClosePreview();
@@ -827,9 +843,12 @@ class DeviceControl extends Page
             return collect();
         }
 
+        $search = trim($this->orderItemSearch);
+
         return CatalogItem::query()
             ->where('is_active', true)
             ->where('inventory_group_id', $this->selectedOrderGroupId)
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name', 'asc')
             ->get();
     }
@@ -855,6 +874,7 @@ class DeviceControl extends Page
         }
 
         $this->selectedOrderGroupId = $groupId;
+        $this->orderItemSearch = '';
         $this->selectedCatalogItemId = null;
         $this->orderItemQuantity = 1;
         $this->orderItemNotes = null;
@@ -969,6 +989,66 @@ class DeviceControl extends Page
         $this->broadcastDeviceControlRefresh('order_added');
 
         $this->closeOrderItemQuantityModal();
+    }
+
+    public function getCanUpdateDeviceControlOrdersProperty(): bool
+    {
+        return Auth::user()?->can(ManageSessionOrderAction::UPDATE_PERMISSION) ?? false;
+    }
+
+    public function getCanDeleteDeviceControlOrdersProperty(): bool
+    {
+        return Auth::user()?->can(ManageSessionOrderAction::DELETE_PERMISSION) ?? false;
+    }
+
+    public function updateBusySessionOrderQuantity(int $orderId, int $quantity): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(ManageSessionOrderAction::class)->updateQuantity($orderId, $quantity, $user);
+            $this->refreshBusyClosePreview();
+            $this->broadcastDeviceControlRefresh('session_order_updated');
+
+            Notification::make()->title('تم تحديث كمية الطلب')->success()->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->title('تعذر تحديث الطلب')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function deleteBusySessionOrder(int $orderId): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            Notification::make()->title('غير مصرح')->danger()->send();
+
+            return;
+        }
+
+        try {
+            app(ManageSessionOrderAction::class)->delete($orderId, $user);
+            $this->refreshBusyClosePreview();
+            $this->broadcastDeviceControlRefresh('session_order_deleted');
+
+            Notification::make()->title('تم حذف الطلب')->success()->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->title('تعذر حذف الطلب')
+                ->body($exception->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public function addBusySessionAmount(): void
@@ -1203,6 +1283,12 @@ class DeviceControl extends Page
 
         if (trim((string) $this->busyActionDiscountAmount) === '') {
             $this->busyActionDiscountAmount = 0;
+        }
+
+        if (! $this->canApplyDeviceControlDiscount && (float) $this->busyActionDiscountAmount > 0) {
+            $this->setCloseInvoiceError('غير مصرح لك بإضافة خصم.');
+
+            return;
         }
 
         if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
@@ -1778,7 +1864,7 @@ class DeviceControl extends Page
                 }
 
                 $this->broadcastDeviceControlRefresh('Turn Off Device (Auto)');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 if ($isRealBridgeDevice) {
                     Notification::make()
                         ->title('خطأ: الجهاز غير متصل على الشبكة')
@@ -1810,7 +1896,7 @@ class DeviceControl extends Page
                 tenantKey: $this->getTenantBroadcastKey(),
                 action: $action,
             ));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Reverb broadcasting failed: '.$e->getMessage());
         }
     }

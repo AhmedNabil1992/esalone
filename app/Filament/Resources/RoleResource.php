@@ -108,6 +108,11 @@ class RoleResource extends BaseRoleResource
             $tabs[] = $widgetTab;
         }
 
+        $customPermissionsTab = static::getTabFormComponentForCustomPermissions();
+        if ($customPermissionsTab) {
+            $tabs[] = $customPermissionsTab;
+        }
+
         return Tabs::make('Permissions')
             ->contained()
             ->tabs($tabs)
