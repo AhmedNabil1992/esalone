@@ -10,15 +10,17 @@ class DeviceControlDeviceTypeColumnTest extends TestCase
 {
     public function test_device_name_and_type_precede_play_type_in_both_time_tables(): void
     {
-        $view = file_get_contents(resource_path('views/filament/pages/device-control.blade.php'));
+        $invoiceView = file_get_contents(resource_path('views/filament/pages/device-control/actions/close-session.blade.php'));
+        $deviceView = file_get_contents(resource_path('views/filament/pages/device-control/actions/device-details.blade.php'));
         $action = file_get_contents(app_path('Actions/Tenant/CloseSessionInvoiceAction.php'));
 
-        $this->assertIsString($view);
+        $this->assertIsString($invoiceView);
+        $this->assertIsString($deviceView);
         $this->assertIsString($action);
 
-        $invoiceTableStart = strpos($view, 'تفاصيل الوقت');
-        $invoiceTableEnd = strpos($view, 'تفاصيل الطلبات', $invoiceTableStart);
-        $invoiceTable = substr($view, $invoiceTableStart, $invoiceTableEnd - $invoiceTableStart);
+        $invoiceTableStart = strpos($invoiceView, 'تفاصيل الوقت');
+        $invoiceTableEnd = strpos($invoiceView, 'تفاصيل الطلبات', $invoiceTableStart);
+        $invoiceTable = substr($invoiceView, $invoiceTableStart, $invoiceTableEnd - $invoiceTableStart);
 
         $this->assertLessThan(strpos($invoiceTable, 'اسم الجهاز'), strpos($invoiceTable, 'نوع الجهاز'));
         $this->assertLessThan(strpos($invoiceTable, 'نوع اللعب'), strpos($invoiceTable, 'اسم الجهاز'));
@@ -27,9 +29,9 @@ class DeviceControlDeviceTypeColumnTest extends TestCase
         $this->assertLessThan(strpos($invoiceTable, '$row[\'play_type\']'), strpos($invoiceTable, '$row[\'device_name\']'));
         $this->assertLessThan(strpos($invoiceTable, '$row[\'play_type\']'), strpos($invoiceTable, '$row[\'device_type\']'));
 
-        $deviceTableStart = strpos($view, 'بيانات الوقت');
-        $deviceTableEnd = strpos($view, 'بيانات الطلبات', $deviceTableStart);
-        $deviceTable = substr($view, $deviceTableStart, $deviceTableEnd - $deviceTableStart);
+        $deviceTableStart = strpos($deviceView, 'بيانات الوقت');
+        $deviceTableEnd = strpos($deviceView, 'بيانات الطلبات', $deviceTableStart);
+        $deviceTable = substr($deviceView, $deviceTableStart, $deviceTableEnd - $deviceTableStart);
 
         $this->assertLessThan(strpos($deviceTable, 'اسم الجهاز'), strpos($deviceTable, 'نوع الجهاز'));
         $this->assertLessThan(strpos($deviceTable, 'نوع اللعب'), strpos($deviceTable, 'اسم الجهاز'));

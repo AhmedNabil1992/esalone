@@ -42,6 +42,8 @@ class DeviceControl extends Page
 {
     use HasPageShield;
 
+    private const int NOTIFICATION_DURATION_MILLISECONDS = 60_000;
+
     protected static ?string $title = 'التحكم في الأجهزة';
 
     protected static ?string $navigationLabel = 'التحكم في الأجهزة';
@@ -185,7 +187,7 @@ class DeviceControl extends Page
                 ->title('نظام التحكم متوقف')
                 ->body('نظام التحكم فعال ولا يوجد اتصال مباشر بأجهزة التحكم')
                 ->warning()
-                ->persistent()
+                ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
                 ->send();
 
             return;
@@ -422,7 +424,7 @@ class DeviceControl extends Page
                     ->title('تنبيه وقت السماح')
                     ->body($e->getMessage())
                     ->danger()
-                    ->persistent()
+                    ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
                     ->send();
 
                 $this->showBusyActionsModal = false;
@@ -1196,30 +1198,33 @@ class DeviceControl extends Page
             return;
         }
 
+        $this->lastCloseInvoiceError = null;
+        $this->lastCloseInvoiceDeviceName = null;
+
+        if (trim((string) $this->busyActionDiscountAmount) === '') {
+            $this->busyActionDiscountAmount = 0;
+        }
+
         if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($this->selectedBusyDevice)) {
-            Notification::make()
-                ->title('غير متاح')
-                ->body('نظام التحكم متوقف حالياً. لا يمكن تقفيل الحساب للجهاز.')
-                ->warning()
-                ->send();
+            $this->setCloseInvoiceError('نظام التحكم متوقف حالياً. لا يمكن تقفيل الحساب للجهاز.');
 
             return;
         }
 
         if (! is_numeric($this->busyActionDiscountAmount) || (float) $this->busyActionDiscountAmount < 0) {
-            Notification::make()->title('يرجى إدخال قيمة خصم صحيحة')->warning()->send();
+            $this->setCloseInvoiceError('يرجى إدخال قيمة خصم صحيحة.');
 
             return;
         }
 
         if ((float) $this->busyActionDiscountAmount > 999) {
-            Notification::make()->title('قيمة الخصم يجب ألا تتجاوز 3 أرقام (999)')->warning()->send();
+            $this->setCloseInvoiceError('قيمة الخصم يجب ألا تتجاوز 3 أرقام (999).');
 
             return;
         }
 
         if ((float) $this->busyActionDiscountAmount > 0 && trim((string) $this->busyActionDiscountReason) === '') {
-            Notification::make()->title('سبب الخصم إجباري عند إدخال خصم')->warning()->send();
+            $this->setCloseInvoiceError('سبب الخصم إجباري عند إدخال خصم.');
 
             return;
         }
@@ -1227,7 +1232,7 @@ class DeviceControl extends Page
         /** @var User|null $user */
         $user = Auth::user();
         if (! $user instanceof User) {
-            Notification::make()->title('غير مصرح')->danger()->send();
+            $this->setCloseInvoiceError('غير مصرح لك بتقفيل الحساب.');
 
             return;
         }
@@ -1242,7 +1247,7 @@ class DeviceControl extends Page
             }
 
             if ($cashBoxId <= 0) {
-                Notification::make()->title('اختر خزينة صحيحة لكل دفعة')->body('سطر رقم '.($index + 1))->warning()->send();
+                $this->setCloseInvoiceError('اختر خزينة صحيحة للدفعة في السطر رقم '.($index + 1).'.');
 
                 return;
             }
@@ -1294,15 +1299,14 @@ class DeviceControl extends Page
 
             $this->closeBusyActionDetailsModal();
         } catch (RuntimeException $e) {
-            $this->lastCloseInvoiceError = $e->getMessage();
-            $this->lastCloseInvoiceDeviceName = $this->selectedBusyDevice?->name ?? 'غير معروف';
-
-            Notification::make()
-                ->title('فشل تقفيل الحساب')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            $this->setCloseInvoiceError($e->getMessage());
         }
+    }
+
+    private function setCloseInvoiceError(string $message): void
+    {
+        $this->lastCloseInvoiceError = $message;
+        $this->lastCloseInvoiceDeviceName = $this->selectedBusyDevice?->name ?? 'غير معروف';
     }
 
     public function cancelBusySessionOrder(): void
@@ -1780,7 +1784,7 @@ class DeviceControl extends Page
                         ->title('خطأ: الجهاز غير متصل على الشبكة')
                         ->body('جهاز "'.$device->name.'" غير متصل على الشبكة. يرجى التأكد من توصيله بالكهرباء والشبكة.')
                         ->danger()
-                        ->persistent()
+                        ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
                         ->send();
                 }
             }

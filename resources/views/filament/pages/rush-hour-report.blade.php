@@ -73,17 +73,18 @@
         <div style="background: #fff; padding: 24px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <div style="font-size: .94rem; font-weight: 700; color: #111827; margin-bottom: 16px;">مخطط توزيع الجلسات على مدار 24 ساعة اليومية</div>
             
-            <div x-data="{
+            <div wire:key="rush-hour-chart-{{ md5($hourlyDataSerialized) }}" x-data="{
                 chart: null,
                 init() {
                     const ctx = this.$refs.canvas.getContext('2d');
+                    const initial = JSON.parse(this.$wire.hourlyDataSerialized || '[]');
                     this.chart = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: {{ json_encode(array_column($this->getHourlyStats(), 'label')) }},
+                            labels: initial.map(item => item.label),
                             datasets: [{
                                 label: 'عدد الجلسات البادئة',
-                                data: {{ json_encode(array_column($this->getHourlyStats(), 'sessions_count')) }},
+                                data: initial.map(item => item.sessions_count),
                                 backgroundColor: 'rgba(37, 99, 235, 0.85)',
                                 borderColor: 'rgb(37, 99, 235)',
                                 borderWidth: 1,
@@ -106,13 +107,12 @@
                             }
                         }
                     });
-
-                    this.$watch('$wire.hourlyDataSerialized', value => {
-                        const parsed = JSON.parse(value);
-                        this.chart.data.datasets[0].data = parsed.map(d => d.sessions_count);
-                        this.chart.data.labels = parsed.map(d => d.label);
-                        this.chart.update();
-                    });
+                },
+                destroy() {
+                    if (this.chart) {
+                        this.chart.destroy();
+                        this.chart = null;
+                    }
                 }
             }" style="width: 100%; height: 350px;">
                 <canvas x-ref="canvas"></canvas>

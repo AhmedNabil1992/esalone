@@ -37,11 +37,13 @@ class RushHourReport extends Page
         $this->updateSerializedData();
     }
 
-    public function updated($propertyName): void
+    public function updated(string $propertyName): void
     {
-        if (in_array($propertyName, ['from', 'until'])) {
-            $this->updateSerializedData();
+        if (! in_array($propertyName, ['from', 'until'], true)) {
+            return;
         }
+
+        $this->updateSerializedData();
     }
 
     public function updateSerializedData(): void
