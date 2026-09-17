@@ -1,0 +1,35 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e9]:
+            - img "Logo" [ref=e10]
+            - generic [ref=e11]: PlayStation
+          - heading "الدخول إلى حسابك" [level=1] [ref=e12]
+        - generic [ref=e16]:
+          - generic [ref=e20]:
+            - generic [ref=e23]:
+              - generic [ref=e27]:
+                - text: البريد الإلكتروني
+                - superscript [ref=e28]: "*"
+              - textbox "البريد الإلكتروني*" [active] [ref=e32]
+            - generic [ref=e35]:
+              - generic [ref=e39]:
+                - text: كلمة المرور
+                - superscript [ref=e40]: "*"
+              - generic [ref=e42]:
+                - textbox "كلمة المرور*" [ref=e44]
+                - button "عرض كلمة المرور" [ref=e47] [cursor=pointer]
+            - generic [ref=e56]:
+              - checkbox "تذكرني" [ref=e57]
+              - generic [ref=e58]: تذكرني
+          - button "تسجيل الدخول" [ref=e64] [cursor=pointer]
+    - paragraph [ref=e67]:
+      - text: PSWeb بواسطة
+      - link "eTech Valley" [ref=e68] [cursor=pointer]:
+        - /url: https://etech-valley.com
+      - text: . © 2026 eTech Valley. جميع الحقوق محفوظة.
+    - text: Photo by Daniela Cuevas on Unsplash
+  - generic:
+    - status

@@ -1,0 +1,118 @@
+- generic [active] [ref=f1e1]:
+  - navigation [ref=f1e3]:
+    - button [ref=f1e6] [cursor=pointer]
+    - link "Logo PlayStation" [ref=f1e10] [cursor=pointer]:
+      - /url: https://test.ps-web.test/admin
+      - generic [ref=f1e12]:
+        - img "Logo" [ref=f1e13]
+        - generic [ref=f1e14]: PlayStation
+    - list [ref=f1e15]:
+      - listitem [ref=f1e16]: اللعب
+      - listitem [ref=f1e17]:
+        - link "التحكم في الأجهزة 1" [ref=f1e18] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/device-control
+          - generic [ref=f1e21]: التحكم في الأجهزة
+          - generic [ref=f1e22]: "1"
+      - listitem [ref=f1e25]:
+        - link "المبيعات المباشرة" [ref=f1e26] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/tenant/sales
+      - listitem [ref=f1e30]:
+        - link "قائمة الانتظار" [ref=f1e31] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/tenant/waiting-lists
+      - listitem [ref=f1e35]:
+        - link "جلسات اللعب" [ref=f1e36] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/tenant/play-sessions
+      - listitem [ref=f1e40]:
+        - link "تقرير اللعب الحالي" [ref=f1e41] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/tenant/play-session-details
+      - listitem [ref=f1e45]:
+        - link "تقرير الطلبات الحالي" [ref=f1e46] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/order-session-details
+      - listitem [ref=f1e50]:
+        - link "الحجوزات" [ref=f1e51] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/tenant/reservations
+      - listitem [ref=f1e55]:
+        - link "مخطط الحجوزات" [ref=f1e56] [cursor=pointer]:
+          - /url: https://test.ps-web.test/admin/reservations-calendar
+    - generic [ref=f1e60]:
+      - generic [ref=f1e61]:
+        - button "عرض التنبيهات" [disabled]
+      - generic [ref=f1e62]:
+        - button "الفرع الرئيسي" [ref=f1e64] [cursor=pointer]
+        - button "البحث السريع (Ctrl+K)" [ref=f1e70] [cursor=pointer]
+      - button "قائمة المستخدم" [ref=f1e73] [cursor=pointer]:
+        - img "صورة شخصية لـ Test" [ref=f1e74]
+  - generic [ref=f1e76]:
+    - main [ref=f1e77]:
+      - generic [ref=f1e79]:
+        - heading "التحكم في الأجهزة" [level=1] [ref=f1e82]
+        - generic [ref=f1e85]:
+          - generic [ref=f1e86]:
+            - button "PlayStatin PlayStatin" [ref=f1e87] [cursor=pointer]:
+              - img "PlayStatin" [ref=f1e89]
+              - generic [ref=f1e90]: PlayStatin
+            - button "pool pool" [ref=f1e91] [cursor=pointer]:
+              - img "pool" [ref=f1e93]
+              - generic [ref=f1e94]: pool
+            - button "ping pong ping pong" [ref=f1e95] [cursor=pointer]:
+              - img "ping pong" [ref=f1e97]
+              - generic [ref=f1e98]: ping pong
+          - generic [ref=f1e100]:
+            - generic [ref=f1e101]: متاح 2
+            - generic [ref=f1e102]: مشغول 1
+            - generic [ref=f1e103]: / 3 جهاز
+          - generic [ref=f1e104]:
+            - generic [ref=f1e105]:
+              - generic [ref=f1e106]:
+                - generic [ref=f1e107]: Room 1
+                - generic [ref=f1e108]: مشغول
+              - generic [ref=f1e110]:
+                - generic [ref=f1e111]:
+                  - generic [ref=f1e112]:
+                    - generic [ref=f1e113]: بداية الوقت
+                    - generic [ref=f1e114]: 03:08 PM
+                  - generic [ref=f1e115]:
+                    - generic [ref=f1e116]: نهاية الوقت
+                    - generic [ref=f1e117]: —
+                - generic [ref=f1e118]:
+                  - generic [ref=f1e119]:
+                    - generic [ref=f1e120]: مدة اللعب
+                    - generic [ref=f1e121]: مفتوح
+                  - generic [ref=f1e122]:
+                    - generic [ref=f1e123]: الوقت المنقضي
+                    - generic [ref=f1e124]: 07:43
+                - img "فردي" [ref=f1e127]
+                - button "تقفيل الحساب" [ref=f1e128] [cursor=pointer]
+            - generic [ref=f1e131] [cursor=pointer]:
+              - generic [ref=f1e132]:
+                - generic [ref=f1e133]: Room 2
+                - generic [ref=f1e134]: متاح
+              - generic [ref=f1e136]:
+                - img "PlayStatin" [ref=f1e139]
+                - generic [ref=f1e140]:
+                  - button "فردي – مكيف 100" [ref=f1e141]:
+                    - generic [ref=f1e142]: فردي – مكيف
+                    - generic [ref=f1e147]: "100"
+                  - button "زوجي – 4 دراع 200" [ref=f1e148]:
+                    - generic [ref=f1e149]: زوجي – 4 دراع
+                    - generic [ref=f1e154]: "200"
+            - generic [ref=f1e155] [cursor=pointer]:
+              - generic [ref=f1e156]:
+                - generic [ref=f1e157]: Room 3
+                - generic [ref=f1e158]: متاح
+              - generic [ref=f1e160]:
+                - img "PlayStatin" [ref=f1e163]
+                - generic [ref=f1e164]:
+                  - button "فردي – فردي 100" [ref=f1e165]:
+                    - generic [ref=f1e166]: فردي – فردي
+                    - generic [ref=f1e171]: "100"
+                  - button "زوجي – زوجي 200" [ref=f1e172]:
+                    - generic [ref=f1e173]: زوجي – زوجي
+                    - generic [ref=f1e178]: "200"
+    - paragraph [ref=f1e180]:
+      - text: PSWeb بواسطة
+      - link "eTech Valley" [ref=f1e181] [cursor=pointer]:
+        - /url: https://etech-valley.com
+      - text: . © 2026 eTech Valley. جميع الحقوق محفوظة.
+  - generic:
+    - status

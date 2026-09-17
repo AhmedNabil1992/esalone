@@ -1,0 +1,49 @@
+[    2155ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[   17069ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[   21938ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[   22259ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[   22260ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[   22260ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[   22299ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[   22602ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[   37513ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[   67444ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[  127461ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[  186221ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  186317ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  186318ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  186318ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  187462ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[  247483ms] [ERROR] WebSocket connection to 'wss://test.ps-web.test/app/6yf7nev8juhtzqjnwnrk?protocol=7&client=js&version=7.6.0&flash=false' failed: Error during WebSocket handshake: Unexpected response code: 404 @ https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:1
+[  285084ms] Error: Broadcaster undefined undefined is not supported.
+    at l.value (https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:2:34180)
+    at new l (https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:2:33509)
+    at https://test.ps-web.test/admin/device-control:2576:31
+[  285234ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  285351ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  285352ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  285352ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  297947ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  298091ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  298091ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  298091ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  338492ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  338586ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  338586ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  338587ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  387851ms] Error: Broadcaster undefined undefined is not supported.
+    at l.value (https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:2:34180)
+    at new l (https://test.ps-web.test/js/filament/filament/echo.js?v=5.6.7.0:2:33509)
+    at https://test.ps-web.test/admin/device-control:2576:31
+[  388220ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  388370ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  388373ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  396476ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  467097ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  467255ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  467256ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  467256ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0
+[  480208ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D4P090H7CZTJ8FC48F965.jpeg:0
+[  480295ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D42C5TDFEGAEJE6ZX85MT.jpeg:0
+[  480295ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/device-types/01M26D547KREPT9X5N0YX5VABY.jpeg:0
+[  480295ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://test.ps-web.test/tenancy/assets/play-types/01M26DB4795HH1W1CVM0YW7JKH.jpeg:0

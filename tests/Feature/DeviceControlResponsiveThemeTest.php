@@ -86,6 +86,22 @@ class DeviceControlResponsiveThemeTest extends TestCase
         }
     }
 
+    public function test_realtime_refresh_has_one_lifecycle_managed_listener(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/pages/device-control.blade.php'));
+
+        $this->assertIsString($view);
+        $this->assertStringNotContainsString('setupEcho', $view);
+        $this->assertStringNotContainsString('window.Echo.channel', $view);
+        $panelProvider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
+
+        $this->assertIsString($panelProvider);
+        $this->assertStringContainsString('->broadcasting(false)', $panelProvider);
+        $this->assertSame([
+            'echo:tenant.central.device-control,.device-control.updated' => '$refresh',
+        ], (new DeviceControl)->getListeners());
+    }
+
     public function test_order_management_is_exposed_in_current_orders_report(): void
     {
         $table = file_get_contents(app_path('Filament/Resources/OrderSessionDetails/Tables/OrderSessionDetailsTable.php'));
