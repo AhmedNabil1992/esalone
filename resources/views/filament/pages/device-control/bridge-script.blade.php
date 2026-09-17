@@ -5,11 +5,8 @@
 
 @if ($isControlActive)
 <script>
-    document.addEventListener('livewire:init', () => {
+    (function() {
         const bridgeUrl = @js($bridgeUrl);
-        let bridgeWs = null;
-        let reconnectTimer = null;
-        let pingInterval = null;
 
         function updateBridgeStatusBadge(isOnline) {
             const badge = document.getElementById('bridge-status-indicator');
@@ -24,89 +21,90 @@
             }
         }
 
-        function initBridgeWebSocket() {
-            if (bridgeWs && (bridgeWs.readyState === WebSocket.OPEN || bridgeWs.readyState === WebSocket.CONNECTING)) {
+        function ensureBridgeWebSocket() {
+            if (window.__bridgeWs && (window.__bridgeWs.readyState === WebSocket.OPEN || window.__bridgeWs.readyState === WebSocket.CONNECTING)) {
+                if (window.__bridgeWs.readyState === WebSocket.OPEN) {
+                    updateBridgeStatusBadge(true);
+                }
                 return;
             }
 
             try {
-                bridgeWs = new WebSocket(bridgeUrl);
+                window.__bridgeWs = new WebSocket(bridgeUrl);
 
-                bridgeWs.onopen = () => {
+                window.__bridgeWs.onopen = () => {
                     updateBridgeStatusBadge(true);
-                    bridgeWs.send('PING_CHECK');
+                    window.__bridgeWs.send('PING_CHECK');
 
-                    if (pingInterval) clearInterval(pingInterval);
-                    pingInterval = setInterval(() => {
-                        if (bridgeWs && bridgeWs.readyState === WebSocket.OPEN) {
-                            bridgeWs.send('PING_CHECK');
+                    if (window.__bridgePingInterval) clearInterval(window.__bridgePingInterval);
+                    window.__bridgePingInterval = setInterval(() => {
+                        if (window.__bridgeWs && window.__bridgeWs.readyState === WebSocket.OPEN) {
+                            window.__bridgeWs.send('PING_CHECK');
                         }
-                    }, 15000);
+                    }, 10000);
                 };
 
-                bridgeWs.onmessage = (event) => {
+                window.__bridgeWs.onmessage = (event) => {
                     try {
                         const resp = JSON.parse(event.data);
-                        if (resp.status === 'online') {
+                        if (resp.status === 'online' || resp.status === 'success') {
                             updateBridgeStatusBadge(true);
-                        } else if (resp.status === 'success') {
-                            console.log('✅ Bridge command success:', resp);
-                        } else if (resp.status === 'failed' || resp.status === 'error') {
-                            console.warn('⚠️ Bridge command failed:', resp.message);
                         }
-                    } catch (e) {
-                        console.log('Bridge response:', event.data);
-                    }
+                    } catch (e) {}
                 };
 
-                bridgeWs.onerror = () => {
+                window.__bridgeWs.onerror = () => {
                     updateBridgeStatusBadge(false);
                 };
 
-                bridgeWs.onclose = () => {
+                window.__bridgeWs.onclose = () => {
                     updateBridgeStatusBadge(false);
-                    if (pingInterval) clearInterval(pingInterval);
-                    if (reconnectTimer) clearTimeout(reconnectTimer);
-                    reconnectTimer = setTimeout(initBridgeWebSocket, 3000);
+                    if (window.__bridgePingInterval) clearInterval(window.__bridgePingInterval);
+                    if (window.__bridgeReconnectTimer) clearTimeout(window.__bridgeReconnectTimer);
+                    window.__bridgeReconnectTimer = setTimeout(ensureBridgeWebSocket, 2000);
                 };
             } catch (e) {
                 updateBridgeStatusBadge(false);
-                if (reconnectTimer) clearTimeout(reconnectTimer);
-                reconnectTimer = setTimeout(initBridgeWebSocket, 3000);
+                if (window.__bridgeReconnectTimer) clearTimeout(window.__bridgeReconnectTimer);
+                window.__bridgeReconnectTimer = setTimeout(ensureBridgeWebSocket, 2000);
             }
         }
 
-        initBridgeWebSocket();
+        // تشغيل الاتصال المستمر فوراً
+        ensureBridgeWebSocket();
 
-        // استقبال أمر التحكم من السيرفر وإرساله عبر الـ WebSocket المحلي
-        Livewire.on('send-bridge-device-command', (payload) => {
-            const data = Array.isArray(payload) ? payload[0] : payload;
-            if (!data || !data.ip || !data.command) return;
+        // تسجيل مستمع أحداث Livewire مرة واحدة على مستوى النافذة لمنع التكرار مع كل تحديث
+        if (!window.__bridgeCommandListenerBound) {
+            window.__bridgeCommandListenerBound = true;
 
-            const ip = data.ip;
-            const command = data.command;
-            const deviceName = data.deviceName || 'Device';
-            const message = `${ip},${command},${deviceName}`;
+            document.addEventListener('livewire:init', () => {
+                Livewire.on('send-bridge-device-command', (payload) => {
+                    const data = Array.isArray(payload) ? payload[0] : payload;
+                    if (!data || !data.ip || !data.command) return;
 
-            if (bridgeWs && bridgeWs.readyState === WebSocket.OPEN) {
-                bridgeWs.send(message);
-                console.log('🚀 تم إرسال أمر التحكم للـ Bridge:', message);
-            } else {
-                console.warn('Bridge offline, trying fallback connection for message:', message);
-                try {
-                    const fallbackWs = new WebSocket(bridgeUrl);
-                    fallbackWs.onopen = () => {
-                        fallbackWs.send(message);
-                        setTimeout(() => { try { fallbackWs.close(); } catch(e){} }, 2000);
-                    };
-                    fallbackWs.onerror = () => {
-                        console.error('Failed to send command to offline bridge:', message);
-                    };
-                } catch (e) {
-                    console.error('Failed fallback connection:', e);
-                }
-            }
-        });
-    });
+                    const ip = data.ip;
+                    const command = data.command;
+                    const deviceName = data.deviceName || 'Device';
+                    const message = `${ip},${command},${deviceName}`;
+
+                    if (window.__bridgeWs && window.__bridgeWs.readyState === WebSocket.OPEN) {
+                        window.__bridgeWs.send(message);
+                        console.log('🚀 تم إرسال أمر التحكم للـ Bridge فوراً:', message);
+                    } else {
+                        console.warn('Bridge offline, trying to connect and send:', message);
+                        ensureBridgeWebSocket();
+                        const checkAndSend = setInterval(() => {
+                            if (window.__bridgeWs && window.__bridgeWs.readyState === WebSocket.OPEN) {
+                                window.__bridgeWs.send(message);
+                                clearInterval(checkAndSend);
+                                console.log('🚀 تم إرسال أمر التحكم للـ Bridge بعد الاتصال:', message);
+                            }
+                        }, 100);
+                        setTimeout(() => clearInterval(checkAndSend), 3000);
+                    }
+                });
+            });
+        }
+    })();
 </script>
 @endif

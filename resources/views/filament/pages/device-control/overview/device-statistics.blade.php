@@ -22,7 +22,7 @@
                 $isControlActive = in_array((string) \App\Models\Tenant\SystemConfig::get('sys_control_active', '0'), ['1', 'true', 'on', 'yes'], true);
             @endphp
             @if ($isControlActive)
-                <div id="bridge-status-indicator" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <div id="bridge-status-indicator" wire:ignore class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> جاري فحص الـ Bridge...
                 </div>
             @endif
