@@ -117,7 +117,9 @@
                     </div>
                 </div>
                 <div class="ds-form-grid">
-                    <div><label class="ds-section-label" for="direct-sales-discount">الخصم</label><input id="direct-sales-discount" type="number" step="0.01" min="0" wire:model.live="discount_amount" class="ds-field" placeholder="0.00" /></div>
+                    @if ($this->canApplyDiscount)
+                        <div><label class="ds-section-label" for="direct-sales-discount">الخصم</label><input id="direct-sales-discount" type="number" step="0.01" min="0" wire:model.live="discount_amount" class="ds-field" placeholder="0.00" /></div>
+                    @endif
                     <div><label class="ds-section-label" for="direct-sales-paid">المدفوع</label><input id="direct-sales-paid" type="number" step="0.01" min="0" wire:model.live.debounce.250ms="paid_amount" class="ds-field" placeholder="0.00" /></div>
                 </div>
                 @if ($selected_customer_id && $this->getRemainingAmount() > 0)

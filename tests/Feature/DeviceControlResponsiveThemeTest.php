@@ -90,6 +90,15 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertStringContainsString('ManageSessionOrderAction::DELETE_PERMISSION', $table);
     }
 
+    public function test_device_control_custom_permissions_have_arabic_labels(): void
+    {
+        $permissions = config('filament-shield.custom_permissions');
+
+        $this->assertSame('تعديل كمية الطلبات', $permissions['Update:DeviceControl']);
+        $this->assertSame('حذف الطلبات', $permissions['Delete:DeviceControl']);
+        $this->assertSame('إضافة خصم لفواتير البيع', $permissions['Discount:DeviceControl']);
+    }
+
     public function test_all_split_view_livewire_bindings_still_target_public_component_api(): void
     {
         $views = file_get_contents(resource_path('views/filament/pages/device-control.blade.php'));

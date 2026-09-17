@@ -21,6 +21,7 @@ class DirectSalesResponsiveDesignTest extends TestCase
         $this->assertStringContainsString('@media(max-width:900px)', $styles);
         $this->assertStringContainsString('@media(max-width:560px)', $styles);
         $this->assertStringContainsString('grid-template-columns:repeat(2,minmax(0,1fr))', $styles);
+        $this->assertStringContainsString('@if ($this->canApplyDiscount)', $view);
 
         preg_match_all('/wire:click="([A-Za-z_][A-Za-z0-9_]*)/', $view, $methodMatches);
         $reflection = new ReflectionClass(DirectSalesForm::class);

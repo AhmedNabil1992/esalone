@@ -15,6 +15,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class CreateDirectSaleActionTest extends TestCase
@@ -364,6 +366,11 @@ class CreateDirectSaleActionTest extends TestCase
 
         // Execute action
         $action = app(CreateDirectSaleAction::class);
+        $authorizedUser = Mockery::mock($user)->makePartial();
+        $authorizedUser->shouldReceive('can')
+            ->once()
+            ->with(CreateDirectSaleAction::DISCOUNT_PERMISSION)
+            ->andReturnTrue();
         $result = $action->execute(
             items: [
                 [
@@ -382,7 +389,7 @@ class CreateDirectSaleActionTest extends TestCase
             customerId: $customer->id,
             cashBoxId: $cashBox->id,
             discountAmount: 10.00,
-            actor: $user
+            actor: $authorizedUser
         );
 
         // Assertions
@@ -445,6 +452,29 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals($cashBox->id, $payment->cash_box_id);
         $this->assertEquals(240.00, (float) $payment->amount);
         $this->assertSame('cash', $payment->payment_method);
+    }
+
+    public function test_manual_discount_requires_device_control_discount_permission(): void
+    {
+        $actor = Mockery::mock(User::class);
+        $actor->shouldReceive('can')
+            ->once()
+            ->with(CreateDirectSaleAction::DISCOUNT_PERMISSION)
+            ->andReturnFalse();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('غير مصرح لك بإضافة خصم.');
+
+        app(CreateDirectSaleAction::class)->execute(
+            items: [[
+                'catalog_item_id' => 1,
+                'quantity' => 1,
+                'unit_price' => 100,
+                'total_amount' => 100,
+            ]],
+            discountAmount: 10,
+            actor: $actor,
+        );
     }
 
     public function test_overpayment_does_not_inflate_cash_box_and_can_be_saved_as_customer_credit(): void
@@ -527,7 +557,7 @@ class CreateDirectSaleActionTest extends TestCase
         ]);
         $action = app(CreateDirectSaleAction::class);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('يجب اختيار صنف واحد على الأقل.');
 
         $action->execute(
@@ -563,7 +593,7 @@ class CreateDirectSaleActionTest extends TestCase
 
         $action = app(CreateDirectSaleAction::class);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('لا توجد فترة عمل نشطة.');
 
         $action->execute(

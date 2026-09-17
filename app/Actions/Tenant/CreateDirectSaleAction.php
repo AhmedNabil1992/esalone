@@ -27,6 +27,8 @@ use RuntimeException;
 
 class CreateDirectSaleAction
 {
+    public const string DISCOUNT_PERMISSION = 'Discount:DeviceControl';
+
     /**
      * @param  array<int,array{catalog_item_id:int,quantity:int,unit_price:float,total_amount:float}>  $items
      * @return array<string,mixed>
@@ -48,6 +50,10 @@ class CreateDirectSaleAction
 
         if (! $actor instanceof User) {
             throw new RuntimeException('المستخدم الحالي غير صالح لتنفيذ عملية البيع.');
+        }
+
+        if ($discountAmount > 0 && ! $actor->can(self::DISCOUNT_PERMISSION)) {
+            throw new RuntimeException('غير مصرح لك بإضافة خصم.');
         }
 
         $activeShift = Shift::query()

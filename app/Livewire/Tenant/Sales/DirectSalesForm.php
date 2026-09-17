@@ -13,6 +13,7 @@ use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -88,6 +89,11 @@ class DirectSalesForm extends Component
             ->where('is_active', true)
             ->orderBy('name', 'asc')
             ->get(['id', 'name']);
+    }
+
+    public function getCanApplyDiscountProperty(): bool
+    {
+        return Auth::user()?->can(CreateDirectSaleAction::DISCOUNT_PERMISSION) ?? false;
     }
 
     private function defaultCashBoxId(): ?int
@@ -331,7 +337,7 @@ class DirectSalesForm extends Component
                 items: $items,
                 customerId: $this->selected_customer_id,
                 cashBoxId: $this->selected_cash_box_id,
-                discountAmount: $this->discount_amount,
+                discountAmount: $this->canApplyDiscount ? $this->discount_amount : 0,
                 paidAmount: $submittedPaidAmount,
                 depositRemainderToCustomerBalance: $this->deposit_remainder_to_customer_balance,
             );
@@ -377,7 +383,9 @@ class DirectSalesForm extends Component
 
     public function getFinalAmount(): float
     {
-        return max(0, $this->getTotalAmount() - $this->discount_amount);
+        $discountAmount = $this->canApplyDiscount ? $this->discount_amount : 0;
+
+        return max(0, $this->getTotalAmount() - $discountAmount);
     }
 
     public function getRemainingAmount(): float
@@ -387,6 +395,10 @@ class DirectSalesForm extends Component
 
     public function updatedDiscountAmount(): void
     {
+        if (! $this->canApplyDiscount) {
+            $this->discount_amount = 0;
+        }
+
         if ($this->paid_amount <= 0) {
             $this->paid_amount = $this->getFinalAmount();
         }
