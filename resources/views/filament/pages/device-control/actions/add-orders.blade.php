@@ -26,8 +26,22 @@
                             </div>
 
                             <div>
-                                <div style="font-size:.8rem;font-weight:700;color:#374151;margin-bottom:6px;">الأصناف</div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:260px;overflow:auto;padding-inline-end:2px;">
+                                <div class="device-control-order-toolbar">
+                                    <div style="font-size:.8rem;font-weight:700;color:#374151;">الأصناف</div>
+                                    <label class="device-control-order-search">
+                                        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <circle cx="11" cy="11" r="7" />
+                                            <path stroke-linecap="round" d="m20 20-4-4" />
+                                        </svg>
+                                        <input
+                                            type="search"
+                                            wire:model.live.debounce.250ms="orderItemSearch"
+                                            placeholder="ابحث عن صنف..."
+                                            aria-label="البحث عن صنف"
+                                        />
+                                    </label>
+                                </div>
+                                <div class="device-control-order-items-grid">
                                     @forelse ($this->orderItems as $item)
                                         <button
                                             type="button"
@@ -48,7 +62,9 @@
                                             <div style="font-size:.74rem;font-weight:700;color:#16a34a;">{{ number_format((float) ($item->sale_price ?? 0), 2) }}</div>
                                         </button>
                                     @empty
-                                        <div style="grid-column:1/-1;text-align:center;color:#6b7280;font-size:.78rem;padding:10px;">اختر مجموعة لإظهار الأصناف</div>
+                                        <div style="grid-column:1/-1;text-align:center;color:#6b7280;font-size:.78rem;padding:10px;">
+                                            {{ trim($orderItemSearch) !== '' ? 'لا توجد أصناف مطابقة للبحث' : 'اختر مجموعة لإظهار الأصناف' }}
+                                        </div>
                                     @endforelse
                                 </div>
                             </div>

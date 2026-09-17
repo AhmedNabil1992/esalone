@@ -14,6 +14,56 @@
             scrollbar-width: thin;
         }
 
+        .device-control-order-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .device-control-order-search {
+            position: relative;
+            width: min(320px, 100%);
+        }
+
+        .device-control-order-search svg {
+            position: absolute;
+            inset-inline-start: 11px;
+            top: 50%;
+            width: 17px;
+            height: 17px;
+            color: #64748b;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .device-control-order-search input {
+            width: 100%;
+            min-height: 38px;
+            padding: 7px 36px 7px 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            color: #111827;
+            font-size: .8rem;
+        }
+
+        .device-control-order-items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+            gap: 10px;
+            max-height: 420px;
+            overflow: auto;
+            padding-inline-end: 2px;
+        }
+
+        .dark .device-control-order-search input {
+            background: #09090b;
+            border-color: #3f3f46;
+            color: #fafafa;
+        }
+
         .dark .device-control-page [style*="background:#fff"],
         .dark .device-control-page [style*="background: #fff"],
         .dark .device-control-page [style*="background:#ffffff"] {
@@ -111,6 +161,20 @@
                 grid-template-columns: minmax(0, 1fr) !important;
             }
 
+            .device-control-order-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .device-control-order-search {
+                width: 100%;
+            }
+
+            .device-control-order-items-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                max-height: 46dvh;
+            }
+
             .device-control-payment-row {
                 grid-template-columns: minmax(0, 1fr) auto !important;
             }
@@ -146,4 +210,3 @@
             }
         }
     </style>
-

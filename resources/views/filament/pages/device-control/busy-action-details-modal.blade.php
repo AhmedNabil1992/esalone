@@ -3,6 +3,10 @@
                 $detailModalWidth = $selectedBusyActionLabel === 'بيانات الجهاز'
                     ? 'min(95vw, 1100px)'
                     : ($selectedBusyActionLabel === 'تقفيل الحساب' ? 'min(96vw, 1180px)' : 'min(92vw, 460px)');
+
+                if ($selectedBusyActionLabel === 'إضافة طلبات') {
+                    $detailModalWidth = 'min(96vw, 1040px)';
+                }
             @endphp
             <div class="device-control-modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:71;display:flex;align-items:center;justify-content:center;padding:12px;" wire:click="closeBusyActionDetailsModal">
                 <div style="width:{{ $detailModalWidth }};max-height:92vh;overflow-y:auto;overflow-x:hidden;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);padding:18px 20px;" wire:click.stop class="device-control-modal-panel bg-white dark:!bg-zinc-900 border border-slate-200 dark:!border-zinc-800 text-slate-900 dark:!text-zinc-100">

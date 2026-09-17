@@ -416,6 +416,7 @@ class CloseSessionInvoiceAction
                 $lineTotal = round((float) ($order->total ?? 0), 2);
 
                 return [
+                    'id' => (int) $order->id,
                     'item_name' => (string) ($order->catalogItem?->name ?? '—'),
                     'quantity' => (int) ($order->quantity ?? 0),
                     'price' => round((float) ($order->price ?? 0), 2),

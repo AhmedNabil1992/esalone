@@ -70,20 +70,40 @@
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">السعر</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">الإجمالي</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">الحالة</th>
+                                                    @if ($this->canUpdateDeviceControlOrders || $this->canDeleteDeviceControlOrders)
+                                                        <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">الإجراءات</th>
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @forelse ($orderRows as $row)
                                                     <tr>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">{{ $row['item_name'] ?? '—' }}</td>
-                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;">{{ $row['quantity'] ?? 0 }}</td>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;">
+                                                            @if ($this->canUpdateDeviceControlOrders)
+                                                                <div style="display:inline-flex;align-items:center;gap:6px;direction:ltr;">
+                                                                    <button type="button" wire:click="updateBusySessionOrderQuantity({{ $row['id'] }}, {{ max(1, (int) ($row['quantity'] ?? 0) - 1) }})" @disabled((int) ($row['quantity'] ?? 0) <= 1) aria-label="تقليل الكمية" style="width:28px;height:28px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;">-</button>
+                                                                    <strong>{{ (int) ($row['quantity'] ?? 0) }}</strong>
+                                                                    <button type="button" wire:click="updateBusySessionOrderQuantity({{ $row['id'] }}, {{ (int) ($row['quantity'] ?? 0) + 1 }})" aria-label="زيادة الكمية" style="width:28px;height:28px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;">+</button>
+                                                                </div>
+                                                            @else
+                                                                {{ $row['quantity'] ?? 0 }}
+                                                            @endif
+                                                        </td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['price'] ?? 0), 2) }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#16a34a;font-weight:700;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['total'] ?? 0), 2) }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#6b7280;">{{ $row['status'] ?? '—' }}</td>
+                                                        @if ($this->canUpdateDeviceControlOrders || $this->canDeleteDeviceControlOrders)
+                                                            <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;">
+                                                                @if ($this->canDeleteDeviceControlOrders)
+                                                                    <button type="button" wire:click="deleteBusySessionOrder({{ $row['id'] }})" wire:confirm="هل أنت متأكد من حذف هذا الطلب؟" style="border:1px solid #fecaca;background:#fef2f2;color:#dc2626;padding:6px 9px;border-radius:8px;cursor:pointer;font-weight:700;">حذف</button>
+                                                                @endif
+                                                            </td>
+                                                        @endif
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="5" style="padding:16px;text-align:center;color:#6b7280;">لا توجد طلبات على الجلسة.</td>
+                                                        <td colspan="{{ ($this->canUpdateDeviceControlOrders || $this->canDeleteDeviceControlOrders) ? 6 : 5 }}" style="padding:16px;text-align:center;color:#6b7280;">لا توجد طلبات على الجلسة.</td>
                                                     </tr>
                                                 @endforelse
                                             </tbody>

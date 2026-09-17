@@ -2,11 +2,18 @@
 
 namespace App\Filament\Resources\OrderSessionDetails\Tables;
 
+use App\Actions\Tenant\ManageSessionOrderAction;
+use App\Models\Tenant\OrderSessionDetail;
+use App\Models\Tenant\User;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use RuntimeException;
+use Throwable;
 
 class OrderSessionDetailsTable
 {
@@ -70,12 +77,90 @@ class OrderSessionDetailsTable
                 //
             ])
             ->recordActions([
-                // EditAction::make(),
+                Action::make('update_quantity')
+                    ->label('تعديل الكمية')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning')
+                    ->visible(fn (OrderSessionDetail $record): bool => self::canManage($record, ManageSessionOrderAction::UPDATE_PERMISSION))
+                    ->fillForm(fn (OrderSessionDetail $record): array => [
+                        'quantity' => (int) $record->quantity,
+                    ])
+                    ->schema([
+                        TextInput::make('quantity')
+                            ->label('الكمية')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->required(),
+                    ])
+                    ->action(function (OrderSessionDetail $record, array $data): void {
+                        try {
+                            app(ManageSessionOrderAction::class)->updateQuantity(
+                                (int) $record->getKey(),
+                                (int) $data['quantity'],
+                                self::authenticatedUser(),
+                            );
+
+                            Notification::make()
+                                ->title('تم تحديث كمية الطلب')
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            self::sendFailureNotification('تعذر تحديث الطلب', $exception);
+                        }
+                    }),
+                Action::make('delete_order')
+                    ->label('حذف')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('حذف الطلب')
+                    ->modalDescription('هل أنت متأكد من حذف هذا الطلب؟')
+                    ->visible(fn (OrderSessionDetail $record): bool => self::canManage($record, ManageSessionOrderAction::DELETE_PERMISSION))
+                    ->action(function (OrderSessionDetail $record): void {
+                        try {
+                            app(ManageSessionOrderAction::class)->delete((int) $record->getKey(), self::authenticatedUser());
+
+                            Notification::make()
+                                ->title('تم حذف الطلب')
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            self::sendFailureNotification('تعذر حذف الطلب', $exception);
+                        }
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     // DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function canManage(OrderSessionDetail $record, string $permission): bool
+    {
+        return auth()->user()?->can($permission) === true
+            && $record->status === 'pending'
+            && $record->playSession()->where('status', 'active')->exists();
+    }
+
+    private static function authenticatedUser(): User
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            throw new RuntimeException('غير مصرح لك بتنفيذ هذا الإجراء.');
+        }
+
+        return $user;
+    }
+
+    private static function sendFailureNotification(string $title, Throwable $exception): void
+    {
+        Notification::make()
+            ->title($title)
+            ->body($exception->getMessage())
+            ->danger()
+            ->send();
     }
 }
