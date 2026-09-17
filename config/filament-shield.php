@@ -229,9 +229,9 @@ return [
     */
 
     'custom_permissions' => [
-        'Update:DeviceControl',
-        'Delete:DeviceControl',
-        'Discount:DeviceControl',
+        'Update:DeviceControl' => 'تعديل كمية الطلبات',
+        'Delete:DeviceControl' => 'حذف الطلبات',
+        'Discount:DeviceControl' => 'إضافة خصم لفواتير البيع',
     ],
 
     /*
