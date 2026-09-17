@@ -50,12 +50,16 @@ class DispatchDeviceControlCommandAction
 
         $deviceName = trim((string) ($device->name ?? 'DEVICE_CONTROL'));
 
-        if (class_exists(Livewire::class)) {
-            Livewire::dispatch('send-bridge-device-command', [
-                'ip' => $ipAddress,
-                'command' => $normalizedAction,
-                'deviceName' => $deviceName,
-            ]);
+        try {
+            if (app()->bound('livewire') && ($component = app('livewire')->current())) {
+                $component->dispatch('send-bridge-device-command', [
+                    'ip' => $ipAddress,
+                    'command' => $normalizedAction,
+                    'deviceName' => $deviceName,
+                ]);
+            }
+        } catch (\Throwable) {
+            // Ignore if outside of a Livewire component request
         }
 
         $result = app(SendDeviceControlCommandViaBridgeAction::class)->execute(

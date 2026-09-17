@@ -82,7 +82,7 @@ class SendDeviceControlCommandViaBridgeAction
             $order = $this->buildBridgeOrder($action);
 
             if ($this->usesWebSocket($bridgeUrl)) {
-                if (class_exists(Livewire::class) && Livewire::isLivewireRequest()) {
+                if (class_exists(Livewire::class) && (Livewire::isLivewireRequest() || app()->bound('livewire'))) {
                     return [
                         'ok' => true,
                         'error' => null,
@@ -319,7 +319,7 @@ class SendDeviceControlCommandViaBridgeAction
 
     private function bridgeUrl(): string
     {
-        return trim((string) Config::get('services.bridge.url', ''));
+        return trim((string) Config::get('services.bridge.url', '')) ?: 'ws://127.0.0.1:9000';
     }
 
     private function bridgeToken(): string

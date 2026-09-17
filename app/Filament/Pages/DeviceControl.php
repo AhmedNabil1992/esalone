@@ -183,6 +183,15 @@ class DeviceControl extends Page
             return;
         }
 
+        $bridgeUrl = (string) (config('services.bridge.url') ?: 'ws://127.0.0.1:9000');
+
+        // إذا كان الاتصال عبر WebSocket، فمتصفح العميل هو من يراقب الاتصال لحظياً ولا يتم إيقاف التحكم في السيرفر
+        if (str_starts_with($bridgeUrl, 'ws://') || str_starts_with($bridgeUrl, 'wss://')) {
+            $this->bridgeUnavailable = false;
+
+            return;
+        }
+
         $bridgeOnline = app(SendDeviceControlCommandViaBridgeAction::class)->isBridgeOnline();
 
         if (! $bridgeOnline) {
