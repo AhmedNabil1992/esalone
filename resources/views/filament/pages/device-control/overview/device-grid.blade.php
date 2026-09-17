@@ -122,10 +122,11 @@
                                     <div
                                         style="font-size:.9rem;font-weight:800;font-family:monospace;letter-spacing:.5px;color:#fef08a;direction:ltr;unicode-bidi:isolate;"
                                         @if ($startTime)
+                                            x-data="{ initialSeconds: {{ $secondsValue }}, mountedAt: Math.floor(Date.now() / 1000) }"
                                             @if ($isTimed)
-                                                x-text="formatDuration(Math.max(0, {{ $endTime->getTimestamp() }} - clockNow))"
+                                                x-text="formatDuration(Math.max(0, initialSeconds - (clockNow - mountedAt)))"
                                             @else
-                                                x-text="formatDuration(Math.max(0, clockNow - {{ $startTime->getTimestamp() }}))"
+                                                x-text="formatDuration(Math.max(0, initialSeconds + (clockNow - mountedAt)))"
                                             @endif
                                         @endif
                                     >{{ $runningCounter }}</div>

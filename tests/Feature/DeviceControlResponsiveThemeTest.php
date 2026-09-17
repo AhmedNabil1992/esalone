@@ -47,8 +47,9 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertStringContainsString('@if ($this->canApplyDeviceControlDiscount)', $closeSession);
         $this->assertStringContainsString('clockNow: Math.floor(Date.now() / 1000)', $view);
         $this->assertStringContainsString('formatDuration(totalSeconds)', $view);
-        $this->assertStringContainsString('x-text="formatDuration(Math.max(0, clockNow -', $deviceGrid);
-        $this->assertStringContainsString('x-text="formatDuration(Math.max(0,', $deviceGrid);
+        $this->assertStringContainsString('x-data="{ initialSeconds:', $deviceGrid);
+        $this->assertStringContainsString('initialSeconds + (clockNow - mountedAt)', $deviceGrid);
+        $this->assertStringContainsString('initialSeconds - (clockNow - mountedAt)', $deviceGrid);
     }
 
     public function test_device_control_is_composed_from_focused_partials(): void
