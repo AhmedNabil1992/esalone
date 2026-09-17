@@ -18,6 +18,7 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $addOrders = file_get_contents(resource_path('views/filament/pages/device-control/actions/add-orders.blade.php'));
         $deviceDetails = file_get_contents(resource_path('views/filament/pages/device-control/actions/device-details.blade.php'));
         $detailsModal = file_get_contents(resource_path('views/filament/pages/device-control/busy-action-details-modal.blade.php'));
+        $deviceGrid = file_get_contents(resource_path('views/filament/pages/device-control/overview/device-grid.blade.php'));
 
         $this->assertIsString($view);
         $this->assertIsString($styles);
@@ -25,6 +26,7 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertIsString($addOrders);
         $this->assertIsString($deviceDetails);
         $this->assertIsString($detailsModal);
+        $this->assertIsString($deviceGrid);
         $this->assertStringContainsString('class="device-control-page"', $view);
         $this->assertStringContainsString('.dark .device-control-page [style*="background:#fff"]', $styles);
         $this->assertStringContainsString('.dark .device-control-modal-panel', $styles);
@@ -43,6 +45,10 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $this->assertStringContainsString('updateBusySessionOrderQuantity', $closeSession);
         $this->assertStringContainsString('deleteBusySessionOrder', $closeSession);
         $this->assertStringContainsString('@if ($this->canApplyDeviceControlDiscount)', $closeSession);
+        $this->assertStringContainsString('clockNow: Math.floor(Date.now() / 1000)', $view);
+        $this->assertStringContainsString('formatDuration(totalSeconds)', $view);
+        $this->assertStringContainsString('x-text="formatDuration(Math.max(0, clockNow -', $deviceGrid);
+        $this->assertStringContainsString('x-text="formatDuration(Math.max(0,', $deviceGrid);
     }
 
     public function test_device_control_is_composed_from_focused_partials(): void

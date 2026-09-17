@@ -119,7 +119,16 @@
                                 <div style="width:1px;background:rgba(255,255,255,.2);"></div>
                                 <div style="text-align:center;">
                                     <div style="font-size:.58rem;opacity:.7;font-weight:600;margin-bottom:3px;">{{ $isTimed ? 'الوقت المتبقي' : 'الوقت المنقضي' }}</div>
-                                    <div style="font-size:.9rem;font-weight:800;font-family:monospace;letter-spacing:.5px;color:#fef08a;direction:ltr;unicode-bidi:isolate;">{{ $runningCounter }}</div>
+                                    <div
+                                        style="font-size:.9rem;font-weight:800;font-family:monospace;letter-spacing:.5px;color:#fef08a;direction:ltr;unicode-bidi:isolate;"
+                                        @if ($startTime)
+                                            @if ($isTimed)
+                                                x-text="formatDuration(Math.max(0, {{ $endTime->getTimestamp() }} - clockNow))"
+                                            @else
+                                                x-text="formatDuration(Math.max(0, clockNow - {{ $startTime->getTimestamp() }}))"
+                                            @endif
+                                        @endif
+                                    >{{ $runningCounter }}</div>
                                 </div>
                             </div>
 

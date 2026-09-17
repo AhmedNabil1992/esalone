@@ -38,6 +38,7 @@
         dir="rtl"
         x-data="{
             sessions: [],
+            clockNow: Math.floor(Date.now() / 1000),
             warned5Min: {},
             warnedFinished: {},
             enableSpeech: @js($alarmSoundActive),
@@ -61,6 +62,7 @@
 
                 // Start the countdown timer
                 setInterval(() => {
+                    this.clockNow = Math.floor(Date.now() / 1000);
                     this.syncSessionsFromDOM();
 
                     this.sessions.forEach(session => {
@@ -88,6 +90,15 @@
                         }
                     });
                 }, 1000);
+            },
+            formatDuration(totalSeconds) {
+                const normalizedSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+                const hours = Math.floor(normalizedSeconds / 3600);
+                const minutes = Math.floor((normalizedSeconds % 3600) / 60);
+
+                return [hours, minutes]
+                    .map(value => String(value).padStart(2, '0'))
+                    .join(':');
             },
             syncSessionsFromDOM() {
                 const dataEl = this.$refs.sessionsData;
