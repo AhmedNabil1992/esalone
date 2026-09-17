@@ -64,6 +64,10 @@ class DeviceControl extends Page
 
         return [
             "echo:tenant.{$tenantKey}.device-control,.device-control.updated" => '$refresh',
+            "echo:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
+            "echo:tenant.{$tenantKey}.device-control,DeviceControlUpdated" => '$refresh',
+            "echo:public:tenant.{$tenantKey}.device-control,.device-control.updated" => '$refresh',
+            "echo:public:tenant.{$tenantKey}.device-control,device-control.updated" => '$refresh',
         ];
     }
 

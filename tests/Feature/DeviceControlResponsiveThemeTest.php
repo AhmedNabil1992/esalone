@@ -91,15 +91,14 @@ class DeviceControlResponsiveThemeTest extends TestCase
         $view = file_get_contents(resource_path('views/filament/pages/device-control.blade.php'));
 
         $this->assertIsString($view);
-        $this->assertStringNotContainsString('setupEcho', $view);
-        $this->assertStringNotContainsString('window.Echo.channel', $view);
+        $this->assertStringContainsString('setupEcho', $view);
+        $this->assertStringContainsString('window.Echo.channel', $view);
         $panelProvider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
 
         $this->assertIsString($panelProvider);
-        $this->assertStringContainsString('->broadcasting(false)', $panelProvider);
-        $this->assertSame([
-            'echo:tenant.central.device-control,.device-control.updated' => '$refresh',
-        ], (new DeviceControl)->getListeners());
+        $this->assertStringNotContainsString('->broadcasting(false)', $panelProvider);
+        $listeners = (new DeviceControl)->getListeners();
+        $this->assertArrayHasKey('echo:tenant.central.device-control,.device-control.updated', $listeners);
     }
 
     public function test_order_management_is_exposed_in_current_orders_report(): void

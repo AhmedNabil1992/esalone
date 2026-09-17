@@ -63,7 +63,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#c4b5fd,#34d399,#fdba74\" \"php artisan queue:listen database --queue=tenant-provisioning,default --timeout=300\" \"php artisan reverb:start --host=0.0.0.0 --port=8080 --hostname=ps-web.test\" \"npm run dev\" --names='queue,reverb,vite'"
+            "npx concurrently -c \"#c4b5fd,#34d399,#fdba74\" \"php artisan queue:listen database --queue=tenant-provisioning,default --timeout=300\" \"php artisan reverb:start\" \"npm run dev\" --names='queue,reverb,vite'"
         ],
         "lint": [
             "pint --parallel"

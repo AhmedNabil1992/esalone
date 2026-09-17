@@ -43,6 +43,20 @@
             warnedFinished: {},
             enableSpeech: @js($alarmSoundActive),
             init() {
+                const channelName = @js($this->getRealtimeDeviceControlChannel());
+
+                const setupEcho = () => {
+                    if (window.Echo) {
+                        window.Echo.channel(channelName)
+                            .listen('.device-control.updated', () => {
+                                $wire.$refresh();
+                            });
+                    } else {
+                        setTimeout(setupEcho, 300);
+                    }
+                };
+                setupEcho();
+
                 // Initial load of sessions
                 this.syncSessionsFromDOM();
 
