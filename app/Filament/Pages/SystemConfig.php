@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Models\Tenant\Warehouse;
@@ -458,23 +457,32 @@ class SystemConfig extends Page
 
     public function refreshPrintersList(): void
     {
-        try {
-            $printers = app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
-            Setting::updateOrCreate(
-                ['key' => 'sys_available_printers'],
-                ['value' => json_encode($printers, JSON_UNESCAPED_UNICODE)]
-            );
+        $this->dispatch('bridge:get-printers');
+    }
 
-            Notification::make()
-                ->title('تم تحديث قائمة الطابعات بنجاح')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('فشل الاتصال بالـ Bridge')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
+    /**
+     * @param  array<int, string>  $printers
+     */
+    public function savePrintersList(array $printers): void
+    {
+        Setting::updateOrCreate(
+            ['key' => 'sys_available_printers'],
+            ['value' => json_encode($printers, JSON_UNESCAPED_UNICODE)]
+        );
+
+        Notification::make()
+            ->title('تم تحديث قائمة الطابعات بنجاح')
+            ->body('تم جلب '.count($printers).' طابعة بنجاح.')
+            ->success()
+            ->send();
+    }
+
+    public function handleBridgeError(string $message): void
+    {
+        Notification::make()
+            ->title('فشل الاتصال بالـ Bridge')
+            ->body($message)
+            ->danger()
+            ->send();
     }
 }

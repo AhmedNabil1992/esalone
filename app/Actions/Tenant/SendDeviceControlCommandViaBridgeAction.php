@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenant;
 
+use App\Models\Tenant\Setting;
 use App\Models\Tenant\SystemConfig;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 use RuntimeException;
 
 class SendDeviceControlCommandViaBridgeAction
@@ -18,6 +20,10 @@ class SendDeviceControlCommandViaBridgeAction
         $bridgeToken = $this->bridgeToken();
 
         if ($this->usesWebSocket($bridgeUrl)) {
+            if (class_exists(Livewire::class) && Livewire::isLivewireRequest()) {
+                return true;
+            }
+
             $response = $this->sendWebSocketMessage($bridgeUrl, 'PING_CHECK');
 
             return $response['ok'];
@@ -76,6 +82,13 @@ class SendDeviceControlCommandViaBridgeAction
             $order = $this->buildBridgeOrder($action);
 
             if ($this->usesWebSocket($bridgeUrl)) {
+                if (class_exists(Livewire::class) && Livewire::isLivewireRequest()) {
+                    return [
+                        'ok' => true,
+                        'error' => null,
+                    ];
+                }
+
                 return $this->sendOrderViaWebSocket(
                     bridgeUrl: $bridgeUrl,
                     ipAddress: $ipAddress,
@@ -565,6 +578,14 @@ class SendDeviceControlCommandViaBridgeAction
         $reply = $this->sendWebSocketMessageWithReply($bridgeUrl, 'GET_PRINTERS');
 
         if ($reply === null) {
+            $saved = Setting::get('sys_available_printers');
+            if ($saved) {
+                $decoded = json_decode($saved, true);
+                if (is_array($decoded) && $decoded !== []) {
+                    return $decoded;
+                }
+            }
+
             throw new RuntimeException('لم يتم استلام رد من الـ Bridge.');
         }
 

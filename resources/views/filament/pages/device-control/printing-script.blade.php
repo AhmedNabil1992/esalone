@@ -1,7 +1,7 @@
     @php
         $invoicePrinter = \App\Models\Tenant\SystemConfig::get('sys_invoice_printer', '');
         $orderPrinter = \App\Models\Tenant\SystemConfig::get('sys_order_printer', '');
-        $bridgeUrl = config('services.bridge.url', 'ws://127.0.0.1:9000');
+        $bridgeUrl = config('services.bridge.url') ?: 'ws://127.0.0.1:9000';
     @endphp
 
     <script>

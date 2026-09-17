@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\InventoryGroups\Schemas;
 
-use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
+use App\Models\Tenant\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
@@ -62,33 +62,25 @@ class InventoryGroupForm
 
     public static function refreshPrintersList(): void
     {
-        try {
-            app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
-
-            Notification::make()
-                ->title('تم تحديث قائمة الطابعات بنجاح')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('فشل الاتصال بالـ Bridge')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
+        Notification::make()
+            ->title('تحديث قائمة الطابعات')
+            ->body('يمكنك تحديث قائمة الطابعات مباشرة من شاشة "إعدادات النظام".')
+            ->info()
+            ->send();
     }
 
     public static function getPrintersOptions(): array
     {
-        try {
-            $printers = app(SendDeviceControlCommandViaBridgeAction::class)->fetchPrinters();
-            if (is_array($printers) && $printers !== []) {
-                return array_combine($printers, $printers);
-            }
-        } catch (\Throwable) {
-            // Gracefully handle bridge offline or connection errors
+        $printers = Setting::get('sys_available_printers');
+        if (! $printers) {
+            return [];
         }
 
-        return [];
+        $decoded = json_decode($printers, true);
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        return array_combine($decoded, $decoded);
     }
 }
