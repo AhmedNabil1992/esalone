@@ -7,6 +7,7 @@ namespace App\Actions\Tenant;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use Livewire\Livewire;
 use RuntimeException;
 
 class DispatchDeviceControlCommandAction
@@ -47,10 +48,24 @@ class DispatchDeviceControlCommandAction
             throw new RuntimeException('أمر التحكم غير مدعوم.');
         }
 
+        $deviceName = trim((string) ($device->name ?? 'DEVICE_CONTROL'));
+
+        try {
+            if (app()->bound('livewire') && ($component = app('livewire')->current())) {
+                $component->dispatch('send-bridge-device-command', [
+                    'ip' => $ipAddress,
+                    'command' => $normalizedAction,
+                    'deviceName' => $deviceName,
+                ]);
+            }
+        } catch (\Throwable) {
+            // Ignore if outside of a Livewire component request
+        }
+
         $result = app(SendDeviceControlCommandViaBridgeAction::class)->execute(
             ipAddress: $ipAddress,
             action: $normalizedAction,
-            deviceName: trim((string) ($device->name ?? 'DEVICE_CONTROL')),
+            deviceName: $deviceName,
         );
 
         if (! $result['ok']) {

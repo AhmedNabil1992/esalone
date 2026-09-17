@@ -217,5 +217,6 @@
     </div>
 
     @include('filament.pages.device-control.printing-script')
+    @include('filament.pages.device-control.bridge-script')
     @include('filament.pages.device-control.reservation-alert-modal')
 </x-filament-panels::page>
