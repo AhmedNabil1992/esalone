@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\Reservation;
+use App\Support\Tenant\TenantClock;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
@@ -35,7 +36,7 @@ class ReservationsCalendar extends Page
 
     public function mount(): void
     {
-        $this->date = $this->date ?? now()->format('Y-m-d');
+        $this->date = $this->date ?? app(TenantClock::class)->nowLocal()->format('Y-m-d');
     }
 
     public function next(): void
@@ -64,7 +65,7 @@ class ReservationsCalendar extends Page
 
     public function today(): void
     {
-        $this->date = now()->format('Y-m-d');
+        $this->date = app(TenantClock::class)->nowLocal()->format('Y-m-d');
     }
 
     public function changeView(string $mode): void
@@ -88,11 +89,13 @@ class ReservationsCalendar extends Page
         }
     }
 
+    /** @return array<string, mixed> */
     public function getDayViewData(): array
     {
+        [$dayStart, $dayEnd] = app(TenantClock::class)->localDateRangeUtc($this->date);
         $devices = Devices::all();
         $reservations = Reservation::query()
-            ->whereDate('start_time', $this->date)
+            ->whereBetween('start_time', [$dayStart, $dayEnd])
             ->whereIn('status', ['active', 'completed'])
             ->with(['customer', 'playPrice.playType'])
             ->orderBy('start_time')
@@ -105,22 +108,25 @@ class ReservationsCalendar extends Page
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getWeekViewData(): array
     {
         $startOfWeek = Carbon::parse($this->date)->startOfWeek(Carbon::SATURDAY);
+        $clock = app(TenantClock::class);
+        [$weekStart, $weekEnd] = $clock->localDateRangeUtc(
+            $startOfWeek,
+            $startOfWeek->copy()->addDays(6),
+        );
         $days = [];
 
         // Fetch reservations for this week range
         $reservations = Reservation::query()
-            ->whereBetween('start_time', [
-                $startOfWeek->copy()->startOfDay(),
-                $startOfWeek->copy()->addDays(6)->endOfDay(),
-            ])
+            ->whereBetween('start_time', [$weekStart, $weekEnd])
             ->whereIn('status', ['active', 'completed'])
             ->with(['device', 'customer', 'playPrice.playType'])
             ->orderBy('start_time')
             ->get()
-            ->groupBy(fn ($r) => Carbon::parse($r->start_time)->format('Y-m-d'));
+            ->groupBy(fn ($reservation) => $clock->utcToLocal($reservation->start_time)->format('Y-m-d'));
 
         for ($i = 0; $i < 7; $i++) {
             $current = $startOfWeek->copy()->addDays($i);
@@ -135,9 +141,12 @@ class ReservationsCalendar extends Page
         return $days;
     }
 
+    /** @return array<int, array<int, array<string, mixed>|null>> */
     public function getCalendarData(): array
     {
         $date = Carbon::parse($this->date)->startOfMonth();
+        $clock = app(TenantClock::class);
+        [$monthStart, $monthEnd] = $clock->localDateRangeUtc($date, $date->copy()->endOfMonth());
         $daysInMonth = $date->daysInMonth;
 
         $firstDayOfMonth = $date->copy()->startOfMonth();
@@ -151,12 +160,11 @@ class ReservationsCalendar extends Page
 
         // Fetch all reservations for this month
         $reservations = Reservation::query()
-            ->whereYear('start_time', $date->year)
-            ->whereMonth('start_time', $date->month)
+            ->whereBetween('start_time', [$monthStart, $monthEnd])
             ->whereIn('status', ['active', 'completed'])
             ->with(['device', 'customer', 'playPrice.playType'])
             ->get()
-            ->groupBy(fn ($r) => Carbon::parse($r->start_time)->day);
+            ->groupBy(fn ($reservation) => $clock->utcToLocal($reservation->start_time)->day);
 
         $week = array_fill(0, $offset, null);
 

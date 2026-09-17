@@ -5,8 +5,8 @@ namespace App\Filament\Pages;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Purchase;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
-use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
@@ -32,8 +32,8 @@ class ProfitLossReport extends Page
 
     public function mount(): void
     {
-        $this->from = Carbon::now()->startOfMonth()->toDateString();
-        $this->until = Carbon::today()->toDateString();
+        $this->from = app(TenantClock::class)->nowLocal()->startOfMonth()->toDateString();
+        $this->until = app(TenantClock::class)->nowLocal()->toDateString();
     }
 
     /**
@@ -41,51 +41,55 @@ class ProfitLossReport extends Page
      */
     public function getFinancials(): array
     {
+        $clock = app(TenantClock::class);
+        $fromUtc = $this->from ? $clock->localDateStartUtc($this->from) : null;
+        $untilUtc = $this->until ? $clock->localDateEndUtc($this->until) : null;
+
         $playRevenue = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('play_amount');
 
         $cafeRevenue = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('order_amount');
 
         $discounts = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('discount_amount');
 
         $serviceAmount = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('service_amount');
 
         $taxAmount = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('tax_amount');
 
         $totalRevenue = (float) Invoice::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('issued_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('issued_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('final_amount');
 
         $expenses = (float) ExpenseHistory::query()
-            ->when($this->from, fn ($q) => $q->whereDate('created_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('created_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('created_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('created_at', '<=', $untilUtc))
             ->sum('amount');
 
         $purchases = (float) Purchase::query()
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('purchased_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('purchased_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('purchased_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('purchased_at', '<=', $untilUtc))
             ->sum('total_amount');
 
         $netProfit = $totalRevenue - $expenses - $purchases;
@@ -93,8 +97,8 @@ class ProfitLossReport extends Page
         // Breakdown of expenses by type
         $expensesByType = ExpenseHistory::query()
             ->select('expenses_id', DB::raw('SUM(amount) as total_amount'))
-            ->when($this->from, fn ($q) => $q->whereDate('created_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('created_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('created_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('created_at', '<=', $untilUtc))
             ->groupBy('expenses_id')
             ->with('expenseType')
             ->get()
@@ -108,8 +112,8 @@ class ProfitLossReport extends Page
         $purchasesBySupplier = Purchase::query()
             ->select('supplier_id', DB::raw('SUM(total_amount) as total_amount'))
             ->where('status', 'posted')
-            ->when($this->from, fn ($q) => $q->whereDate('purchased_at', '>=', $this->from))
-            ->when($this->until, fn ($q) => $q->whereDate('purchased_at', '<=', $this->until))
+            ->when($fromUtc, fn ($q) => $q->where('purchased_at', '>=', $fromUtc))
+            ->when($untilUtc, fn ($q) => $q->where('purchased_at', '<=', $untilUtc))
             ->groupBy('supplier_id')
             ->with('supplier')
             ->get()

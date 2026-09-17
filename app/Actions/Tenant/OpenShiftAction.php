@@ -8,6 +8,7 @@ use App\Models\Tenant\Branch;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\User;
 use App\Scopes\BranchScope;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -46,7 +47,7 @@ class OpenShiftAction
                 'branch_id' => $branchId,
                 'shift_no' => (int) ((clone $shifts)->max('shift_no') ?? 0) + 1,
                 'opened_by_user_id' => $actor->id,
-                'shift_date' => today()->toDateString(),
+                'shift_date' => app(TenantClock::class)->nowLocal()->toDateString(),
                 'shift_from' => now(),
                 'start_amount' => $data['start_amount'] ?? $lastClosedShift?->actual_amount ?? 0,
                 'actual_amount' => 0,

@@ -335,6 +335,7 @@
                         @if ($soonReservation)
                             @php
                                 $resStartTime = \Carbon\Carbon::parse($soonReservation->start_time);
+                                $resStartTimeLocal = app(\App\Support\Tenant\TenantClock::class)->utcToLocal($resStartTime);
                                 $resMinutesLeft = max(1, (int) now()->diffInMinutes($resStartTime));
                             @endphp
                             <div style="background: rgba(254, 242, 242, 0.95); border: 1.5px solid #ef4444; color: #991b1b; font-size: 0.72rem; padding: 6px 10px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 4px; animation: pulse-border 2s infinite;">
@@ -343,7 +344,7 @@
                                 </svg>
                                 <span style="flex:1;text-align:right;">
                                     حجز قادم بعد {{ $resMinutesLeft }} دقيقة
-                                    ({{ $resStartTime->format('h:i A') }})
+                                    ({{ $resStartTimeLocal->format('h:i A') }})
                                 </span>
                             </div>
                         @endif
@@ -353,6 +354,8 @@
                                 $activeDetail = $device->activeSession?->latestDetail;
                                 $startTime = $device->activeSession?->getOriginalStartTime() ?? $activeDetail?->start_time;
                                 $endTime = $activeDetail?->end_time;
+                                $displayStartTime = $startTime ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($startTime) : null;
+                                $displayEndTime = $endTime ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($endTime) : null;
                                 $period = $activeDetail?->period;
                                 $isTimed = $period !== null && $endTime !== null;
 
@@ -384,12 +387,12 @@
                             <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;gap:8px;width:100%;">
                                 <div style="text-align:center;">
                                     <div style="font-size:.6rem;opacity:.7;font-weight:600;margin-bottom:2px;">بداية الوقت</div>
-                                    <div style="font-size:.85rem;font-weight:800;font-family:monospace;direction:ltr;unicode-bidi:isolate;">{{ $startTime?->format('h:i A') ?? '—' }}</div>
+                                    <div style="font-size:.85rem;font-weight:800;font-family:monospace;direction:ltr;unicode-bidi:isolate;">{{ $displayStartTime?->format('h:i A') ?? '—' }}</div>
                                 </div>
                                 <div style="width:1px;background:rgba(255,255,255,.25);"></div>
                                 <div style="text-align:center;">
                                     <div style="font-size:.6rem;opacity:.7;font-weight:600;margin-bottom:2px;">نهاية الوقت</div>
-                                    <div style="font-size:.85rem;font-weight:800;font-family:monospace;direction:ltr;unicode-bidi:isolate;">{{ $isTimed ? ($endTime?->format('h:i A') ?? '—') : '—' }}</div>
+                                    <div style="font-size:.85rem;font-weight:800;font-family:monospace;direction:ltr;unicode-bidi:isolate;">{{ $isTimed ? ($displayEndTime?->format('h:i A') ?? '—') : '—' }}</div>
                                 </div>
                             </div>
 
@@ -628,6 +631,8 @@
                                         <table style="width:100%;border-collapse:collapse;font-size:.76rem;">
                                             <thead style="background:#f9fafb;color:#374151;">
                                                 <tr>
+                                                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">نوع الجهاز</th>
+                                                    <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">اسم الجهاز</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">نوع اللعب</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">الفئة</th>
                                                     <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">البداية</th>
@@ -640,17 +645,19 @@
                                             <tbody>
                                                 @forelse ($timeRows as $row)
                                                     <tr>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">{{ $row['device_type'] ?: '—' }}</td>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">{{ $row['device_name'] ?: '—' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">{{ $row['play_type'] ?: '—' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;">{{ $row['play_category'] ?: '—' }}</td>
-                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['start_time']) && $row['start_time'] ? \Illuminate\Support\Carbon::parse($row['start_time'])->format('h:i A') : '—' }}</td>
-                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['end_time']) && $row['end_time'] ? \Illuminate\Support\Carbon::parse($row['end_time'])->format('h:i A') : '—' }}</td>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['start_time']) && $row['start_time'] ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($row['start_time'])->format('h:i A') : '—' }}</td>
+                                                        <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;direction:ltr;unicode-bidi:isolate;color:#374151;">{{ isset($row['end_time']) && $row['end_time'] ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($row['end_time'])->format('h:i A') : '—' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['play_price'] ?? 0), 2) }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#111827;">{{ ($row['period'] ?? 0) > 0 ? ($row['period'] . ' د') : 'مفتوح' }}</td>
                                                         <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#16a34a;font-weight:700;direction:ltr;unicode-bidi:isolate;">{{ number_format((float) ($row['cost'] ?? 0), 2) }}</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="6" style="padding:16px;text-align:center;color:#6b7280;">لا توجد تفاصيل وقت.</td>
+                                                        <td colspan="9" style="padding:16px;text-align:center;color:#6b7280;">لا توجد تفاصيل وقت.</td>
                                                     </tr>
                                                 @endforelse
                                             </tbody>
@@ -1184,6 +1191,8 @@
                                     <table style="width:100%;border-collapse:collapse;font-size:.76rem;">
                                         <thead style="background:#f9fafb;color:#374151;">
                                             <tr>
+                                                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">نوع الجهاز</th>
+                                                <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">اسم الجهاز</th>
                                                 <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">نوع اللعب</th>
                                                 <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">السعر</th>
                                                 <th style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">النوع</th>
@@ -1196,6 +1205,12 @@
                                             @forelse ($timeDetails as $detail)
                                                 <tr>
                                                     <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">
+                                                        {{ $detail->device?->type?->name ?: '—' }}
+                                                    </td>
+                                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">
+                                                        {{ $detail->device?->name ?: '—' }}
+                                                    </td>
+                                                    <td style="padding:8px;border-bottom:1px solid #f3f4f6;color:#111827;">
                                                         {{ $detail->play_type ?: '—' }}
                                                     </td>
                                                     <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;">
@@ -1205,10 +1220,10 @@
                                                         {{ $detail->play_category ?: '—' }}
                                                     </td>
                                                     <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;direction:ltr;unicode-bidi:isolate;">
-                                                        {{ $detail->start_time?->format('h:i A') ?? '—' }}
+                                                        {{ $detail->start_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($detail->start_time)->format('h:i A') : '—' }}
                                                     </td>
                                                     <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#374151;direction:ltr;unicode-bidi:isolate;">
-                                                        {{ $detail->end_time?->format('h:i A') ?? '—' }}
+                                                        {{ $detail->end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($detail->end_time)->format('h:i A') : '—' }}
                                                     </td>
                                                     <td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;color:#111827;">
                                                         {{ $detail->period ? $detail->period . ' د' : 'مفتوح' }}
@@ -1216,7 +1231,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="6" style="padding:16px;text-align:center;color:#6b7280;">لا توجد بيانات وقت على هذه الجلسة.</td>
+                                                    <td colspan="8" style="padding:16px;text-align:center;color:#6b7280;">لا توجد بيانات وقت على هذه الجلسة.</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -1438,7 +1453,7 @@
 
                         <div style="font-size:.78rem;color:#6b7280;margin-bottom:10px;line-height:1.6;">
                             وقت بداية الجلسة:
-                            <strong style="direction:ltr;unicode-bidi:isolate;">{{ $limitSessionStart?->format('h:i A') ?? '—' }}</strong>
+                            <strong style="direction:ltr;unicode-bidi:isolate;">{{ $limitSessionStart ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($limitSessionStart)->format('h:i A') : '—' }}</strong>
                             <br>
                             الوقت الحالي المنقضي تقريبيًا: <strong>{{ $elapsedFromSessionStart }} د</strong>
                             <br>
@@ -1446,7 +1461,7 @@
                             @if ($limitCurrentDetail?->end_time)
                                 <br>
                                 نهاية الجزء الحالي:
-                                <strong style="direction:ltr;unicode-bidi:isolate;">{{ $limitCurrentDetail->end_time->format('h:i A') }}</strong>
+                                <strong style="direction:ltr;unicode-bidi:isolate;">{{ app(\App\Support\Tenant\TenantClock::class)->utcToLocal($limitCurrentDetail->end_time)->format('h:i A') }}</strong>
                             @endif
                         </div>
 
@@ -1505,7 +1520,7 @@
                         @else
                             <div style="font-size:.82rem;color:#4b5563;margin-bottom:10px;">
                                 الوقت الحالي ينتهي عند:
-                                <strong style="direction:ltr;unicode-bidi:isolate;">{{ $addTimeDetail?->end_time?->format('h:i A') ?? '—' }}</strong>
+                                <strong style="direction:ltr;unicode-bidi:isolate;">{{ $addTimeDetail?->end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($addTimeDetail->end_time)->format('h:i A') : '—' }}</strong>
                             </div>
 
                             <input
@@ -1578,8 +1593,8 @@
                             <div style="display:grid;gap:6px;padding-right:16px;border-top:1px dashed #fca5a5;padding-top:8px;">
                                 @foreach($todayReservations as $res)
                                     @php
-                                        $startTime = \Carbon\Carbon::parse($res->start_time)->format('h:i A');
-                                        $endTime = \Carbon\Carbon::parse($res->end_time)->format('h:i A');
+                                        $startTime = app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->start_time)->format('h:i A');
+                                        $endTime = app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->end_time)->format('h:i A');
                                     @endphp
                                     <div style="font-size:.74rem;font-weight:600;display:flex;justify-content:space-between;align-items:center;" class="text-rose-800 dark:!text-rose-300">
                                         <span>• من {{ $startTime }} إلى {{ $endTime }}</span>
@@ -1880,8 +1895,8 @@
                     <div style="background:#f9fafb;border-radius:12px;border:1px solid #e5e7eb;padding:12px;margin-bottom:20px;max-height:150px;overflow:auto;">
                         @foreach($todayReservations as $res)
                             @php
-                                $startTime = \Carbon\Carbon::parse($res->start_time)->format('h:i A');
-                                $endTime = \Carbon\Carbon::parse($res->end_time)->format('h:i A');
+                                $startTime = app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->start_time)->format('h:i A');
+                                $endTime = app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->end_time)->format('h:i A');
                             @endphp
                             <div style="font-size:.76rem;color:#374151;font-weight:600;padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;align-items:center;">
                                 <span>• من {{ $startTime }} إلى {{ $endTime }}</span>

@@ -5,7 +5,7 @@ namespace App\Ai\Tools;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Shift;
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
@@ -35,12 +35,13 @@ class GetRevenueReportTool implements Tool
             $shift = Shift::find($shiftId);
             $reportTitle = 'الوردية رقم: '.($shift ? $shift->shift_no : $shiftId);
         } elseif ($startDateStr || $endDateStr) {
-            $start = $startDateStr ? Carbon::parse($startDateStr)->startOfDay() : Carbon::today()->startOfDay();
-            $end = $endDateStr ? Carbon::parse($endDateStr)->endOfDay() : Carbon::today()->endOfDay();
+            $clock = app(TenantClock::class);
+            $start = $clock->localDateStartUtc($startDateStr ?? $clock->nowLocal());
+            $end = $clock->localDateEndUtc($endDateStr ?? $clock->nowLocal());
 
             $invoiceQuery->whereBetween('issued_at', [$start, $end]);
             $expenseQuery->whereBetween('occurred_at', [$start, $end]);
-            $reportTitle = "الفترة من {$start->toDateString()} إلى {$end->toDateString()}";
+            $reportTitle = "الفترة من {$startDateStr} إلى {$endDateStr}";
         } else {
             // Default to today's open shift if exists, otherwise today's date
             $activeShift = Shift::where('status', 'open')->first();
@@ -49,11 +50,13 @@ class GetRevenueReportTool implements Tool
                 $expenseQuery->where('shift_id', $activeShift->id);
                 $reportTitle = "الوردية المفتوحة حالياً (رقم {$activeShift->shift_no})";
             } else {
-                $start = Carbon::today()->startOfDay();
-                $end = Carbon::today()->endOfDay();
+                $clock = app(TenantClock::class);
+                $localToday = $clock->nowLocal();
+                $start = $clock->localDateStartUtc($localToday);
+                $end = $clock->localDateEndUtc($localToday);
                 $invoiceQuery->whereBetween('issued_at', [$start, $end]);
                 $expenseQuery->whereBetween('occurred_at', [$start, $end]);
-                $reportTitle = "اليوم الحالي ({$start->toDateString()})";
+                $reportTitle = "اليوم الحالي ({$localToday->toDateString()})";
             }
         }
 

@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PlayPrice extends Model
 {
@@ -14,17 +15,20 @@ class PlayPrice extends Model
         'start_from',
     ];
 
-    public function playType()
+    /** @return BelongsTo<PlayType, $this> */
+    public function playType(): BelongsTo
     {
         return $this->belongsTo(PlayType::class, 'play_type_id');
     }
 
-    public function device()
+    /** @return BelongsTo<Devices, $this> */
+    public function device(): BelongsTo
     {
         return $this->belongsTo(Devices::class, 'device_id');
     }
 
-    public function deviceType()
+    /** @return BelongsTo<DevicesType, $this> */
+    public function deviceType(): BelongsTo
     {
         return $this->belongsTo(DevicesType::class, 'device_type_id');
     }

@@ -2,7 +2,7 @@
 
 namespace App\Ai\Tools;
 
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Contracts\Tool;
@@ -32,8 +32,9 @@ class GetBestSellingProductsTool implements Tool
             ->where('order_session_details.status', '!=', 'cancelled');
 
         if ($startDateStr || $endDateStr) {
-            $start = $startDateStr ? Carbon::parse($startDateStr)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
-            $end = $endDateStr ? Carbon::parse($endDateStr)->endOfDay() : Carbon::now()->endOfDay();
+            $clock = app(TenantClock::class);
+            $start = $clock->localDateStartUtc($startDateStr ?? $clock->nowLocal()->subDays(30));
+            $end = $clock->localDateEndUtc($endDateStr ?? $clock->nowLocal());
             $query->whereBetween('order_session_details.created_at', [$start, $end]);
         }
 

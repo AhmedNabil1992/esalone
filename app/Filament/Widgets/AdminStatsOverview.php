@@ -9,10 +9,10 @@ use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Purchase;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Number;
 
 class AdminStatsOverview extends StatsOverviewWidget
@@ -26,8 +26,9 @@ class AdminStatsOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         $currencyCode = Setting::get('sys_locale_currency', 'EGP');
-        $todayStart = Carbon::now()->startOfDay();
-        $todayEnd = Carbon::now()->endOfDay();
+        [$todayStart, $todayEnd] = app(TenantClock::class)->localDateRangeUtc(
+            app(TenantClock::class)->nowLocal(),
+        );
 
         // 1. Devices Activity Stat
         $totalDevices = Devices::count();

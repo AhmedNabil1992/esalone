@@ -7,8 +7,8 @@
 * **تاريخ الوردية:** {{ $shift->shift_date->format('Y-m-d') }}
 * **افتتح بواسطة:** {{ $shift->opener?->name ?? 'غير معروف' }}
 * **أغلق بواسطة:** {{ $shift->closer?->name ?? 'غير معروف' }}
-* **بداية الوردية:** {{ $shift->shift_from?->format('Y-m-d h:i A') }}
-* **نهاية الوردية:** {{ $shift->shift_to?->format('Y-m-d h:i A') }}
+* **بداية الوردية:** {{ $shift->shift_from ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($shift->shift_from)->format('Y-m-d h:i A') : '-' }}
+* **نهاية الوردية:** {{ $shift->shift_to ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($shift->shift_to)->format('Y-m-d h:i A') : '-' }}
 
 ---
 

@@ -11,6 +11,7 @@ use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Scopes\BranchScope;
+use App\Support\Tenant\TenantClock;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -133,14 +134,15 @@ class CustomerReservations extends Page implements HasTable
                         ->default(60)
                         ->minValue(15),
                 ])
-                ->action(function (array $data) use ($tenantTz): void {
+                ->action(function (array $data): void {
                     /** @var Customer|null $customer */
                     $customer = Auth::guard('customer')->user();
                     if (! $customer) {
                         return;
                     }
 
-                    $startTime = Carbon::parse($data['start_time'], $tenantTz);
+                    // Filament's timezone-aware DateTimePicker dehydrates the local wall time to UTC.
+                    $startTime = Carbon::parse($data['start_time'], 'UTC')->utc();
                     $duration = (int) $data['duration_minutes'];
                     $endTime = (clone $startTime)->addMinutes($duration);
 
@@ -164,15 +166,15 @@ class CustomerReservations extends Page implements HasTable
                         'device_id' => (int) $data['device_id'],
                         'customer_id' => $customer->id,
                         'play_price_id' => $playPriceId,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
+                        'start_time' => $startTime->toDateTimeString(),
+                        'end_time' => $endTime->toDateTimeString(),
                         'duration_minutes' => $duration,
                         'status' => 'active',
                     ]);
 
                     Notification::make()
                         ->title('تم إرسال طلب الحجز بنجاح!')
-                        ->body("تم حجز الجهاز في تاريخ {$startTime->format('d/m/Y h:i A')}")
+                        ->body('تم حجز الجهاز في تاريخ '.app(TenantClock::class)->utcToLocal($startTime)->format('d/m/Y h:i A'))
                         ->success()
                         ->send();
 

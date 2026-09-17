@@ -1,34 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
-use App\Models\Tenant\SystemConfig as Setting;
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Closure;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Http\Request;
-use Throwable;
 
 class SetTenantTimezone
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): mixed
     {
-        try {
-            // بنقرأ التوقيت من إعدادات العميل، ولو مش موجود بناخد التوقيت الافتراضي
-            $timezone = Setting::get('sys_system_time_zone', config('app.timezone'));
-
-            if ($timezone) {
-                // 1. تظبيط توقيت لاراڤيل وكاربون الأساسي (عشان الحسابات في الباك إند)
-                config(['app.timezone' => $timezone]);
-                date_default_timezone_set($timezone);
-                Carbon::setFallbackTimezone($timezone);
-
-                // 2. تظبيط التوقيت في فيلامنت لكل الجداول والفورمز
-                FilamentTimezone::set($timezone);
-            }
-        } catch (Throwable) {
-            // لو حصل أي مشكلة (مثلاً الجدول لسه متعملوش ميكريشن)، نتجاهل الخطأ ويكمل بالتوقيت الافتراضي
-        }
+        FilamentTimezone::set(app(TenantClock::class)->timezone());
 
         return $next($request);
     }

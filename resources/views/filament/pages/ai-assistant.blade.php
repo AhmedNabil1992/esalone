@@ -21,7 +21,7 @@
                 </div>
                 <div>
                     <h4 style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">معدل استهلاك الذكاء الاصطناعي اليومي</h4>
-                    <p style="font-size: 0.75rem; color: #64748b;">يتم تصفير العداد تلقائياً كل 24 ساعة.</p>
+                    <p style="font-size: 0.75rem; color: #64748b;">يتم تصفير العداد تلقائياً مع بداية اليوم حسب توقيت المنشأة.</p>
                 </div>
             </div>
             

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\PlayHistory;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
@@ -135,10 +136,10 @@ class DevicesReport extends Page implements HasTable
 
                         $query = Invoice::where('device_id', $record->id)->where('status', 'posted');
                         if ($from) {
-                            $query->whereDate('issued_at', '>=', $from);
+                            $query->where('issued_at', '>=', app(TenantClock::class)->localDateStartUtc($from));
                         }
                         if ($until) {
-                            $query->whereDate('issued_at', '<=', $until);
+                            $query->where('issued_at', '<=', app(TenantClock::class)->localDateEndUtc($until));
                         }
 
                         return (float) $query->sum('order_amount');
@@ -155,10 +156,10 @@ class DevicesReport extends Page implements HasTable
 
                                 $invoiceQuery = Invoice::whereIn('device_id', $deviceIds)->where('status', 'posted');
                                 if ($from) {
-                                    $invoiceQuery->whereDate('issued_at', '>=', $from);
+                                    $invoiceQuery->where('issued_at', '>=', app(TenantClock::class)->localDateStartUtc($from));
                                 }
                                 if ($until) {
-                                    $invoiceQuery->whereDate('issued_at', '<=', $until);
+                                    $invoiceQuery->where('issued_at', '<=', app(TenantClock::class)->localDateEndUtc($until));
                                 }
 
                                 return (float) $invoiceQuery->sum('order_amount');
@@ -178,11 +179,11 @@ class DevicesReport extends Page implements HasTable
 
                         if ($from) {
                             $playQuery->whereDate('trx_date', '>=', $from);
-                            $invoiceQuery->whereDate('issued_at', '>=', $from);
+                            $invoiceQuery->where('issued_at', '>=', app(TenantClock::class)->localDateStartUtc($from));
                         }
                         if ($until) {
                             $playQuery->whereDate('trx_date', '<=', $until);
-                            $invoiceQuery->whereDate('issued_at', '<=', $until);
+                            $invoiceQuery->where('issued_at', '<=', app(TenantClock::class)->localDateEndUtc($until));
                         }
 
                         $play = (float) $playQuery->sum('cost');
@@ -206,11 +207,11 @@ class DevicesReport extends Page implements HasTable
 
                                 if ($from) {
                                     $playQuery->whereDate('trx_date', '>=', $from);
-                                    $invoiceQuery->whereDate('issued_at', '>=', $from);
+                                    $invoiceQuery->where('issued_at', '>=', app(TenantClock::class)->localDateStartUtc($from));
                                 }
                                 if ($until) {
                                     $playQuery->whereDate('trx_date', '<=', $until);
-                                    $invoiceQuery->whereDate('issued_at', '<=', $until);
+                                    $invoiceQuery->where('issued_at', '<=', app(TenantClock::class)->localDateEndUtc($until));
                                 }
 
                                 $play = (float) $playQuery->sum('cost');

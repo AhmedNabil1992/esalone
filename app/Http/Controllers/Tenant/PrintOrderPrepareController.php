@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\OrderSessionDetail;
 use App\Models\Tenant\SystemConfig;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -36,7 +37,9 @@ class PrintOrderPrepareController extends Controller
         }
 
         $deviceName = $orders->first()->device?->name ?? '—';
-        $orderTime = $orders->first()->created_at ? $orders->first()->created_at->format('h:i:s a') : now()->format('h:i:s a');
+        $orderTime = $orders->first()->created_at
+            ? app(TenantClock::class)->utcToLocal($orders->first()->created_at)->format('h:i:s a')
+            : app(TenantClock::class)->nowLocal()->format('h:i:s a');
 
         return view('tenant.prints.order-prepare', [
             'orders' => $orders,

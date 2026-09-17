@@ -11,12 +11,12 @@ Artisan::command('inspire', function () {
 Schedule::command('tenants:run tenants:send-booking-alerts')
     ->everyMinute()
     ->runInBackground()
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);
 
 Schedule::command('tenants:run tenants:send-session-expiry-alerts')
     ->everyMinute()
     ->runInBackground()
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);
 
 Schedule::command('tenants:cleanup-expired')
     ->dailyAt('03:00')

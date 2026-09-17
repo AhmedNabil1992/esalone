@@ -2,8 +2,10 @@
 
 namespace App\Models\Tenant;
 
+use App\Scopes\BranchScope;
 use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Reservation extends Model
 {
@@ -31,17 +33,20 @@ class Reservation extends Model
         'admin_alert_sent' => 'boolean',
     ];
 
-    public function device()
+    /** @return BelongsTo<Devices, $this> */
+    public function device(): BelongsTo
     {
         return $this->belongsTo(Devices::class);
     }
 
-    public function customer()
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function playPrice()
+    /** @return BelongsTo<PlayPrice, $this> */
+    public function playPrice(): BelongsTo
     {
         return $this->belongsTo(PlayPrice::class);
     }

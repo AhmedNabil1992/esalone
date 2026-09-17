@@ -3,7 +3,7 @@
 namespace App\Ai\Tools;
 
 use App\Models\Tenant\ExpenseHistory;
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
@@ -32,8 +32,9 @@ class GetExpensesReportTool implements Tool
             );
 
         if ($startDateStr || $endDateStr) {
-            $start = $startDateStr ? Carbon::parse($startDateStr)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
-            $end = $endDateStr ? Carbon::parse($endDateStr)->endOfDay() : Carbon::now()->endOfDay();
+            $clock = app(TenantClock::class);
+            $start = $clock->localDateStartUtc($startDateStr ?? $clock->nowLocal()->subDays(30));
+            $end = $clock->localDateEndUtc($endDateStr ?? $clock->nowLocal());
             $query->whereBetween('expense_histories.occurred_at', [$start, $end]);
         }
 
@@ -50,7 +51,7 @@ class GetExpensesReportTool implements Tool
                 'category' => $row->expense_type ?? 'مصروفات عامة',
                 'amount' => $amount,
                 'notes' => $row->description,
-                'date' => Carbon::parse($row->occurred_at)->toDateTimeString(),
+                'date' => app(TenantClock::class)->utcToLocal($row->occurred_at)->toDateTimeString(),
             ];
         }
 

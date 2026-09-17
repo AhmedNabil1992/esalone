@@ -26,6 +26,7 @@ use App\Models\Tenant\TaxHistory;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,7 @@ class CloseSessionInvoiceAction
         $device = Devices::query()
             ->with([
                 'activeSession.details' => fn ($query) => $query->orderBy('id', 'asc'),
+                'activeSession.details.device.type',
                 'activeSession.orderSessionDetails.catalogItem',
             ])
             ->whereKey($deviceId)
@@ -396,6 +398,8 @@ class CloseSessionInvoiceAction
                 $cost = round((float) ($detail->cost ?? 0), 2);
 
                 return [
+                    'device_type' => (string) ($detail->device?->type?->name ?? ''),
+                    'device_name' => (string) ($detail->device?->name ?? ''),
                     'play_type' => (string) ($detail->play_type ?? ''),
                     'play_category' => (string) ($detail->play_category ?? ''),
                     'start_time' => $detail->start_time,
@@ -507,10 +511,11 @@ class CloseSessionInvoiceAction
 
     private function generateInvoiceNo(): string
     {
-        $today = Carbon::now();
+        $clock = app(TenantClock::class);
+        $today = $clock->nowLocal();
         $prefix = $today->format('y-m-d');
         $dailyCount = Invoice::query()
-            ->whereDate('issued_at', $today->toDateString())
+            ->whereBetween('issued_at', $clock->localDateRangeUtc($today))
             ->count() + 1;
 
         return sprintf('%s-%d', $prefix, $dailyCount);
@@ -851,7 +856,7 @@ class CloseSessionInvoiceAction
                 'username' => $actor->name,
                 'shift_id' => $shiftId,
                 'invoice_no' => $invoice->invoice_no,
-                'trx_date' => now()->toDateString(),
+                'trx_date' => app(TenantClock::class)->nowLocal()->toDateString(),
             ]);
         }
     }

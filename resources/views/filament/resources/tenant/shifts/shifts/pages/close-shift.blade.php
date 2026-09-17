@@ -16,11 +16,11 @@
                     </div>
                     <div>
                         <span style="display: block; font-size: 0.75rem; color: #94a3b8;">بداية الوردية</span>
-                        <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">{{ $record->shift_from?->format('Y-m-d H:i') ?? '-' }}</span>
+                        <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">{{ $record->shift_from ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($record->shift_from)->format('Y-m-d H:i') : '-' }}</span>
                     </div>
                     <div>
                         <span style="display: block; font-size: 0.75rem; color: #94a3b8;">نهاية الوردية</span>
-                        <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">{{ $record->shift_to?->format('Y-m-d H:i') ?? 'الوردية نشطة حالياً' }}</span>
+                        <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">{{ $record->shift_to ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($record->shift_to)->format('Y-m-d H:i') : 'الوردية نشطة حالياً' }}</span>
                     </div>
                     @if($record->status === 'open')
                         <div>
@@ -574,7 +574,7 @@
                             <tbody>
                                 @forelse($expenses as $exp)
                                     <tr class="border-b border-slate-100 dark:!border-zinc-800/60 text-slate-700 dark:!text-zinc-300">
-                                        <td style="padding: 8px;" class="text-slate-800 dark:!text-zinc-200">{{ \Illuminate\Support\Carbon::parse($exp['created_at'])->format('H:i') }}</td>
+                                        <td style="padding: 8px;" class="text-slate-800 dark:!text-zinc-200">{{ app(\App\Support\Tenant\TenantClock::class)->utcToLocal($exp['created_at'])->format('H:i') }}</td>
                                         <td style="padding: 8px; font-weight: 700;" class="text-slate-900 dark:!text-zinc-100">{{ $exp['expense_type']['name'] ?? '-' }}</td>
                                         <td style="padding: 8px;" class="text-slate-800 dark:!text-zinc-200">{{ $exp['cash_box']['name'] ?? '-' }}</td>
                                         <td style="padding: 8px;" class="text-slate-800 dark:!text-zinc-200">{{ $exp['description'] }}</td>

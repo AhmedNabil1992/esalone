@@ -1,5 +1,17 @@
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    (() => {
+        if (window.__psGlobalNotificationAudioInitialized) {
+            return;
+        }
+
+        window.__psGlobalNotificationAudioInitialized = true;
+
+        const audioAlertsEnabled = @js(in_array(
+            (string) \App\Models\Tenant\SystemConfig::get('sys_alarm_sound', '0'),
+            ['1', 'true', 'on', 'yes'],
+            true,
+        ));
+
         // 1. Request Browser Notification permissions on load if default
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
@@ -28,6 +40,8 @@
 
         // 2. Audio Alert Synthesizer (Beep Tone)
         window.playGlobalAlertSound = function () {
+            if (!audioAlertsEnabled) return;
+
             try {
                 unlockAudioContext();
                 if (!globalAudioCtx || globalAudioCtx.state === 'suspended') return;
@@ -57,7 +71,7 @@
 
         // 3. Speech Alert Synthesizer (Text-To-Speech for alerts)
         window.speakGlobalAlert = function (text) {
-            if ('speechSynthesis' in window && text) {
+            if (audioAlertsEnabled && 'speechSynthesis' in window && text) {
                 try {
                     window.speechSynthesis.cancel();
                     const cleanText = text.replace(/[\*\_]/g, '');
@@ -73,7 +87,7 @@
 
         // 4. Function to check unread notification count badge in Filament
         function checkUnreadNotifications() {
-            const badge = document.querySelector('.fi-topbar-database-notifications-btn .fi-icon-btn-badge, [data-unread-notifications-count]');
+            const badge = document.querySelector('.fi-topbar-database-notifications-btn .fi-badge, .fi-sidebar-database-notifications-btn .fi-badge, [data-unread-notifications-count]');
             if (badge) {
                 const currentCount = parseInt(badge.textContent.trim()) || 0;
                 if (previousUnreadCount !== null && currentCount > previousUnreadCount) {
@@ -122,5 +136,11 @@
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
-    });
+
+        document.addEventListener('livewire:navigated', () => {
+            setTimeout(checkUnreadNotifications, 200);
+        });
+
+        checkUnreadNotifications();
+    })();
 </script>

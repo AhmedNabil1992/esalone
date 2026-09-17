@@ -26,6 +26,7 @@ use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
@@ -229,7 +230,7 @@ class DeviceControl extends Page
             ->where('devices_type_id', $this->selectedTypeId)
             ->where('is_active', true)
             ->with(['type', 'playPrices.playType', 'playTypes', 'activeSession.latestDetail', 'activeSession.details', 'activeSession.customer'])
-            ->orderBy('name', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
     }
 
@@ -588,6 +589,7 @@ class DeviceControl extends Page
                 'activeSession.latestDetail',
                 'activeSession.customer',
                 'activeSession.details.user',
+                'activeSession.details.device.type',
                 'activeSession.orderSessionDetails.catalogItem',
                 'activeSession.orderSessionDetails.user',
             ])
@@ -1592,10 +1594,13 @@ class DeviceControl extends Page
             return false;
         }
 
+        [$todayStart, $todayEnd] = app(TenantClock::class)->localDateRangeUtc(
+            app(TenantClock::class)->nowLocal(),
+        );
+
         return Reservation::query()
             ->where('device_id', $deviceId)
-            ->where('start_time', '>=', Carbon::today())
-            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->whereBetween('start_time', [$todayStart, $todayEnd])
             ->where('status', 'active')
             ->exists();
     }
@@ -1607,10 +1612,13 @@ class DeviceControl extends Page
             return collect();
         }
 
+        [$todayStart, $todayEnd] = app(TenantClock::class)->localDateRangeUtc(
+            app(TenantClock::class)->nowLocal(),
+        );
+
         return Reservation::query()
             ->where('device_id', $deviceId)
-            ->where('start_time', '>=', Carbon::today())
-            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->whereBetween('start_time', [$todayStart, $todayEnd])
             ->where('status', 'active')
             ->with(['customer', 'playPrice.playType'])
             ->orderBy('start_time')
@@ -1619,10 +1627,13 @@ class DeviceControl extends Page
 
     public function checkReservationBeforeStart(int $deviceId, int $playPriceId): void
     {
+        [$todayStart, $todayEnd] = app(TenantClock::class)->localDateRangeUtc(
+            app(TenantClock::class)->nowLocal(),
+        );
+
         $hasReservation = Reservation::query()
             ->where('device_id', $deviceId)
-            ->where('start_time', '>=', Carbon::today())
-            ->where('start_time', '<=', Carbon::today()->endOfDay())
+            ->whereBetween('start_time', [$todayStart, $todayEnd])
             ->where('status', 'active')
             ->exists();
 

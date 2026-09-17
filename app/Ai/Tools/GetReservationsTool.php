@@ -2,7 +2,7 @@
 
 namespace App\Ai\Tools;
 
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
@@ -35,11 +35,12 @@ class GetReservationsTool implements Tool
             );
 
         if ($dateStr) {
-            $day = Carbon::parse($dateStr)->toDateString();
-            $query->whereDate('reservations.start_time', $day);
+            [$dayStart, $dayEnd] = app(TenantClock::class)->localDateRangeUtc($dateStr);
+            $query->whereBetween('reservations.start_time', [$dayStart, $dayEnd]);
         } else {
             // Default to today and upcoming reservations
-            $query->whereDate('reservations.start_time', '>=', Carbon::today()->toDateString());
+            [$dayStart] = app(TenantClock::class)->localDateRangeUtc(app(TenantClock::class)->nowLocal());
+            $query->where('reservations.start_time', '>=', $dayStart);
         }
 
         if ($deviceName) {
@@ -55,8 +56,8 @@ class GetReservationsTool implements Tool
                 'customer_name' => $row->customer_name ?? 'عميل غير مسجل',
                 'customer_phone' => $row->customer_phone ?? 'بدون هاتف',
                 'device_name' => $row->device_name ?? 'أي جهاز',
-                'start_time' => Carbon::parse($row->start_time)->toDateTimeString(),
-                'end_time' => Carbon::parse($row->end_time)->toDateTimeString(),
+                'start_time' => app(TenantClock::class)->utcToLocal($row->start_time)->toDateTimeString(),
+                'end_time' => app(TenantClock::class)->utcToLocal($row->end_time)->toDateTimeString(),
                 'duration_minutes' => (int) $row->duration_minutes,
                 'status' => match ($row->status) {
                     'pending' => 'معلق',

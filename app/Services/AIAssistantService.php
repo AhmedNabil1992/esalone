@@ -13,6 +13,8 @@ use App\Models\Tenant\DevicesType;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\PlayType;
+use App\Support\Tenant\AiTenantContext;
+use App\Support\Tenant\TenantClock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -49,7 +51,7 @@ class AIAssistantService
         }
 
         // 2. التحقق من الحد اليومي
-        $today = now()->toDateString();
+        $today = app(TenantClock::class)->nowLocal()->toDateString();
         $requestsLimit = $tenant->ai_requests_limit ?? 10;
 
         if ($tenant->ai_last_request_date !== $today) {
@@ -312,12 +314,13 @@ class AIAssistantService
         $target = $actionData['target'] ?? '';
         $amount = (float) ($actionData['amount'] ?? 0);
         $operation = $actionData['operation'] ?? 'add';
+        $currency = app(AiTenantContext::class)->currency();
 
         $operationLabel = match ($operation) {
-            'add' => "زيادة {$amount} ج.م",
-            'subtract' => "تخفيض {$amount} ج.م",
-            'set' => "تحديد السعر بـ {$amount} ج.م",
-            default => "تعديل {$amount} ج.م",
+            'add' => "زيادة {$amount} {$currency}",
+            'subtract' => "تخفيض {$amount} {$currency}",
+            'set' => "تحديد السعر بـ {$amount} {$currency}",
+            default => "تعديل {$amount} {$currency}",
         };
 
         $preview = "⚠️ **تأكيد التعديل المطلوب**\n\n";
@@ -362,6 +365,7 @@ class AIAssistantService
      */
     protected function getPlayPricesPreview(string $target, float $amount, string $operation): array
     {
+        $currency = app(AiTenantContext::class)->currency();
         $query = PlayPrice::query();
 
         if (! empty($target) && strtolower($target) !== 'all') {
@@ -398,7 +402,7 @@ class AIAssistantService
                 'subtract' => max(0, $oldPrice - $amount),
                 default => $amount,
             };
-            $text .= "* **{$labelName} ({$typeName}):** {$oldPrice} ج.م → **{$newPrice} ج.م**\n";
+            $text .= "* **{$labelName} ({$typeName}):** {$oldPrice} {$currency} → **{$newPrice} {$currency}**\n";
         }
 
         return ['preview_text' => $text ?: '* لا توجد أسعار مطابقة.'];
@@ -411,6 +415,7 @@ class AIAssistantService
      */
     protected function getProductPricesPreview(string $target, float $amount, string $operation): array
     {
+        $currency = app(AiTenantContext::class)->currency();
         $query = CatalogItem::query()->where('is_product', true);
 
         if (! empty($target) && strtolower($target) !== 'all') {
@@ -432,7 +437,7 @@ class AIAssistantService
                 'subtract' => max(0, $oldPrice - $amount),
                 default => $amount,
             };
-            $text .= "* **{$item->name}:** {$oldPrice} ج.م → **{$newPrice} ج.م**\n";
+            $text .= "* **{$item->name}:** {$oldPrice} {$currency} → **{$newPrice} {$currency}**\n";
         }
 
         return ['preview_text' => $text ?: '* لا توجد منتجات مطابقة.'];
@@ -496,9 +501,15 @@ SQL Query:";
     ): string {
         try {
             $resultsJson = json_encode($dbResults, JSON_UNESCAPED_UNICODE);
+            $tenantContext = app(AiTenantContext::class)->promptContext();
             $answerPrompt = "
 أنت مساعد ذكي ونظام خبير متكامل لإدارة صالة ألعاب PlayStation وكافيه.
 أجب عن سؤال المستخدم باللغة العربية بأسلوب ودود ومهني وواضح ومختصر وبشكل نقاط مرتبة.
+
+سياق المنشأة الحالي:
+===
+{$tenantContext}
+===
 
 سجل المحادثة السابقة:
 ===
@@ -518,6 +529,8 @@ SQL Query:";
 3. إذا قام المستخدم بتصحيحك في الرسائل السابقة، اعترف بذلك وقدم الحساب المعدل.
 4. إذا كانت النتائج فارغة، وضح بلطف أنه لا توجد بيانات مطابقة ولا تخترع أرقاماً.
 5. إذا سألك المستخدم عن حذف أو إضافة تعديلات (غير الأسعار)، أخبره أنك مساعد تحليلي فقط.
+6. استخدم التاريخ المحلي والفترات المحددة في سياق المنشأة، والأسبوع من السبت إلى الجمعة.
+7. أضف رمز عملة المنشأة لكل مبلغ مالي، ولا تفترض عملة أخرى.
 
 الإجابة المنسقة:";
 
@@ -882,6 +895,7 @@ CRITICAL BUSINESS LOGIC HINTS:
      */
     protected function handlePriceUpdateAction(array $actionData): string
     {
+        $currency = app(AiTenantContext::class)->currency();
         $type = $actionData['type'] ?? '';
         $operation = $actionData['operation'] ?? 'add';
         $amount = (float) ($actionData['amount'] ?? 0);
@@ -941,7 +955,7 @@ CRITICAL BUSINESS LOGIC HINTS:
                 $devTypeName = $p->device->type->name ?? '';
                 $typeName = $p->playType->name ?? 'عادي';
                 $labelName = $devTypeName ? "{$devName} ({$devTypeName})" : $devName;
-                $response .= "* **{$labelName} ({$typeName}):** ".number_format((float) $p->price, 2)." ج.م\n";
+                $response .= "* **{$labelName} ({$typeName}):** ".number_format((float) $p->price, 2)." {$currency}\n";
             }
 
             return $response;
@@ -979,7 +993,7 @@ CRITICAL BUSINESS LOGIC HINTS:
             $itemsAfter = $query->get();
             $response = "✅ **تم تعديل أسعار المبيعات بنجاح!** ({$targetName})\n\nإليك الأسعار الجديدة:\n";
             foreach ($itemsAfter as $item) {
-                $response .= "* **{$item->name}:** ".number_format((float) $item->sale_price, 2)." ج.م\n";
+                $response .= "* **{$item->name}:** ".number_format((float) $item->sale_price, 2)." {$currency}\n";
             }
 
             return $response;

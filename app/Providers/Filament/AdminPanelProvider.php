@@ -38,7 +38,6 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
@@ -279,12 +278,6 @@ class AdminPanelProvider extends PanelProvider
                         return '';
                     }
 
-                    try {
-                        Artisan::call('tenants:send-session-expiry-alerts');
-                        Artisan::call('tenants:send-booking-alerts');
-                    } catch (Throwable) {
-                    }
-
                     return Blade::render("@livewire('quick-navigation')").view('filament.hooks.global-notification-audio')->render();
                 },
             )
@@ -311,6 +304,9 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('10s')
             ->topNavigation()
             ->spa()
+            ->spaUrlExceptions([
+                '*/admin/device-control*',
+            ])
             ->globalSearch(false);
     }
 

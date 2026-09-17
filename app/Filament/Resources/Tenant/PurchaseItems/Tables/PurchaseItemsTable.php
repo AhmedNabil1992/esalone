@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\PurchaseItems\Tables;
 
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -18,8 +18,9 @@ class PurchaseItemsTable
 {
     public static function configure(Table $table): Table
     {
-        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
-        $defaultUntil = Carbon::today()->toDateString();
+        $clock = app(TenantClock::class);
+        $defaultFrom = $clock->nowLocal()->startOfMonth()->toDateString();
+        $defaultUntil = $clock->nowLocal()->toDateString();
 
         return $table
             ->columns([
@@ -109,10 +110,10 @@ class PurchaseItemsTable
                         return $query->whereHas('purchase', function (Builder $b) use ($from, $until): void {
                             $b->when(
                                 filled($from),
-                                fn (Builder $builder): Builder => $builder->whereDate('purchased_at', '>=', $from)
+                                fn (Builder $builder): Builder => $builder->where('purchased_at', '>=', app(TenantClock::class)->localDateStartUtc($from))
                             )->when(
                                 filled($until),
-                                fn (Builder $builder): Builder => $builder->whereDate('purchased_at', '<=', $until)
+                                fn (Builder $builder): Builder => $builder->where('purchased_at', '<=', app(TenantClock::class)->localDateEndUtc($until))
                             );
                         });
                     }),

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\DiscountHistory;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
-use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -39,8 +39,9 @@ class DiscountHistoryReport extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
-        $defaultUntil = Carbon::today()->toDateString();
+        $clock = app(TenantClock::class);
+        $defaultFrom = $clock->nowLocal()->startOfMonth()->toDateString();
+        $defaultUntil = $clock->nowLocal()->toDateString();
 
         return $table
             ->query(DiscountHistory::query()->with(['branch', 'shift', 'user', 'invoice'])->latest('id'))
@@ -110,11 +111,11 @@ class DiscountHistoryReport extends Page implements HasTable
                         return $query
                             ->when(
                                 filled($from),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '>=', $from)
+                                fn (Builder $builder): Builder => $builder->where('occurred_at', '>=', app(TenantClock::class)->localDateStartUtc($from))
                             )
                             ->when(
                                 filled($until),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $until)
+                                fn (Builder $builder): Builder => $builder->where('occurred_at', '<=', app(TenantClock::class)->localDateEndUtc($until))
                             );
                     }),
                 SelectFilter::make('shift_id')

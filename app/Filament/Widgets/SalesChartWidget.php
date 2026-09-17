@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Tenant\Invoice;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
 
 class SalesChartWidget extends ChartWidget
 {
@@ -17,22 +17,23 @@ class SalesChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $startDate = Carbon::now()->subDays(29)->startOfDay();
-        $endDate = Carbon::now()->endOfDay();
+        $clock = app(TenantClock::class);
+        $localToday = $clock->nowLocal();
+        $startDate = $clock->localDateStartUtc($localToday->subDays(29));
+        $endDate = $clock->localDateEndUtc($localToday);
 
         $rawSales = Invoice::query()
             ->where('status', 'posted')
             ->whereBetween('issued_at', [$startDate, $endDate])
-            ->selectRaw('DATE(issued_at) as date, SUM(final_amount) as total')
-            ->groupBy('date')
-            ->pluck('total', 'date')
-            ->toArray();
+            ->get(['issued_at', 'final_amount'])
+            ->groupBy(fn (Invoice $invoice): string => $clock->utcToLocal($invoice->issued_at)->toDateString())
+            ->map(fn ($invoices): float => (float) $invoices->sum('final_amount'));
 
         $data = [];
         $labels = [];
 
         for ($i = 29; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
+            $date = $localToday->subDays($i);
             $dateString = $date->toDateString();
             $labels[] = $date->format('m-d');
             $data[] = (float) ($rawSales[$dateString] ?? 0.0);

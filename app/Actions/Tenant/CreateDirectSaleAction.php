@@ -19,6 +19,7 @@ use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseStock;
+use App\Support\Tenant\TenantClock;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -457,10 +458,11 @@ class CreateDirectSaleAction
 
     private function generateInvoiceNo(): string
     {
-        $today = Carbon::now();
+        $clock = app(TenantClock::class);
+        $today = $clock->nowLocal();
         $prefix = $today->format('y-m-d');
         $dailyCount = Invoice::query()
-            ->whereDate('issued_at', $today->toDateString())
+            ->whereBetween('issued_at', $clock->localDateRangeUtc($today))
             ->count() + 1;
 
         return sprintf('S-%s-%d', $prefix, $dailyCount);

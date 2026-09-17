@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\User;
 use App\Services\AIAssistantService;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 
@@ -61,7 +62,7 @@ class AIAssistant extends Page
         $this->hasAiSubscription = (bool) ($tenant->has_ai_subscription ?? false);
 
         // Reset daily counter if day changed
-        $today = now()->toDateString();
+        $today = app(TenantClock::class)->nowLocal()->toDateString();
         if ($tenant->ai_last_request_date !== $today) {
             $tenant->ai_requests_today = 0;
             $tenant->ai_last_request_date = $today;

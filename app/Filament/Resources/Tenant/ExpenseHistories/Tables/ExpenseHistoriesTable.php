@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\ExpenseHistories\Tables;
 
-use Carbon\Carbon;
+use App\Support\Tenant\TenantClock;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -18,8 +18,9 @@ class ExpenseHistoriesTable
 {
     public static function configure(Table $table): Table
     {
-        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
-        $defaultUntil = Carbon::today()->toDateString();
+        $clock = app(TenantClock::class);
+        $defaultFrom = $clock->nowLocal()->startOfMonth()->toDateString();
+        $defaultUntil = $clock->nowLocal()->toDateString();
 
         return $table
             ->columns([
@@ -80,11 +81,11 @@ class ExpenseHistoriesTable
                         return $query
                             ->when(
                                 filled($from),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '>=', $from)
+                                fn (Builder $builder): Builder => $builder->where('occurred_at', '>=', app(TenantClock::class)->localDateStartUtc($from))
                             )
                             ->when(
                                 filled($until),
-                                fn (Builder $builder): Builder => $builder->whereDate('occurred_at', '<=', $until)
+                                fn (Builder $builder): Builder => $builder->where('occurred_at', '<=', app(TenantClock::class)->localDateEndUtc($until))
                             );
                     }),
                 SelectFilter::make('cash_box_id')

@@ -166,14 +166,14 @@ class TenantRuntimeTest extends TestCase
         $this->assertStringNotContainsString('://', $url);
     }
 
-    public function test_timezone_is_restored_after_tenant_context(): void
+    public function test_tenant_context_does_not_mutate_the_process_timezone(): void
     {
-        $original = date_default_timezone_get();
+        date_default_timezone_set('UTC');
         $bootstrapper = new TimezoneBootstrapper;
         $bootstrapper->bootstrap(new Tenant);
-        date_default_timezone_set('Africa/Cairo');
+        $this->assertSame('UTC', date_default_timezone_get());
         $bootstrapper->revert();
-        $this->assertSame($original, date_default_timezone_get());
+        $this->assertSame('UTC', date_default_timezone_get());
     }
 
     public function test_database_jobs_stay_in_the_central_database_inside_tenant_context(): void

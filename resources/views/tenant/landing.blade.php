@@ -752,7 +752,7 @@
                             </div>
                         </div>
                         <div style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">
-                            تاريخ الانضمام: {{ $loggedCustomer->created_at ? $loggedCustomer->created_at->format('Y-m-d') : 'اليوم' }}
+                            تاريخ الانضمام: {{ $loggedCustomer->created_at ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($loggedCustomer->created_at)->format('Y-m-d') : 'اليوم' }}
                         </div>
                     </div>
 

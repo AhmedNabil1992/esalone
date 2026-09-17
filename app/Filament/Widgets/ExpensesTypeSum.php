@@ -5,8 +5,8 @@ namespace App\Filament\Widgets;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\ExpensesType;
 use App\Models\Tenant\SystemConfig as Setting;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
-use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +21,9 @@ class ExpensesTypeSum extends StatsOverviewWidget
     protected function getStats(): array
     {
         // تحديد بداية الشهر وحتى الوقت الحالي (من أول يوم في الشهر لحد اليوم)
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $now = Carbon::now();
+        $clock = app(TenantClock::class);
+        $startOfMonth = $clock->localDateStartUtc($clock->nowLocal()->startOfMonth());
+        $now = $clock->nowUtc();
 
         // سحب رمز العملة الحالي للصالة (مثلاً EGP) لتنسيق المظهر المالي
         $currencyCode = (string) (Setting::get('sys_locale_currency') ?: 'EGP');

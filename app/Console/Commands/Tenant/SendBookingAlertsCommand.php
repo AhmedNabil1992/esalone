@@ -6,12 +6,14 @@ use App\Filament\Resources\Tenant\Reservations\ReservationsResource;
 use App\Models\Tenant\Reservation;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use App\Support\Tenant\TenantClock;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use WallaceMartinss\FilamentEvolution\Enums\StatusConnectionEnum;
+use WallaceMartinss\FilamentEvolution\Models\WhatsappInstance;
 use WallaceMartinss\FilamentEvolution\Services\EvolutionClient;
-use WallaceMartinss\FilamentEvolution\Services\WhatsappService;
 
 class SendBookingAlertsCommand extends Command
 {
@@ -31,8 +33,9 @@ class SendBookingAlertsCommand extends Command
             $alertLeadTime = 30;
         }
 
-        $now = now();
-        $targetTime = now()->addMinutes($alertLeadTime);
+        $clock = app(TenantClock::class);
+        $now = $clock->nowUtc();
+        $targetTime = $now->addMinutes($alertLeadTime);
 
         // 2. Find active reservations starting between now and targetTime that haven't been fully alerted
         $reservations = Reservation::query()
@@ -42,7 +45,7 @@ class SendBookingAlertsCommand extends Command
                 $query->where('whatsapp_alert_sent', false)
                     ->orWhere('admin_alert_sent', false);
             })
-            ->whereBetween('start_time', [$now, $targetTime])
+            ->whereBetween('start_time', [$now->subMinutes(5), $targetTime])
             ->get();
 
         if ($reservations->isEmpty()) {
@@ -54,10 +57,11 @@ class SendBookingAlertsCommand extends Command
 
         // 4. Check WhatsApp service availability
         $whatsappEnabled = (bool) SystemConfig::get('sys_whatsapp_enabled', '0');
-        $whatsappService = app(WhatsappService::class);
-        $instance = $whatsappEnabled ? $whatsappService->getConnectedInstances()->first() : null;
+        $instance = $whatsappEnabled
+            ? WhatsappInstance::query()->where('status', StatusConnectionEnum::OPEN)->first()
+            : null;
 
-        $countryCode = preg_replace('/\D/', '', (string) SystemConfig::get('sys_country_code', ''));
+        $countryCode = preg_replace('/\D/', '', (string) SystemConfig::get('sys_country_code', '')) ?? '';
         $shopName = SystemConfig::get('sys_shop_name', 'gameOver');
         $evolutionClient = app(EvolutionClient::class);
 
@@ -66,10 +70,10 @@ class SendBookingAlertsCommand extends Command
 
         foreach ($reservations as $reservation) {
             $customer = $reservation->customer;
-            $customerName = $customer?->name ?? 'عميل';
-            $deviceName = $reservation->device?->name ?? 'جهاز اللعب';
-            $startTimeFormatted = $reservation->start_time->format('h:i A');
-            $minutesLeft = max(1, (int) now()->diffInMinutes($reservation->start_time));
+            $customerName = $customer->name ?? 'عميل';
+            $deviceName = $reservation->device->name ?? 'جهاز اللعب';
+            $startTimeFormatted = $clock->utcToLocal($reservation->start_time)->format('h:i A');
+            $minutesLeft = max(0, (int) $now->diffInMinutes($reservation->start_time, false));
 
             // A) Send Admin Notification (Filament Database & Browser Notification)
             if (! $reservation->admin_alert_sent && $users->isNotEmpty()) {
@@ -83,7 +87,7 @@ class SendBookingAlertsCommand extends Command
                             ->label('عرض الحجوزات')
                             ->url(ReservationsResource::getUrl('index', panel: 'admin', isAbsolute: false)),
                     ])
-                    ->sendToDatabase($users);
+                    ->sendToDatabase($users, isEventDispatched: true);
 
                 $reservation->update(['admin_alert_sent' => true]);
                 $sentAdminCount++;
@@ -92,7 +96,7 @@ class SendBookingAlertsCommand extends Command
 
             // B) Send Customer WhatsApp Notification
             if (! $reservation->whatsapp_alert_sent && $whatsappEnabled && $instance && $customer && $customer->phone) {
-                $phone = preg_replace('/\D/', '', $customer->phone);
+                $phone = preg_replace('/\D/', '', (string) $customer->phone) ?? '';
                 if (str_starts_with($phone, '00')) {
                     $phone = substr($phone, 2);
                 }

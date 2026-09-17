@@ -8,7 +8,7 @@
         </div>
         <div>
             <span style="font-size: 0.85rem; color: #9ca3af; display: block; margin-bottom: 4px;">التاريخ والوقت</span>
-            <strong style="font-size: 0.95rem; color: #fff;">{{ $invoice->issued_at ? $invoice->issued_at->format('d/m/Y h:i A') : '-' }}</strong>
+            <strong style="font-size: 0.95rem; color: #fff;">{{ $invoice->issued_at ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($invoice->issued_at)->format('d/m/Y h:i A') : '-' }}</strong>
         </div>
         <div>
             <span style="font-size: 0.85rem; color: #9ca3af; display: block; margin-bottom: 4px;">نوع الفاتورة</span>
@@ -41,8 +41,8 @@
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: #e5e7eb;">
                                 <td style="padding: 10px 8px; font-weight: bold; color: #fff;">{{ $play->device?->name ?? $invoice->device?->name ?? 'جهاز رئيسي' }}</td>
                                 <td style="padding: 10px 8px;">{{ $play->play_type }}</td>
-                                <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->start_time ? $play->start_time->format('h:i A') : '-' }}</td>
-                                <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->actual_end_time ? $play->actual_end_time->format('h:i A') : '-' }}</td>
+                                <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->start_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($play->start_time)->format('h:i A') : '-' }}</td>
+                                <td style="padding: 10px 8px; font-size: 0.8rem; color: #9ca3af;">{{ $play->actual_end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($play->actual_end_time)->format('h:i A') : '-' }}</td>
                                 <td style="padding: 10px 8px; font-weight: 700;">{{ $play->play_time }} دقيقة</td>
                                 <td style="padding: 10px 8px; text-align: left; font-weight: bold; color: #10b981;">{{ number_format($play->cost, 2) }} ج.م</td>
                             </tr>

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\InvoicePayment;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
@@ -38,8 +39,9 @@ class SalesReport extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-        $defaultFrom = Carbon::now()->startOfMonth()->toDateString();
-        $defaultUntil = Carbon::today()->toDateString();
+        $clock = app(TenantClock::class);
+        $defaultFrom = $clock->nowLocal()->startOfMonth()->toDateString();
+        $defaultUntil = $clock->nowLocal()->toDateString();
 
         return $table
             ->query(
@@ -155,20 +157,20 @@ class SalesReport extends Page implements HasTable
                     ->form([
                         DatePicker::make('from')
                             ->label('من تاريخ')
-                            ->default(Carbon::now()->startOfMonth()),
+                            ->default($defaultFrom),
                         DatePicker::make('until')
                             ->label('إلى تاريخ')
-                            ->default(Carbon::today()),
+                            ->default($defaultUntil),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('issued_at', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->where('issued_at', '>=', app(TenantClock::class)->localDateStartUtc($date)),
                             )
                             ->when(
                                 $data['until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('issued_at', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->where('issued_at', '<=', app(TenantClock::class)->localDateEndUtc($date)),
                             );
                     })
                     ->indicateUsing(function (array $data): array {

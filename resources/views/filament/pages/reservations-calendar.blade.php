@@ -109,8 +109,8 @@
                                             'cancelled' => '#b91c1c',
                                             default => '#374151'
                                         };
-                                        $startTimeFormatted = $res->start_time ? \Carbon\Carbon::parse($res->start_time)->format('h:i A') : '';
-                                        $endTimeFormatted = $res->end_time ? \Carbon\Carbon::parse($res->end_time)->format('h:i A') : '';
+                                        $startTimeFormatted = $res->start_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->start_time)->format('h:i A') : '';
+                                        $endTimeFormatted = $res->end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->end_time)->format('h:i A') : '';
                                     @endphp
                                     <a 
                                         href="{{ route('filament.admin.resources.tenant.reservations.edit', ['record' => $res->id]) }}"
@@ -200,8 +200,8 @@
                                             'cancelled' => '#b91c1c',
                                             default => '#374151'
                                         };
-                                        $startTimeFormatted = $res->start_time ? \Carbon\Carbon::parse($res->start_time)->format('h:i A') : '';
-                                        $endTimeFormatted = $res->end_time ? \Carbon\Carbon::parse($res->end_time)->format('h:i A') : '';
+                                        $startTimeFormatted = $res->start_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->start_time)->format('h:i A') : '';
+                                        $endTimeFormatted = $res->end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->end_time)->format('h:i A') : '';
                                     @endphp
                                     <a 
                                         href="{{ route('filament.admin.resources.tenant.reservations.edit', ['record' => $res->id]) }}"
@@ -285,8 +285,8 @@
                                                     'cancelled' => '#b91c1c',
                                                     default => '#374151'
                                                 };
-                                                $startTimeFormatted = $res->start_time ? \Carbon\Carbon::parse($res->start_time)->format('h:i A') : '';
-                                                $endTimeFormatted = $res->end_time ? \Carbon\Carbon::parse($res->end_time)->format('h:i A') : '';
+                                                $startTimeFormatted = $res->start_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->start_time)->format('h:i A') : '';
+                                                $endTimeFormatted = $res->end_time ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($res->end_time)->format('h:i A') : '';
                                             @endphp
                                             <a 
                                                 href="{{ route('filament.admin.resources.tenant.reservations.edit', ['record' => $res->id]) }}"

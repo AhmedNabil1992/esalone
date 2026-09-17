@@ -39,7 +39,7 @@ class InvoiceItemsRelationManager extends RelationManager
                     ->sortable(),
                 TextColumn::make('transaction_date')
                     ->label('تاريخ العملية')
-                    ->dateTime('Y-m-d', timezone: 'Africa/Cairo')
+                    ->dateTime('Y-m-d')
                     ->sortable(),
                 TextColumn::make('transaction_time')
                     ->label('وقت العملية')

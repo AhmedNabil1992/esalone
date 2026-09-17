@@ -230,7 +230,7 @@
 
     <table>
         {!! $renderRow($shape('رقم الفاتورة'), $printedInvoiceNo !== '' ? $printedInvoiceNo : $invoiceNumber, true) !!}
-        {!! $renderRow($shape('التاريخ'), $invoice->issued_at?->format('Y-m-d h:i A') ?? '-', true) !!}
+        {!! $renderRow($shape('التاريخ'), $invoice->issued_at ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($invoice->issued_at)->format('Y-m-d h:i A') : '-', true) !!}
         @if($invoice->device)
             {!! $renderRow($shape('الجهاز'), $shape($invoice->device->name), true) !!}
         @endif

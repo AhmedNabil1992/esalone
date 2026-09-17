@@ -18,6 +18,7 @@ use App\Ai\Tools\GetStaffPerformanceTool;
 use App\Ai\Tools\GetWaitingListTool;
 use App\Ai\Tools\ProposePriceUpdate;
 use App\Services\AIAssistantService;
+use App\Support\Tenant\AiTenantContext;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Concerns\RemembersConversations;
@@ -51,8 +52,15 @@ class PlayStationAssistant implements Agent, Conversational, HasTools
      */
     public function instructions(): string
     {
+        $tenantContext = app(AiTenantContext::class)->promptContext();
+
         return "You are an expert system and a helpful assistant for a PlayStation cafe & cafe management system.
 Your job is to answer the user's questions about the cafe using the database or action tools.
+
+TENANT BUSINESS CONTEXT:
+===
+{$tenantContext}
+===
 
 DATABASE SCHEMA AND TABLES:
 ===
@@ -90,7 +98,9 @@ Follow these instructions carefully:
    You MUST call 'proposePriceUpdate' tool with the exact operation parameters. Do NOT try to write SQL to modify the database yourself.
 15. **COMPLEX CUSTOM REPORTING (FALLBACK):** If the user asks a complex custom reporting question that is NOT covered by the specific tools above, you may call 'executeReadOnlySql' (if available).
 16. Do NOT guess or fabricate any data. If a tool returns empty results or fails, explain this nicely to the user.
-17. Always respond to the user in a friendly, professional Arabic style. Never mention database table names, SQL syntax, or internal technical terms in your final response.";
+17. Always respond to the user in a friendly, professional Arabic style. Never mention database table names, SQL syntax, or internal technical terms in your final response.
+18. Resolve relative dates only from TENANT BUSINESS CONTEXT. The business week starts on Saturday and ends on Friday. The phrase last week means the complete previous Saturday-Friday period shown above.
+19. Whenever you mention a monetary amount, append the exact Tenant currency code shown above. Never assume EGP, pounds, dollars, or another currency.";
     }
 
     /**

@@ -65,7 +65,7 @@ class SendSessionExpiryAlertsCommand extends Command
                                 ->label('التحكم بالأجهزة')
                                 ->url(route('filament.admin.pages.device-control', [], false)),
                         ])
-                        ->sendToDatabase($users);
+                        ->sendToDatabase($users, isEventDispatched: true);
 
                     $session->update([
                         'alert_ended_sent' => true,
@@ -96,7 +96,7 @@ class SendSessionExpiryAlertsCommand extends Command
                             ->label('التحكم بالأجهزة')
                             ->url(route('filament.admin.pages.device-control', [], false)),
                     ])
-                    ->sendToDatabase($users);
+                    ->sendToDatabase($users, isEventDispatched: true);
 
                 $session->update(['alert_5min_sent' => true]);
                 $sentCount++;

@@ -267,14 +267,14 @@
         <div style="display: flex; flex-direction: column; gap: 4px;">
             <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">الموظف المسؤول عن فتح الوردية:</span>
             <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">{{ $record->opener?->name ?? 'غير محدد' }}</span>
-            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">وقت الفتح: {{ $record->shift_from?->format('Y-m-d H:i:s') }}</span>
+            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">وقت الفتح: {{ $record->shift_from ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($record->shift_from)->format('Y-m-d H:i:s') : '-' }}</span>
         </div>
         
         <div style="display: flex; flex-direction: column; gap: 4px;">
             <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">الموظف المسؤول عن إغلاق الوردية:</span>
             <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">{{ $record->closer?->name ?? '-' }}</span>
             <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">
-                وقت الإغلاق: {{ $record->shift_to?->format('Y-m-d H:i:s') ?? '-' }}
+                وقت الإغلاق: {{ $record->shift_to ? app(\App\Support\Tenant\TenantClock::class)->utcToLocal($record->shift_to)->format('Y-m-d H:i:s') : '-' }}
             </span>
         </div>
 
@@ -462,7 +462,7 @@
                     <tbody>
                         @forelse($expenses as $exp)
                             <tr style="border-bottom: 1px solid #f1f5f9; color: #334155;">
-                                <td style="padding: 8px;">{{ $exp->created_at->format('H:i') }}</td>
+                                <td style="padding: 8px;">{{ app(\App\Support\Tenant\TenantClock::class)->utcToLocal($exp->created_at)->format('H:i') }}</td>
                                 <td style="padding: 8px; font-weight: 700;">{{ $exp->expenseType->name ?? '-' }}</td>
                                 <td style="padding: 8px;">{{ $exp->cashBox->name ?? '-' }}</td>
                                 <td style="padding: 8px;">{{ $exp->description }}</td>
