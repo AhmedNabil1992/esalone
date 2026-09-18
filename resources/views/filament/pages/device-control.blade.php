@@ -45,17 +45,34 @@
             init() {
                 const channelName = @js($this->getRealtimeDeviceControlChannel());
 
-                const setupEcho = () => {
-                    if (window.Echo) {
-                        window.Echo.channel(channelName)
+                const bindEchoListener = (echoInstance) => {
+                    if (!echoInstance) return;
+                    try {
+                        echoInstance.channel(channelName)
+                            .stopListening('.device-control.updated')
                             .listen('.device-control.updated', () => {
                                 $wire.$refresh();
                             });
-                    } else {
-                        setTimeout(setupEcho, 300);
+                    } catch (e) {
+                        console.warn('Echo subscription attempt failed:', e);
+                    }
+                };
+
+                const setupEcho = () => {
+                    if (window.Echo) {
+                        window.Echo.channel(channelName);
+                        bindEchoListener(window.Echo);
                     }
                 };
                 setupEcho();
+
+                window.addEventListener('EchoLoaded', () => {
+                    setupEcho();
+                });
+
+                setTimeout(setupEcho, 500);
+                setTimeout(setupEcho, 1500);
+                setTimeout(setupEcho, 3000);
 
                 // Initial load of sessions
                 this.syncSessionsFromDOM();
@@ -203,7 +220,6 @@
             }
         }"
         x-init="
-            init();
             if (enableSpeech && 'Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }

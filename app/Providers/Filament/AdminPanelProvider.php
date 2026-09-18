@@ -347,13 +347,14 @@ class AdminPanelProvider extends PanelProvider
         $reverbScheme = (string) config('broadcasting.connections.reverb.options.scheme', 'http');
         $reverbHost = (string) config('broadcasting.connections.reverb.options.host', '127.0.0.1');
         $reverbPort = (int) config('broadcasting.connections.reverb.options.port', 8080);
-        $key = (string) config('broadcasting.connections.reverb.key', '');
+        $key = (string) (config('broadcasting.connections.reverb.key') ?: env('VITE_REVERB_APP_KEY', ''));
 
         $isSecure = ($reverbScheme === 'https') || request()->secure();
-        $host = request()->getHost() ?: $reverbHost;
-        $clientPort = $isSecure ? 443 : $reverbPort;
+        $host = env('VITE_REVERB_HOST') && ! in_array(env('VITE_REVERB_HOST'), ['127.0.0.1', 'localhost'], true)
+            ? (string) env('VITE_REVERB_HOST')
+            : (request()->getHost() ?: $reverbHost);
+        $clientPort = (int) (env('VITE_REVERB_PORT') ?: ($isSecure ? 443 : $reverbPort));
 
-        Config::set('filament.broadcasting.echo.broadcaster', 'reverb');
         Config::set('filament.broadcasting.echo.key', $key);
         Config::set('filament.broadcasting.echo.wsHost', $host);
         Config::set('filament.broadcasting.echo.wsPort', $clientPort);
