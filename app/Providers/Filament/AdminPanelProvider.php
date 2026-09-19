@@ -344,16 +344,17 @@ class AdminPanelProvider extends PanelProvider
 
     protected function configureBroadcasting(): void
     {
-        $reverbScheme = (string) config('broadcasting.connections.reverb.options.scheme', 'http');
-        $reverbHost = (string) config('broadcasting.connections.reverb.options.host', '127.0.0.1');
-        $reverbPort = (int) config('broadcasting.connections.reverb.options.port', 8080);
-        $key = (string) (config('broadcasting.connections.reverb.key') ?: env('VITE_REVERB_APP_KEY', ''));
+        $isSecure = request()->secure()
+            || request()->header('X-Forwarded-Proto') === 'https'
+            || env('VITE_REVERB_SCHEME') === 'https'
+            || env('REVERB_SCHEME') === 'https';
 
-        $isSecure = ($reverbScheme === 'https') || request()->secure();
         $host = env('VITE_REVERB_HOST') && ! in_array(env('VITE_REVERB_HOST'), ['127.0.0.1', 'localhost'], true)
             ? (string) env('VITE_REVERB_HOST')
-            : (request()->getHost() ?: $reverbHost);
-        $clientPort = $isSecure ? 443 : (int) (env('VITE_REVERB_PORT') ?: $reverbPort);
+            : (request()->getHost() ?: (string) env('REVERB_HOST', '127.0.0.1'));
+
+        $clientPort = $isSecure ? 443 : (int) (env('VITE_REVERB_PORT') ?: env('REVERB_PORT', 8080));
+        $key = (string) (env('VITE_REVERB_APP_KEY') ?: (config('broadcasting.connections.reverb.key') ?: env('REVERB_APP_KEY', '')));
 
         Config::set('filament.broadcasting.echo.key', $key);
         Config::set('filament.broadcasting.echo.wsHost', $host);

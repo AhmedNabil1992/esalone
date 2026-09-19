@@ -36,10 +36,10 @@ return [
             'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID'),
             'options' => [
-                'host' => env('REVERB_HOST'),
-                'port' => env('REVERB_PORT', 443),
-                'scheme' => env('REVERB_SCHEME', 'https'),
-                'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+                'host' => env('REVERB_INTERNAL_HOST') ?: (env('REVERB_SERVER_HOST', '127.0.0.1') === '0.0.0.0' ? '127.0.0.1' : env('REVERB_SERVER_HOST', '127.0.0.1')),
+                'port' => (int) (env('REVERB_INTERNAL_PORT') ?: env('REVERB_SERVER_PORT', 8080)),
+                'scheme' => env('REVERB_INTERNAL_SCHEME', 'http'),
+                'useTLS' => env('REVERB_INTERNAL_SCHEME', 'http') === 'https',
             ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
