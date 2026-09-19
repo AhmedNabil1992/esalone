@@ -12,6 +12,10 @@
 رابط لوحة تحكم الإدارة:  
 [https://{{ $domain }}/admin](https://{{ $domain }}/admin)
 
+رابط العملاء:  
+[https://{{ $domain }}/customer](https://{{ $domain }}/customer)
+
+
 ---
 مع تحياتنا،  
 فريق العمل

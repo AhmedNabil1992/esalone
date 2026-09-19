@@ -62,4 +62,14 @@ class Devices extends Model
             ->where('status', 'active')
             ->latestOfMany();
     }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(PlaySessions::class, 'device_id');
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'device_id');
+    }
 }

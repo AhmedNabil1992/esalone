@@ -17,7 +17,9 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Minishlink\WebPush\ContentEncoding;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use NotificationChannels\WebPush\PushSubscription;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -97,6 +99,24 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
     protected function getDefaultGuardName(): string
     {
         return 'web';
+    }
+
+    public function updatePushSubscription(string $endpoint, ?string $key = null, ?string $token = null, ContentEncoding|string|null $contentEncoding = null): PushSubscription
+    {
+        if (is_string($contentEncoding)) {
+            $contentEncoding = ContentEncoding::from($contentEncoding);
+        }
+
+        /** @var PushSubscription $subscription */
+        $subscription = app(config('webpush.model'))->firstOrNew(['endpoint' => $endpoint]);
+        $subscription->subscribable_id = $this->getKey();
+        $subscription->subscribable_type = $this->getMorphClass();
+        $subscription->public_key = $key;
+        $subscription->auth_token = $token;
+        $subscription->content_encoding = $contentEncoding;
+        $subscription->save();
+
+        return $subscription;
     }
 
     public function canAccessPanel(Panel $panel): bool

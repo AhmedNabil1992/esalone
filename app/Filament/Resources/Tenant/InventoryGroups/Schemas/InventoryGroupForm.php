@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Tenant\InventoryGroups\Schemas;
 
-use App\Models\Tenant\Setting;
+use App\Models\Tenant\SystemConfig as Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;

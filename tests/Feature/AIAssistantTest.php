@@ -13,6 +13,7 @@ use App\Models\Tenant\DevicesType;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\PlayPrice;
 use App\Models\Tenant\PlayType;
+use App\Models\Tenant\SystemConfig;
 use App\Services\AIAssistantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -155,6 +156,7 @@ class AIAssistantTest extends TestCase
     {
         $this->tenant->update(['has_ai_subscription' => true]);
         config(['services.gemini.key' => 'AIzaSyFakeKeyForTestingPurposesOnly']);
+        SystemConfig::set('sys_locale_currency', 'ج.م');
 
         // Create Play Price test data
         $deviceType = DevicesType::create(['name' => 'بلايستيشن 5', 'description' => 'PS5']);
@@ -219,6 +221,7 @@ class AIAssistantTest extends TestCase
     {
         $this->tenant->update(['has_ai_subscription' => true]);
         config(['services.gemini.key' => 'AIzaSyFakeKeyForTestingPurposesOnly']);
+        SystemConfig::set('sys_locale_currency', 'ج.م');
 
         // Create Catalog Item test data
         $group = InventoryGroup::create(['name' => 'مشروبات ساخنة']);

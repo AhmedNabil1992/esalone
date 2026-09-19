@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Tenant;
 
-use App\Models\Tenant\Setting;
 use App\Models\Tenant\SystemConfig;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Config;
@@ -578,7 +577,7 @@ class SendDeviceControlCommandViaBridgeAction
         $reply = $this->sendWebSocketMessageWithReply($bridgeUrl, 'GET_PRINTERS');
 
         if ($reply === null) {
-            $saved = Setting::get('sys_available_printers');
+            $saved = SystemConfig::get('sys_available_printers');
             if ($saved) {
                 $decoded = json_decode($saved, true);
                 if (is_array($decoded) && $decoded !== []) {

@@ -195,9 +195,9 @@ class ShiftsTable
                         && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                // BulkActionGroup::make([
+                //     DeleteBulkAction::make(),
+                // ]),
             ])
             ->recordUrl(fn ($record) => ShiftResource::getUrl('view', ['record' => $record]));
     }
