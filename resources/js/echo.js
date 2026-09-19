@@ -10,11 +10,13 @@ const reverbHost =
         ? import.meta.env.VITE_REVERB_HOST
         : window.location.hostname;
 const reverbScheme =
-    import.meta.env.VITE_REVERB_SCHEME ??
-    (window.location.protocol === "https:" ? "https" : "http");
-const websocketPort = Number(
-    import.meta.env.VITE_REVERB_PORT ?? (reverbScheme === "https" ? 443 : 80),
-);
+    window.location.protocol === "https:"
+        ? "https"
+        : (import.meta.env.VITE_REVERB_SCHEME ?? "http");
+const websocketPort =
+    window.location.protocol === "https:"
+        ? 443
+        : Number(import.meta.env.VITE_REVERB_PORT ?? 8080);
 
 // window.Echo = new Echo({
 //     broadcaster: "reverb",

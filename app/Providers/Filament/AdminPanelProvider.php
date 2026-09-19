@@ -353,7 +353,7 @@ class AdminPanelProvider extends PanelProvider
         $host = env('VITE_REVERB_HOST') && ! in_array(env('VITE_REVERB_HOST'), ['127.0.0.1', 'localhost'], true)
             ? (string) env('VITE_REVERB_HOST')
             : (request()->getHost() ?: $reverbHost);
-        $clientPort = (int) (env('VITE_REVERB_PORT') ?: ($isSecure ? 443 : $reverbPort));
+        $clientPort = $isSecure ? 443 : (int) (env('VITE_REVERB_PORT') ?: $reverbPort);
 
         Config::set('filament.broadcasting.echo.key', $key);
         Config::set('filament.broadcasting.echo.wsHost', $host);
