@@ -1,8 +1,28 @@
-                        <div style="display:grid;gap:12px;">
-                            <div>
-                                <div style="font-size:.8rem;font-weight:700;color:#374151;margin-bottom:6px;">مجموعات الأصناف</div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;">
-                                    @forelse ($this->orderGroups as $group)
+                        <!-- الهيدر الخاص بشاشة إضافة طلبات مع زرار الإغلاق -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <!-- تم إزالة العنوان "إضافة طلبات" من هنا لأنه موجود بالفعل في الشاشة الأب -->
+                                <div style="flex-grow: 1;"></div> 
+                                
+                                <!-- زرار الإغلاق (مكان المربع الأخضر في الصورة) -->
+                                <button 
+                                    type="button" 
+                                    wire:click="closeBusyActionDetailsModal" 
+                                    style="background:transparent; border:none; padding:6px; cursor:pointer; color:#9ca3af; display:flex; align-items:center; justify-content:center; border-radius:6px; margin-top: -30px; margin-left: -10px;"
+                                    onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#ef4444'" 
+                                    onmouseout="this.style.backgroundColor='transparent'; this.style.color='#9ca3af'"
+                                    aria-label="إغلاق"
+                                >
+                                    <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div style="display:grid;gap:12px;">
+                                <div>
+                                    <div style="font-size:.8rem;font-weight:700;color:#374151;margin-bottom:6px;">مجموعات الأصناف</div>
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;">
+                                        @forelse ($this->orderGroups as $group)
                                         <button
                                             type="button"
                                             wire:click="selectOrderGroup({{ $group->id }})"
