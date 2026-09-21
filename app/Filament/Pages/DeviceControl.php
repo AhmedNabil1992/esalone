@@ -86,6 +86,8 @@ class DeviceControl extends Page
 
     public bool $showBusyActionDetailsModal = false;
 
+    public bool $showCurrentDeviceOrdersModal = false;
+
     public ?int $selectedDeviceId = null;
 
     public ?int $selectedBusyDeviceId = null;
@@ -626,6 +628,7 @@ class DeviceControl extends Page
         }
 
         $this->showBusyActionDetailsModal = false;
+        $this->showCurrentDeviceOrdersModal = false;
         $this->selectedBusyActionLabel = null;
         $this->busyActionAmount = null;
         $this->busyActionMinutes = null;
@@ -714,6 +717,21 @@ class DeviceControl extends Page
                 'activeSession.orderSessionDetails.user',
             ])
             ->find($this->selectedBusyDeviceId);
+    }
+
+    /** @return Collection<int, OrderSessionDetail> */
+    public function getSelectedBusyDeviceOrdersProperty(): Collection
+    {
+        $session = $this->selectedBusyDevice?->activeSession;
+        if (! $session) {
+            return collect();
+        }
+
+        return OrderSessionDetail::query()
+            ->with(['catalogItem', 'user'])
+            ->where('play_session_id', $session->id)
+            ->latest('id')
+            ->get();
     }
 
     /** @return Collection<int, PlayPrice> */
@@ -1024,6 +1042,20 @@ class DeviceControl extends Page
         $this->orderItemNotes = null;
     }
 
+    public function openCurrentDeviceOrdersModal(): void
+    {
+        if ($this->selectedBusyDeviceOrders->isEmpty()) {
+            return;
+        }
+
+        $this->showCurrentDeviceOrdersModal = true;
+    }
+
+    public function closeCurrentDeviceOrdersModal(): void
+    {
+        $this->showCurrentDeviceOrdersModal = false;
+    }
+
     public function addOrderItemToBusySession(): void
     {
         if ($this->selectedBusyActionLabel !== 'إضافة طلبات') {
@@ -1031,8 +1063,6 @@ class DeviceControl extends Page
         }
 
         if (! $this->selectedBusyDeviceId || ! $this->selectedCatalogItemId) {
-            Notification::make()->title('بيانات الطلب غير مكتملة')->warning()->send();
-
             return;
         }
 
