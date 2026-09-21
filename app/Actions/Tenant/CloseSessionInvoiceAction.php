@@ -259,19 +259,19 @@ class CloseSessionInvoiceAction
             ]);
 
             if ($resolvedAllocations !== []) {
-                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $tenderedPaidAmount);
+                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $appliedPaidAmount);
                 $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $normalizedAllocations);
                 $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
                 $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
                 $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
             } else {
-                $cashBoxId = $this->applyCashReceiptToCashBox($tenderedPaidAmount, $targetCashBox);
-                if ($tenderedPaidAmount > 0 && $cashBoxId) {
+                $cashBoxId = $this->applyCashReceiptToCashBox($appliedPaidAmount, $targetCashBox);
+                if ($appliedPaidAmount > 0 && $cashBoxId) {
                     $this->recordInvoicePaymentRows($invoice, $actor, [
                         [
                             'cash_box' => $targetCashBox,
                             'cash_box_id' => $cashBoxId,
-                            'amount' => $tenderedPaidAmount,
+                            'amount' => $appliedPaidAmount,
                             'payment_method' => 'cash',
                         ],
                     ]);

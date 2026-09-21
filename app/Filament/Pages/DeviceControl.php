@@ -368,8 +368,111 @@ class DeviceControl extends Page
         $this->selectedBusyDeviceId = null;
     }
 
+    public function reviewBusyDevice(): void
+    {
+        $device = $this->selectedBusyDevice;
+
+        if (! $device || $device->status !== 'busy') {
+            Notification::make()
+                ->title('الجهاز غير مشغول حالياً')
+                ->warning()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($device)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن إرسال أمر التحكم بدون Bridge.')
+                ->warning()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        /** @var PlaySessions|null $activeSession */
+        $activeSession = $device->activeSession;
+        $latestDetail = $activeSession?->latestDetail;
+
+        if (! $activeSession || ! $latestDetail) {
+            Notification::make()
+                ->title('تنبيه')
+                ->body('لا توجد جلسة نشطة لهذا الجهاز.')
+                ->danger()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        $isTimed = $latestDetail->period !== null && $latestDetail->end_time !== null;
+
+        if ($isTimed) {
+            $now = now();
+            $remainingMinutes = (int) floor((float) $now->diffInMinutes($latestDetail->end_time, false));
+
+            if ($remainingMinutes <= 2) {
+                Notification::make()
+                    ->title('تنبيه')
+                    ->body('لا يمكن إرسال أمر الفتح، الوقت المتبقي دقيقتان أو أقل (أو انتهى بالفعل).')
+                    ->warning()
+                    ->send();
+
+                $this->closeBusyActionsModal();
+
+                return;
+            }
+
+            $bridgeAction = 'ON,Limit,'.(string) $remainingMinutes;
+            $successBody = 'تم إرسال كود الفتح لجهاز: '.$device->name.' بوقت متبقي ('.$remainingMinutes.' دقيقة).';
+        } else {
+            $bridgeAction = 'ON,Unlimited,0';
+            $successBody = 'تم إرسال كود الفتح (وقت مفتوح) لجهاز: '.$device->name.'.';
+        }
+
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+
+            app(DispatchDeviceControlCommandAction::class)->execute(
+                $device,
+                $user,
+                $bridgeAction,
+                'Review Device'
+            );
+
+            Notification::make()
+                ->title('تم إرسال أمر الفتح بنجاح')
+                ->body($successBody)
+                ->success()
+                ->send();
+
+            $this->broadcastDeviceControlRefresh('Review Device');
+            $this->closeBusyActionsModal();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('فشل إرسال أمر التحكم')
+                ->body($e->getMessage())
+                ->danger()
+                ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
+                ->send();
+        }
+    }
+
     public function openBusyActionDetails(string $actionLabel): void
     {
+        if ($actionLabel === 'مراجعة') {
+            $this->reviewBusyDevice();
+
+            return;
+        }
+
         $this->lastCloseInvoiceError = null;
         $this->lastCloseInvoiceDeviceName = null;
         $this->selectedBusyActionLabel = $actionLabel;
