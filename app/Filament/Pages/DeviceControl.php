@@ -10,6 +10,7 @@ use App\Actions\Tenant\DispatchDeviceControlCommandAction;
 use App\Actions\Tenant\LimitSessionTimeAction;
 use App\Actions\Tenant\ManageSessionOrderAction;
 use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
+use App\Actions\Tenant\SendDeviceControlCommandViaMqttAction;
 use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
 use App\Actions\Tenant\SwitchPlayAction;
@@ -185,6 +186,22 @@ class DeviceControl extends Page
             return;
         }
 
+        $connectionType = SystemConfig::get('sys_iot_connection_type', 'bridge');
+        if ($connectionType === 'mqtt') {
+            $this->bridgeUnavailable = ! app(SendDeviceControlCommandViaMqttAction::class)->isBrokerOnline();
+
+            if ($this->bridgeUnavailable) {
+                Notification::make()
+                    ->title('نظام التحكم متوقف')
+                    ->body('تعذر اتصال السيرفر بوسيط MQTT.')
+                    ->warning()
+                    ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
+                    ->send();
+            }
+
+            return;
+        }
+
         $bridgeUrl = (string) (config('services.bridge.url') ?: 'ws://127.0.0.1:9000');
 
         // إذا كان الاتصال عبر WebSocket، فمتصفح العميل هو من يراقب الاتصال لحظياً ولا يتم إيقاف التحكم في السيرفر
@@ -217,7 +234,11 @@ class DeviceControl extends Page
             return false;
         }
 
-        $ipAddress = trim((string) ($device->ip_address ?? ''));
+        if (SystemConfig::get('sys_iot_connection_type', 'bridge') === 'mqtt') {
+            return $device->is_time;
+        }
+
+        $ipAddress = trim((string) $device->ip_address);
 
         return $ipAddress !== '' && $ipAddress !== '127.0.0.1';
     }

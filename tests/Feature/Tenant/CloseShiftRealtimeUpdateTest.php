@@ -15,6 +15,7 @@ use App\Models\Tenant\User;
 use App\Scopes\BranchScope;
 use Filament\Facades\Filament;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
@@ -498,6 +499,103 @@ class CloseShiftRealtimeUpdateTest extends TestCase
 
         $this->assertEquals(80.0, (float) $component->get('stats')['playstation_amount']);
         $this->assertEquals(180.0, (float) $component->get('stats')['expected_cash']);
+    }
+
+    public function test_unpaid_debt_is_removed_from_expected_cash_without_creating_a_cash_box_outflow(): void
+    {
+        $branch = Branch::query()->create(['name' => 'Debt branch', 'code' => 'DEBT']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'debt@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $cashBox = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'Main', 'current_balance' => 160]);
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        Invoice::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'invoice_no' => 'DEBT-1',
+            'invoice_type' => 'direct_sale',
+            'order_amount' => 100,
+            'subtotal' => 100,
+            'final_amount' => 100,
+            'paid_amount' => 60,
+            'remain_amount' => -40,
+        ]);
+        CashBoxLedgerEntry::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'cash_box_id' => $cashBox->id,
+            'operation' => 'direct_sale',
+            'direction' => 'in',
+            'amount' => 60,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+
+        $this->assertSame(40.0, (float) $component->get('stats')['credit_amount']);
+        $this->assertSame(160.0, (float) $component->get('stats')['expected_cash']);
+        $this->assertSame(60.0, (float) $component->get('cashBoxSummaries')[0]['net_change']);
+
+        $shift->update(['sales_amount' => 100, 'credit_amount' => 40]);
+        $this->assertSame(160.0, $shift->fresh()->remain_amount);
+    }
+
+    public function test_customer_balance_payment_does_not_change_cash_box_liquidity(): void
+    {
+        $branch = Branch::query()->create(['name' => 'Wallet branch', 'code' => 'WALLET']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'wallet@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $cashBox = CashBox::query()->create(['branch_id' => $branch->id, 'name' => 'Main', 'current_balance' => 160]);
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 1,
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        $invoice = Invoice::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'invoice_no' => 'WALLET-1',
+            'invoice_type' => 'direct_sale',
+            'order_amount' => 100,
+            'subtotal' => 100,
+            'final_amount' => 100,
+            'paid_amount' => 100,
+            'remain_amount' => 0,
+        ]);
+        DB::table('invoice_payments')->insert([
+            'branch_id' => $branch->id,
+            'invoice_id' => $invoice->id,
+            'payment_method' => 'customer_balance',
+            'amount' => 40,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        CashBoxLedgerEntry::query()->create([
+            'branch_id' => $branch->id,
+            'shift_id' => $shift->id,
+            'cash_box_id' => $cashBox->id,
+            'operation' => 'direct_sale',
+            'direction' => 'in',
+            'amount' => 60,
+        ]);
+
+        $component = Livewire::test(CloseShift::class, ['record' => $shift->id]);
+
+        $this->assertSame(40.0, (float) $component->get('stats')['customer_credit_amount']);
+        $this->assertSame(160.0, (float) $component->get('stats')['expected_cash']);
+        $this->assertSame(60.0, (float) $component->get('cashBoxSummaries')[0]['net_change']);
     }
 
     public function test_acknowledge_new_transactions_resets_flag(): void

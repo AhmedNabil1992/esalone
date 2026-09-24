@@ -40,6 +40,7 @@ class SettingSeeder extends Seeder
 
             // 3. إعدادات النظام
             ['key' => 'sys_control_active', 'value' => '1', 'group' => 'system'],
+            ['key' => 'sys_iot_connection_type', 'value' => 'bridge', 'group' => 'system'],
             ['key' => 'sys_alarm_sound', 'value' => '1', 'group' => 'system'],
             ['key' => 'sys_qr_customer', 'value' => '1', 'group' => 'system'],
             ['key' => 'sys_shop_name', 'value' => 'PlayStation', 'group' => 'system'],
@@ -113,6 +114,15 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
+            if ($setting['key'] === 'sys_iot_connection_type') {
+                Setting::firstOrCreate(
+                    ['key' => $setting['key']],
+                    ['value' => $setting['value'], 'group' => $setting['group']]
+                );
+
+                continue;
+            }
+
             Setting::updateOrCreate(
                 [
                     'key' => $setting['key'],

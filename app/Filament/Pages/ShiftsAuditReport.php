@@ -78,7 +78,7 @@ class ShiftsAuditReport extends Page implements HasTable
                             - (float) $record->discount_amount
                             - (float) $record->customer_credit_amount
                             - (float) $record->customer_minus_amount
-                            + (float) $record->credit_amount;
+                            - (float) $record->credit_amount;
                     }),
                 TextColumn::make('actual_amount')
                     ->label('الرصيد الفعلي')
@@ -99,7 +99,7 @@ class ShiftsAuditReport extends Page implements HasTable
                             - (float) $record->discount_amount
                             - (float) $record->customer_credit_amount
                             - (float) $record->customer_minus_amount
-                            + (float) $record->credit_amount;
+                            - (float) $record->credit_amount;
 
                         return (float) $record->actual_amount - $expected;
                     })
@@ -160,7 +160,7 @@ class ShiftsAuditReport extends Page implements HasTable
                 Filter::make('has_discrepancy')
                     ->label('الورديات غير المطابقة فقط')
                     ->query(function (Builder $query): Builder {
-                        return $query->whereRaw('actual_amount <> (start_amount + playstation_amount + sales_amount + tax_amount + service_amount + customer_add_amount + income_history_amount - purchase_amount - expenses_amount - discount_amount - customer_credit_amount - customer_minus_amount + credit_amount)');
+                        return $query->whereRaw('actual_amount <> (start_amount + playstation_amount + sales_amount + tax_amount + service_amount + customer_add_amount + income_history_amount - purchase_amount - expenses_amount - discount_amount - customer_credit_amount - customer_minus_amount - credit_amount)');
                     }),
             ], layout: FiltersLayout::AboveContent);
     }

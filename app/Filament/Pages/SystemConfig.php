@@ -185,6 +185,14 @@ class SystemConfig extends Page
                             ->schema([
                                 Grid::make(3)->schema([
                                     Toggle::make('sys_control_active')->label('تفعيل نظام التحكم'),
+                                    Select::make('sys_iot_connection_type')
+                                        ->label('نوع الاتصال بأجهزة IoT')
+                                        ->options([
+                                            'bridge' => 'Bridge محلي',
+                                            'mqtt' => 'اتصال مباشر MQTT',
+                                        ])
+                                        ->default('bridge')
+                                        ->required(),
                                     Toggle::make('sys_alarm_sound')->label('تفعيل إنذار الصوت'),
                                     Toggle::make('sys_qr_customer')->label('تفعيل QR للعميل'),
                                 ]),
