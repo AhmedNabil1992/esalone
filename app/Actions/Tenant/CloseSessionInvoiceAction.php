@@ -920,7 +920,7 @@ class CloseSessionInvoiceAction
 
                     // Deduct component from stock
                     if ($defaultWarehouse && $compStock) {
-                        $newQty = max(0.0, (float) $compStock->quantity - $componentQtyNeeded);
+                        $newQty = (float) $compStock->quantity - $componentQtyNeeded;
                         $newAmount = max(0.0, (float) $compStock->amount - $compTotalCost);
 
                         if ($newQty <= 0.0) {
@@ -979,7 +979,7 @@ class CloseSessionInvoiceAction
                 // Deduct from stock
                 if ($defaultWarehouse) {
                     if ($warehouseStock) {
-                        $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                        $newQty = (float) $warehouseStock->quantity - $qtySold;
                         $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
 
                         if ($newQty <= 0.0) {

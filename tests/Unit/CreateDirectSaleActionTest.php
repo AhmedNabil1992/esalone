@@ -467,6 +467,76 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertSame('cash', $payment->payment_method);
     }
 
+    public function test_direct_sale_allows_warehouse_stock_to_become_negative(): void
+    {
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => 'negative-stock@example.com',
+            'password' => bcrypt('password'),
+        ]);
+        Shift::create([
+            'shift_no' => random_int(1000, 9999),
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        $cashBox = CashBox::create([
+            'name' => 'Cash Box 1',
+            'is_active' => true,
+            'current_balance' => 0,
+        ]);
+        $group = InventoryGroup::create([
+            'name' => 'Test Group',
+            'is_active' => true,
+        ]);
+        $item = CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'Out of stock item',
+            'sale_price' => 50.00,
+            'purchase_price' => 30.00,
+            'is_product' => true,
+        ]);
+
+        $warehouseId = DB::table('warehouses')->insertGetId([
+            'name' => 'Main Warehouse',
+            'code' => 'WH001',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('warehouse_stocks')->insert([
+            'warehouse_id' => $warehouseId,
+            'catalog_item_id' => $item->id,
+            'quantity' => 0,
+            'amount' => 0,
+            'min_quantity' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $result = app(CreateDirectSaleAction::class)->execute(
+            items: [[
+                'catalog_item_id' => $item->id,
+                'quantity' => 2,
+                'unit_price' => 50.00,
+                'total_amount' => 100.00,
+            ]],
+            cashBoxId: $cashBox->id,
+            actor: $user,
+        );
+
+        $this->assertDatabaseHas('warehouse_stocks', [
+            'warehouse_id' => $warehouseId,
+            'catalog_item_id' => $item->id,
+            'quantity' => -2,
+            'amount' => 0,
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'invoice_no' => $result['invoice_no'],
+            'catalog_item_id' => $item->id,
+            'quantity' => -2,
+        ]);
+    }
+
     public function test_manual_discount_requires_device_control_discount_permission(): void
     {
         $actor = Mockery::mock(User::class);
