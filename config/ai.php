@@ -30,6 +30,14 @@ return [
         'embeddings' => 'text-embedding-004',
     ],
 
+    'assistant' => [
+        'allow_read_only_sql' => env('AI_ALLOW_READ_ONLY_SQL', false),
+    ],
+
+    'conversations' => [
+        'generate_title' => false,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | AI Providers

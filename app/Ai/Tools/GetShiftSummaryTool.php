@@ -4,6 +4,7 @@ namespace App\Ai\Tools;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\Query\Builder;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
@@ -18,17 +19,23 @@ class GetShiftSummaryTool implements Tool
     public function handle(Request $request): Stringable|string
     {
         $shiftNo = $request['shift_no'] ?? null;
+        $branchId = $this->activeBranchId();
+        $shifts = \DB::table('shifts')
+            ->when($branchId, fn (Builder $query, int $id): Builder => $query->where('branch_id', $id));
 
         if ($shiftNo) {
-            $shift = \DB::table('shifts')->where('shift_no', $shiftNo)->first();
+            $shift = (clone $shifts)->where('shift_no', $shiftNo)->first();
         } else {
             // Find current open shift or the latest closed shift
-            $shift = \DB::table('shifts')->where('status', 'open')->first()
-                ?? \DB::table('shifts')->orderBy('id', 'desc')->first();
+            $shift = (clone $shifts)->where('status', 'open')->orderByDesc('id')->first()
+                ?? (clone $shifts)->orderByDesc('id')->first();
         }
 
         if (! $shift) {
-            return json_encode(['error' => 'لم يتم العثور على أي وردية في النظام.'], JSON_UNESCAPED_UNICODE);
+            return json_encode([
+                'status' => 'shift_not_found',
+                'shift_number' => $shiftNo,
+            ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
 
         $isClosed = ($shift->status !== 'open');
@@ -92,7 +99,7 @@ class GetShiftSummaryTool implements Tool
             'notes' => $shift->notes,
         ];
 
-        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     public function schema(JsonSchema $schema): array
@@ -101,5 +108,12 @@ class GetShiftSummaryTool implements Tool
             'shift_no' => $schema->integer()
                 ->description('رقم الوردية المطلوب جلب ملخصها (مثال: 5) - اختياري، عند تركه فارغاً يجلب الوردية الحالية.'),
         ];
+    }
+
+    private function activeBranchId(): ?int
+    {
+        $branchId = session('active_branch_id');
+
+        return $branchId !== null && $branchId !== 'all' ? (int) $branchId : null;
     }
 }

@@ -66,4 +66,20 @@ class AiTenantContext
             'Tenant currency: '.$this->currency(),
         ]);
     }
+
+    public function compactPromptContext(): string
+    {
+        $today = $this->today();
+        $currentWeek = $this->currentWeek();
+        $previousWeek = $this->previousWeek();
+
+        return implode("\n", [
+            'Timezone: '.$this->clock->timezone(),
+            'Today: '.$today->toDateString(),
+            'Yesterday: '.$today->subDay()->toDateString(),
+            'Current week: '.$currentWeek['start']->toDateString().' to '.$currentWeek['end']->toDateString(),
+            'Last week: '.$previousWeek['start']->toDateString().' to '.$previousWeek['end']->toDateString(),
+            'Currency: '.$this->currency(),
+        ]);
+    }
 }

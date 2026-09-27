@@ -2,9 +2,12 @@
 
 namespace App\Ai\Tools;
 
-use App\Models\Tenant\WaitingList;
-use Carbon\Carbon;
+use App\Support\ArabicSearch;
+use App\Support\Tenant\TenantClock;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
@@ -13,61 +16,80 @@ class GetWaitingListTool implements Tool
 {
     public function description(): Stringable|string
     {
-        return 'جلب الأشخاص المسجلين في قائمة الانتظار للأجهزة والألعاب، مع حساب وقت الانتظار وتفاصيل طلباتهم.';
+        return 'Return customers whose actual waiting-list status is waiting, optionally matching an Arabic or English device type.';
     }
 
     public function handle(Request $request): Stringable|string
     {
-        $deviceTypeName = $request['device_type_name'] ?? null;
+        $deviceTypeName = trim((string) ($request['device_type_name'] ?? ''));
+        $limit = min(max((int) ($request['limit'] ?? 25), 1), 50);
+        $clock = app(TenantClock::class);
+        $now = $clock->nowUtc();
 
-        // Note: WaitingList might be named WaitingLists or WaitingList. Let's make sure it's database-safe.
-        // We can query using the DB query builder or the model to prevent class name mismatches.
-        $query = \DB::table('waiting_lists')
+        $query = DB::table('waiting_lists')
             ->leftJoin('devices_types', 'waiting_lists.devices_type_id', '=', 'devices_types.id')
             ->select(
                 'waiting_lists.id',
                 'waiting_lists.customer_name',
                 'waiting_lists.customer_phone',
                 'devices_types.name AS device_type_name',
-                'waiting_lists.status',
                 'waiting_lists.notes',
                 'waiting_lists.created_at'
             )
-            ->whereIn('waiting_lists.status', ['waiting', 'pending']); // common waiting statuses
+            ->where('waiting_lists.status', 'waiting')
+            ->when($this->activeBranchId(), fn (Builder $builder, int $branchId): Builder => $builder->where('waiting_lists.branch_id', $branchId))
+            ->orderBy('waiting_lists.created_at');
 
-        if ($deviceTypeName) {
-            $query->where('devices_types.name', 'like', '%'.$deviceTypeName.'%');
-        }
+        $waiting = [];
+        $candidateTypes = [];
 
-        $results = $query->orderBy('waiting_lists.created_at', 'asc')->get();
+        foreach ($query->cursor() as $row) {
+            $typeName = (string) ($row->device_type_name ?? '');
+            if ($deviceTypeName !== '' && ! ArabicSearch::matches($typeName, $deviceTypeName)) {
+                $candidateTypes[] = $typeName;
 
-        $output = [];
-        $now = Carbon::now();
+                continue;
+            }
 
-        foreach ($results as $row) {
-            $created = Carbon::parse($row->created_at);
-            $waitingMinutes = (int) ceil($created->diffInSeconds($now) / 60);
-
-            $output[] = [
-                'waiting_id' => $row->id,
-                'customer_name' => $row->customer_name,
+            $createdUtc = CarbonImmutable::parse($row->created_at, 'UTC');
+            $waiting[] = [
+                'waiting_id' => (int) $row->id,
+                'customer_name' => (string) $row->customer_name,
                 'customer_phone' => $row->customer_phone,
-                'requested_device_type' => $row->device_type_name ?? 'أي جهاز',
-                'status' => $row->status === 'waiting' || $row->status === 'pending' ? 'انتظار' : $row->status,
+                'requested_device_type' => $row->device_type_name,
+                'status' => 'waiting',
                 'notes' => $row->notes,
-                'waiting_since' => $created->toDateTimeString(),
-                'waiting_duration_minutes' => $waitingMinutes,
+                'waiting_since' => $clock->utcToLocal($createdUtc)->toDateTimeString(),
+                'waiting_duration_minutes' => max(0, (int) ceil($createdUtc->diffInSeconds($now) / 60)),
             ];
+
+            if (count($waiting) >= $limit) {
+                break;
+            }
         }
 
-        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        return json_encode([
+            'status' => $waiting === [] ? 'no_waiting_customers_matched' : 'waiting_customers_found',
+            'device_type_search' => $deviceTypeName !== '' ? $deviceTypeName : null,
+            'waiting_customers' => $waiting,
+            'suggestions' => $deviceTypeName !== '' && $waiting === []
+                ? ArabicSearch::suggestions(array_values(array_unique($candidateTypes)), $deviceTypeName)
+                : [],
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'device_type_name' => $schema->string()
-                ->description('نوع الجهاز المطلوب فلترة الانتظار بناء عليه (مثال: بلياردو، بلايستيشن) - اختياري.'),
+            'device_type_name' => $schema->string()->description('Optional device type name in Arabic or English.'),
+            'limit' => $schema->integer()->description('Maximum rows to return. Defaults to 25 and never exceeds 50.'),
         ];
+    }
+
+    private function activeBranchId(): ?int
+    {
+        $branchId = session('active_branch_id');
+
+        return $branchId !== null && $branchId !== 'all' ? (int) $branchId : null;
     }
 }

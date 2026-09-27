@@ -21,7 +21,7 @@ class AgentController extends Controller
         $user = auth()->user();
 
         // Instantiate the PlayStationAssistant agent
-        $assistant = new PlayStationAssistant;
+        $assistant = new PlayStationAssistant($request->input('prompt'));
 
         // Continue conversation if ID is provided, otherwise start a new one for user
         if ($request->filled('conversation_id')) {

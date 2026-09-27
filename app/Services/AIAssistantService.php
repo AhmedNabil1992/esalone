@@ -26,6 +26,7 @@ class AIAssistantService
      * إرسال السؤال وسجل المحادثة إلى المساعد الذكي.
      * يرجع إما string (رد نصي عادي) أو array بمفتاح __pending_action عند اكتشاف طلب تعديل أسعار.
      *
+     * @param  array<int, array{sender: string, text: string, type?: string}>  $history
      * @return string|array<string, mixed>
      */
     public function ask(string $question, array $history = []): string|array
@@ -172,9 +173,10 @@ class AIAssistantService
                 $assistant = new PlayStationAssistant($question);
                 $user = auth()->user();
 
-                // تنفيذ المساعد الذكي مع حفظ المحادثة
+                // استكمال آخر محادثة لنفس المستخدم حتى تفهم رسائل المتابعة،
+                // بينما يقيد الـ Agent السياق النصي بآخر دورين فقط لتوفير التوكنز.
                 if ($user) {
-                    $response = $assistant->forUser($user)->prompt($question);
+                    $response = $assistant->continueLastConversation($user)->prompt($question);
                 } else {
                     $response = $assistant->prompt($question);
                 }
@@ -280,6 +282,8 @@ class AIAssistantService
 
     /**
      * تنفيذ تعديل الأسعار بعد تأكيد المدير.
+     *
+     * @param  array<string, mixed>  $actionData
      */
     public function executePriceUpdate(array $actionData): string
     {
@@ -306,6 +310,7 @@ class AIAssistantService
     /**
      * جلب البيانات المتأثرة أولاً وإرجاعها للمستخدم طلباً للتأكيد.
      *
+     * @param  array<string, mixed>  $actionData
      * @return array<string, mixed>
      */
     public function buildPendingActionResponse(array $actionData): array
@@ -490,6 +495,8 @@ SQL Query:";
 
     /**
      * توليد الإجابة العربية النهائية بعد تنفيذ الاستعلام.
+     *
+     * @param  array<int, object>|null  $dbResults
      */
     protected function generateFinalAnswer(
         string $question,
@@ -669,6 +676,8 @@ SQL Query:";
 
     /**
      * جلب مخطط الجداول المحددة مع توضيح العلاقات.
+     *
+     * @param  array<int, string>  $tables
      */
     private function getSpecificTablesSchema(array $tables): string
     {
@@ -892,6 +901,8 @@ CRITICAL BUSINESS LOGIC HINTS:
 
     /**
      * تنفيذ تعديل الأسعار فعلياً بعد تأكيد المدير.
+     *
+     * @param  array<string, mixed>  $actionData
      */
     protected function handlePriceUpdateAction(array $actionData): string
     {

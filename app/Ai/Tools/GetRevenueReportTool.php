@@ -15,90 +15,103 @@ class GetRevenueReportTool implements Tool
 {
     public function description(): Stringable|string
     {
-        return 'الحصول على تقارير الإيرادات والمبيعات والأرباح والمصروفات بالتفصيل لفترة زمنية محددة أو لشيفت (وردية) معينة.';
+        return 'Return invoiced revenue, collected payments, expenses, and net result for a local date range or a shift ID/visible shift number.';
     }
 
     public function handle(Request $request): Stringable|string
     {
-        $startDateStr = $request['start_date'] ?? null;
-        $endDateStr = $request['end_date'] ?? null;
-        $shiftId = $request['shift_id'] ?? null;
+        $startDate = trim((string) ($request['start_date'] ?? ''));
+        $endDate = trim((string) ($request['end_date'] ?? ''));
+        $shiftId = isset($request['shift_id']) ? (int) $request['shift_id'] : null;
+        $shiftNo = isset($request['shift_no']) ? (int) $request['shift_no'] : null;
+        $clock = app(TenantClock::class);
 
         $invoiceQuery = Invoice::query()->where('status', 'posted');
         $expenseQuery = ExpenseHistory::query();
+        $reportScope = '';
 
-        $reportTitle = '';
+        if ($shiftNo !== null && $shiftId === null) {
+            $shift = Shift::query()->where('shift_no', $shiftNo)->orderByDesc('id')->first();
 
-        if ($shiftId) {
-            $invoiceQuery->where('shift_id', $shiftId);
-            $expenseQuery->where('shift_id', $shiftId);
+            if (! $shift) {
+                return json_encode([
+                    'status' => 'shift_not_found',
+                    'shift_number' => $shiftNo,
+                ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            }
+
+            $shiftId = $shift->id;
+        }
+
+        if ($shiftId !== null) {
             $shift = Shift::find($shiftId);
-            $reportTitle = 'الوردية رقم: '.($shift ? $shift->shift_no : $shiftId);
-        } elseif ($startDateStr || $endDateStr) {
-            $clock = app(TenantClock::class);
-            $start = $clock->localDateStartUtc($startDateStr ?? $clock->nowLocal());
-            $end = $clock->localDateEndUtc($endDateStr ?? $clock->nowLocal());
+            if (! $shift) {
+                return json_encode([
+                    'status' => 'shift_not_found',
+                    'shift_id' => $shiftId,
+                ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            }
 
-            $invoiceQuery->whereBetween('issued_at', [$start, $end]);
-            $expenseQuery->whereBetween('occurred_at', [$start, $end]);
-            $reportTitle = "الفترة من {$startDateStr} إلى {$endDateStr}";
+            $invoiceQuery->where('shift_id', $shift->id);
+            $expenseQuery->where('shift_id', $shift->id);
+            $reportScope = 'shift';
+            $scopeDetails = ['shift_id' => $shift->id, 'shift_number' => (int) $shift->shift_no];
+        } elseif ($startDate !== '' || $endDate !== '') {
+            $resolvedStartDate = $startDate !== '' ? $startDate : $endDate;
+            $resolvedEndDate = $endDate !== '' ? $endDate : $startDate;
+            [$startUtc] = $clock->localDateRangeUtc($resolvedStartDate);
+            [, $endUtc] = $clock->localDateRangeUtc($resolvedEndDate);
+            $invoiceQuery->whereBetween('issued_at', [$startUtc, $endUtc]);
+            $expenseQuery->whereBetween('occurred_at', [$startUtc, $endUtc]);
+            $reportScope = 'date_range';
+            $scopeDetails = ['date_from' => $resolvedStartDate, 'date_to' => $resolvedEndDate];
         } else {
-            // Default to today's open shift if exists, otherwise today's date
-            $activeShift = Shift::where('status', 'open')->first();
+            $activeShift = Shift::query()->where('status', 'open')->orderByDesc('id')->first();
+
             if ($activeShift) {
                 $invoiceQuery->where('shift_id', $activeShift->id);
                 $expenseQuery->where('shift_id', $activeShift->id);
-                $reportTitle = "الوردية المفتوحة حالياً (رقم {$activeShift->shift_no})";
+                $reportScope = 'current_open_shift';
+                $scopeDetails = ['shift_id' => $activeShift->id, 'shift_number' => (int) $activeShift->shift_no];
             } else {
-                $clock = app(TenantClock::class);
-                $localToday = $clock->nowLocal();
-                $start = $clock->localDateStartUtc($localToday);
-                $end = $clock->localDateEndUtc($localToday);
-                $invoiceQuery->whereBetween('issued_at', [$start, $end]);
-                $expenseQuery->whereBetween('occurred_at', [$start, $end]);
-                $reportTitle = "اليوم الحالي ({$localToday->toDateString()})";
+                $today = $clock->nowLocal()->toDateString();
+                [$startUtc, $endUtc] = $clock->localDateRangeUtc($today);
+                $invoiceQuery->whereBetween('issued_at', [$startUtc, $endUtc]);
+                $expenseQuery->whereBetween('occurred_at', [$startUtc, $endUtc]);
+                $reportScope = 'today';
+                $scopeDetails = ['date' => $today];
             }
         }
 
         $invoices = $invoiceQuery->get();
         $expenses = $expenseQuery->get();
-
-        $playAmount = (float) $invoices->sum('play_amount');
-        $orderAmount = (float) $invoices->sum('order_amount');
-        $subtotal = (float) $invoices->sum('subtotal');
-        $discountAmount = (float) $invoices->sum('discount_amount');
         $finalAmount = (float) $invoices->sum('final_amount');
-        $paidAmount = (float) $invoices->sum('paid_amount');
-
         $totalExpenses = (float) $expenses->sum('amount');
-        $netProfit = $finalAmount - $totalExpenses;
 
-        $output = [
-            'report_scope' => $reportTitle,
-            'play_revenue' => round($playAmount, 2),
-            'cafe_sales' => round($orderAmount, 2),
-            'subtotal' => round($subtotal, 2),
-            'discounts_given' => round($discountAmount, 2),
+        return json_encode([
+            'status' => 'revenue_report_ready',
+            'report_scope' => $reportScope,
+            'scope' => $scopeDetails,
+            'play_revenue' => round((float) $invoices->sum('play_amount'), 2),
+            'cafe_sales' => round((float) $invoices->sum('order_amount'), 2),
+            'subtotal' => round((float) $invoices->sum('subtotal'), 2),
+            'discounts_given' => round((float) $invoices->sum('discount_amount'), 2),
             'total_invoiced_revenue' => round($finalAmount, 2),
-            'total_payments_collected' => round($paidAmount, 2),
+            'total_payments_collected' => round((float) $invoices->sum('paid_amount'), 2),
             'total_expenses' => round($totalExpenses, 2),
-            'net_profit' => round($netProfit, 2),
+            'net_result' => round($finalAmount - $totalExpenses, 2),
             'invoices_count' => $invoices->count(),
             'expenses_count' => $expenses->count(),
-        ];
-
-        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'start_date' => $schema->string()
-                ->description('تاريخ بدء التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-10)'),
-            'end_date' => $schema->string()
-                ->description('تاريخ نهاية التقرير بتنسيق YYYY-MM-DD (مثال: 2026-07-15)'),
-            'shift_id' => $schema->integer()
-                ->description('معرف الوردية لعمل تقرير عن وردية محددة'),
+            'start_date' => $schema->string()->description('Optional local start date in YYYY-MM-DD format.'),
+            'end_date' => $schema->string()->description('Optional local end date in YYYY-MM-DD format.'),
+            'shift_id' => $schema->integer()->description('Database shift ID. Use only when the user explicitly gives an ID.'),
+            'shift_no' => $schema->integer()->description('Visible shift number. Prefer this when the user says shift number or وردية رقم.'),
         ];
     }
 }

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Ai\Agents\PlayStationAssistant;
+use App\Ai\Tools\GetCatalogInventoryTool;
+use App\Ai\Tools\GetClosedDevicesByUserTool;
+use App\Ai\Tools\GetItemOrderLocationsTool;
 use App\Models\AiChatLog;
 use App\Models\AiTrainingRule;
 use App\Models\Tenant;
@@ -11,15 +15,21 @@ use App\Models\Tenant\CatalogItem;
 use App\Models\Tenant\Devices;
 use App\Models\Tenant\DevicesType;
 use App\Models\Tenant\InventoryGroup;
+use App\Models\Tenant\Invoice;
+use App\Models\Tenant\OrderSessionDetail;
 use App\Models\Tenant\PlayPrice;
+use App\Models\Tenant\PlaySessions;
 use App\Models\Tenant\PlayType;
+use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig;
+use App\Models\Tenant\User;
 use App\Services\AIAssistantService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Laravel\Ai\Tools\Request;
 use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
 use Tests\TestCase;
 
@@ -72,7 +82,26 @@ class AIAssistantTest extends TestCase
     protected function tearDown(): void
     {
         if (tenancy()->initialized) {
-            foreach (['play_prices', 'play_types', 'devices', 'devices_types', 'catalog_items', 'inventory_groups'] as $table) {
+            foreach ([
+                'invoice_payments',
+                'market_history',
+                'order_session_details',
+                'invoices',
+                'play_session_details',
+                'play_sessions',
+                'shifts',
+                'play_prices',
+                'play_types',
+                'devices',
+                'devices_types',
+                'warehouse_stocks',
+                'catalog_items',
+                'inventory_groups',
+                'branch_user',
+                'model_has_permissions',
+                'model_has_roles',
+                'users',
+            ] as $table) {
                 DB::connection('tenant')->table($table)->delete();
             }
 
@@ -420,5 +449,142 @@ class AIAssistantTest extends TestCase
 
         $response2 = $service->ask('كم عدد الاجهزة النشطة الآن؟');
         $this->assertStringContainsString('3', $response2); // In test environment, the faked DB call still runs our seed data (3 items), but it ran via the fresh SQL path
+    }
+
+    public function test_catalog_search_finds_arabic_spelling_variants(): void
+    {
+        $group = InventoryGroup::create(['name' => 'مشروبات ساخنة']);
+        CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'قهوه فرنساوي',
+            'sale_price' => 35,
+            'purchase_price' => 10,
+            'is_product' => true,
+            'is_active' => true,
+        ]);
+
+        $result = json_decode((string) (new GetCatalogInventoryTool)->handle(new Request([
+            'search_name' => 'القهوة الفرنساوي',
+        ])), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('ok', $result['status']);
+        $this->assertSame('قهوه فرنساوي', $result['products'][0]['product_name']);
+
+        CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'قهوة فرنساوي موقوفة',
+            'sale_price' => 35,
+            'purchase_price' => 10,
+            'is_product' => false,
+            'is_component' => true,
+            'is_active' => false,
+        ]);
+
+        $inactiveResult = json_decode((string) (new GetCatalogInventoryTool)->handle(new Request([
+            'search_name' => 'قهوة فرنساوي موقوفة',
+        ])), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('matched_items_include_inactive', $inactiveResult['status']);
+        $this->assertSame('component', $inactiveResult['products'][0]['item_type']);
+    }
+
+    public function test_item_location_tool_distinguishes_existing_item_with_active_order(): void
+    {
+        $user = User::create([
+            'name' => 'عبدالرحمن',
+            'email' => 'abdelrahman@example.test',
+            'password' => 'password',
+        ]);
+        $deviceType = DevicesType::create(['name' => 'ترابيزات']);
+        $device = Devices::create(['name' => 'ترابيزة 4', 'status' => 'busy', 'devices_type_id' => $deviceType->id]);
+        $group = InventoryGroup::create(['name' => 'مشروبات ساخنة']);
+        $item = CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'قهوه فرنساوي',
+            'sale_price' => 35,
+            'purchase_price' => 10,
+            'is_product' => true,
+            'is_active' => true,
+        ]);
+        $session = PlaySessions::create(['device_id' => $device->id, 'status' => 'active']);
+        OrderSessionDetail::create([
+            'play_session_id' => $session->id,
+            'device_id' => $device->id,
+            'catalog_item_id' => $item->id,
+            'price' => 35,
+            'quantity' => 2,
+            'total' => 70,
+            'status' => 'served',
+            'user_id' => $user->id,
+        ]);
+
+        $result = json_decode((string) (new GetItemOrderLocationsTool)->handle(new Request([
+            'item_name' => 'القهوة الفرنساوي',
+        ])), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('active_orders_found', $result['status']);
+        $this->assertSame(['قهوه فرنساوي'], $result['matched_catalog_items']);
+        $this->assertSame('ترابيزة 4', $result['active_locations'][0]['device_name']);
+        $this->assertSame(2, (int) $result['active_locations'][0]['quantity']);
+    }
+
+    public function test_closed_devices_tool_uses_real_invoice_and_user_relationships(): void
+    {
+        $user = User::create([
+            'name' => 'عبدالرحمن أحمد',
+            'email' => 'closer@example.test',
+            'password' => 'password',
+        ]);
+        $deviceType = DevicesType::create(['name' => 'ترابيزات']);
+        $device = Devices::create(['name' => 'ترابيزة 7', 'status' => 'active', 'devices_type_id' => $deviceType->id]);
+        $shift = Shift::create([
+            'shift_no' => 6,
+            'shift_date' => '2026-09-21',
+            'shift_from' => '2026-09-21 08:00:00',
+            'opened_by_user_id' => $user->id,
+            'status' => 'open',
+        ]);
+        Invoice::create([
+            'invoice_no' => 'AI-REGRESSION-1',
+            'invoice_type' => 'device_sale',
+            'device_id' => $device->id,
+            'shift_id' => $shift->id,
+            'created_by_user_id' => $user->id,
+            'final_amount' => 120,
+            'paid_amount' => 120,
+            'status' => 'posted',
+            'issued_at' => '2026-09-21 10:00:00',
+        ]);
+
+        $result = json_decode((string) (new GetClosedDevicesByUserTool)->handle(new Request([
+            'user_name' => 'عبد الرحمن',
+            'shift_no' => 6,
+        ])), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('ok', $result['status']);
+        $this->assertSame(['عبدالرحمن أحمد'], $result['matched_users']);
+        $this->assertSame('ترابيزة 7', $result['devices'][0]['device_name']);
+        $this->assertSame(120.0, (float) $result['devices'][0]['total_amount']);
+    }
+
+    public function test_follow_up_messages_continue_one_compact_conversation(): void
+    {
+        $this->tenant->update(['has_ai_subscription' => true]);
+        config(['services.gemini.key' => 'AIzaSyFakeKeyForTestingPurposesOnly']);
+
+        $user = User::create([
+            'name' => 'Manager',
+            'email' => 'manager@example.test',
+            'password' => 'password',
+        ]);
+        $this->actingAs($user);
+        PlayStationAssistant::fake(['الرد الأول', 'الرد الثاني']);
+
+        $service = new AIAssistantService;
+        $this->assertSame('الرد الأول', $service->ask('طريقة عمل تصريح لمستخدم في المبيعات المباشرة'));
+        $this->assertSame('الرد الثاني', $service->ask('ممكن تبحث عليها؟'));
+
+        $this->assertSame(1, DB::table('agent_conversations')->where('user_id', $user->id)->count());
+        $this->assertSame(4, DB::table('agent_conversation_messages')->where('user_id', $user->id)->count());
     }
 }

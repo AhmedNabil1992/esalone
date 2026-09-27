@@ -3,135 +3,240 @@
 namespace App\Ai\Agents;
 
 use App\Ai\Tools\ExecuteReadOnlySql;
+use App\Ai\Tools\GetApplicationHelpTool;
 use App\Ai\Tools\GetBestSellingProductsTool;
 use App\Ai\Tools\GetCashBoxesBalancesTool;
 use App\Ai\Tools\GetCatalogInventoryTool;
+use App\Ai\Tools\GetClosedDevicesByUserTool;
 use App\Ai\Tools\GetCustomersBalancesTool;
 use App\Ai\Tools\GetDevicesStatusTool;
 use App\Ai\Tools\GetExpensesReportTool;
+use App\Ai\Tools\GetItemOrderLocationsTool;
 use App\Ai\Tools\GetLowStockAlertsTool;
 use App\Ai\Tools\GetMostActiveDevicesTool;
+use App\Ai\Tools\GetPaymentMethodsSummaryTool;
 use App\Ai\Tools\GetReservationsTool;
 use App\Ai\Tools\GetRevenueReportTool;
+use App\Ai\Tools\GetReversedPurchasesTool;
 use App\Ai\Tools\GetShiftSummaryTool;
 use App\Ai\Tools\GetStaffPerformanceTool;
 use App\Ai\Tools\GetWaitingListTool;
 use App\Ai\Tools\ProposePriceUpdate;
-use App\Services\AIAssistantService;
+use App\Support\ArabicSearch;
 use App\Support\Tenant\AiTenantContext;
+use Illuminate\Support\Facades\DB;
+use Laravel\Ai\Attributes\MaxSteps;
+use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
+use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 
 #[Provider(Lab::Gemini)]
 #[Model('gemini-3.1-flash-lite')]
+#[MaxSteps(3)]
+#[MaxTokens(500)]
+#[Temperature(0.1)]
 class PlayStationAssistant implements Agent, Conversational, HasTools
 {
     use Promptable, RemembersConversations;
 
-    protected string $schemaContext = '';
+    public function __construct(protected string $question = '') {}
 
-    /**
-     * Constructor to dynamically accept the user's question and load filtered database schemas.
-     */
-    public function __construct(string $question = '')
-    {
-        if ($question !== '') {
-            $this->schemaContext = app(AIAssistantService::class)->getSchemaForQuestion($question);
-        }
-    }
-
-    /**
-     * Get the system instructions that the agent should follow.
-     */
     public function instructions(): string
     {
-        $tenantContext = app(AiTenantContext::class)->promptContext();
+        $tenantContext = app(AiTenantContext::class)->compactPromptContext();
 
-        return "You are an expert system and a helpful assistant for a PlayStation cafe & cafe management system.
-Your job is to answer the user's questions about the cafe using the database or action tools.
+        return <<<PROMPT
+You are the Arabic operations assistant for a PlayStation cafe.
 
-TENANT BUSINESS CONTEXT:
-===
+Context:
 {$tenantContext}
-===
 
-DATABASE SCHEMA AND TABLES:
-===
-{$this->schemaContext}
-===
-
-Follow these instructions carefully:
-1. **DEVICES STATUS & ACTIVE SESSIONS:** If asked about devices, active sessions, play cost running now, cafe order totals running now, or status:
-   You MUST call 'GetDevicesStatusTool'.
-2. **REVENUE & FINANCIAL REPORTS:** If asked about revenue reports, cafe sales, play revenues, net profit, or financial summaries for a specific date range:
-   You MUST call 'GetRevenueReportTool'.
-3. **MOST ACTIVE DEVICES:** If asked about most active devices, most played devices, or device session counts:
-   You MUST call 'GetMostActiveDevicesTool'.
-4. **CATALOG & STOCK INVENTORY:** If asked about catalog items, products, beverage prices, or stock levels:
-   You MUST call 'GetCatalogInventoryTool'.
-5. **EXPENSES REPORT:** If asked about expenses, outgoing cash, category breakdowns, or expense logs:
-   You MUST call 'GetExpensesReportTool'.
-6. **WAITING LIST:** If asked about waiting list, queue status, or waiting customers:
-   You MUST call 'GetWaitingListTool'.
-7. **RESERVATIONS:** If asked about bookings, device reservations, or scheduled play sessions:
-   You MUST call 'GetReservationsTool'.
-8. **SHIFT SUMMARY:** If asked for a summary of the current open shift or a past shift (opening/closing cash, play/cafe revenue breakdown, expected cash in drawer):
-   You MUST call 'GetShiftSummaryTool'.
-9. **BEST SELLING PRODUCTS:** If asked about best-selling drinks, popular food, or cafe item sales analytics:
-   You MUST call 'GetBestSellingProductsTool'.
-10. **CUSTOMER BALANCES:** If asked about customer accounts, point balances, debtors, or customer level info:
-   You MUST call 'GetCustomersBalancesTool'.
-11. **LOW STOCK & SHORTAGES:** If asked about shortages, missing inventory, out-of-stock items, or low stock warnings:
-   You MUST call 'GetLowStockAlertsTool'.
-12. **CASH BOXES BALANCES:** If asked about cash box balances, drawer cash, register balances, or safe balances:
-   You MUST call 'GetCashBoxesBalancesTool'.
-13. **STAFF & CASHIER PERFORMANCE:** If asked about staff performance, cashier sales, top-selling cashiers, or employee metrics:
-   You MUST call 'GetStaffPerformanceTool'.
-14. **ACTION-TAKING (PRICE UPDATES):** If the user explicitly asks to change, increase, decrease, or set pricing/rates (such as hourly play price, beverage price, or item price):
-   You MUST call 'proposePriceUpdate' tool with the exact operation parameters. Do NOT try to write SQL to modify the database yourself.
-15. **COMPLEX CUSTOM REPORTING (FALLBACK):** If the user asks a complex custom reporting question that is NOT covered by the specific tools above, you may call 'executeReadOnlySql' (if available).
-16. Do NOT guess or fabricate any data. If a tool returns empty results or fails, explain this nicely to the user.
-17. Always respond to the user in a friendly, professional Arabic style. Never mention database table names, SQL syntax, or internal technical terms in your final response.
-18. Resolve relative dates only from TENANT BUSINESS CONTEXT. The business week starts on Saturday and ends on Friday. The phrase last week means the complete previous Saturday-Friday period shown above.
-19. Whenever you mention a monetary amount, append the exact Tenant currency code shown above. Never assume EGP, pounds, dollars, or another currency.";
+Rules:
+- Answer in concise, clear Arabic for a business manager; normally 2-5 lines.
+- For any claim about live business data, call the most specific available tool first.
+- Never invent a screen, permission, record, column, relationship, amount, or status.
+- Distinguish these cases exactly: record not found, record exists but has no activity in scope, and tool/query failure.
+- An empty activity result never proves that the user, device, or catalog item does not exist.
+- Preserve the user's scope. Do not assume "currently active" unless the user says so; when scope is omitted, report current and historical results separately if the tool provides both.
+- Treat Arabic spelling variants as possible matches and mention the matched stored name.
+- Never expose SQL, table names, field names, stack traces, or other internal implementation details.
+- Use only the currency shown in Context and do not add follow-up sales language unless clarification is genuinely required.
+PROMPT;
     }
 
     /**
-     * Get the tools available to the agent.
+     * Keep only two compact text turns. Stored tool payloads can be very large and
+     * are intentionally excluded from the next prompt.
      *
+     * @return array<int, Message>
+     */
+    public function messages(): iterable
+    {
+        $conversationId = $this->currentConversation();
+        if (! $conversationId) {
+            return [];
+        }
+
+        return DB::table(config('ai.conversations.tables.messages', 'agent_conversation_messages'))
+            ->where('conversation_id', $conversationId)
+            ->whereIn('role', ['user', 'assistant'])
+            ->orderByDesc('id')
+            ->limit(4)
+            ->get(['role', 'content'])
+            ->reverse()
+            ->map(fn (object $message): Message => new Message($message->role, $message->content))
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<Tool>
      */
     public function tools(): iterable
     {
-        $tools = [
-            new ProposePriceUpdate,
-            new GetDevicesStatusTool,
-            new GetRevenueReportTool,
-            new GetMostActiveDevicesTool,
-            new GetCatalogInventoryTool,
-            new GetExpensesReportTool,
-            new GetWaitingListTool,
-            new GetReservationsTool,
-            new GetShiftSummaryTool,
-            new GetBestSellingProductsTool,
-            new GetCustomersBalancesTool,
-            new GetLowStockAlertsTool,
-            new GetCashBoxesBalancesTool,
-            new GetStaffPerformanceTool,
-        ];
+        $normalized = ArabicSearch::normalize($this->routingQuestion());
+        $tools = [];
 
-        // Only register ExecuteReadOnlySql for super_admins
-        if (auth()->check() && auth()->user()->hasRole('super_admin')) {
-            $tools[] = new ExecuteReadOnlySql;
+        if ($this->containsAny($normalized, ['صلاح', 'تصريح', 'ازاي اضيف', 'كيف اضيف', 'طريقه اضافه', 'مكان الصلاحيه'])) {
+            return [new GetApplicationHelpTool];
         }
 
-        return $tools;
+        if ($this->containsAny($normalized, ['زود', 'زيد', 'قلل', 'خفض', 'تعديل سعر', 'غير سعر', 'حدد سعر'])) {
+            return [new ProposePriceUpdate];
+        }
+
+        if ($this->containsAny($normalized, ['اتقفل', 'اتقفلت', 'اغلق', 'قفلها', 'قفل'])) {
+            return [new GetClosedDevicesByUserTool];
+        }
+
+        if ($this->containsAny($normalized, ['فيزا', 'بطاق', 'كارت', 'طريقه دفع', 'مدفوعات'])) {
+            return [new GetPaymentMethodsSummaryTool];
+        }
+
+        if ($this->containsAny($normalized, ['فاتوره معكوسه', 'فواتير معكوسه', 'المشتريات المعكوسه'])) {
+            return [new GetReversedPurchasesTool];
+        }
+
+        if ($this->containsAny($normalized, ['ترابيز', 'طاول', 'نزل عليها', 'طلبات جهاز', 'مشاريب', 'طلب صنف'])) {
+            return [new GetItemOrderLocationsTool];
+        }
+
+        if ($this->containsAny($normalized, ['صنف', 'اصناف', 'منتج', 'مشروب', 'قهو', 'شاي', 'مخزون', 'سعر'])) {
+            $this->addTool($tools, new GetCatalogInventoryTool);
+        }
+
+        if ($this->containsAny($normalized, ['نواقص', 'ناقص', 'نفد', 'قارب علي النفاد', 'حد الطلب'])) {
+            $this->addTool($tools, new GetLowStockAlertsTool);
+        }
+
+        if ($this->containsAny($normalized, ['ايراد', 'اراد المكان', 'دخل', 'مبيعات', 'مبلغ', 'تقارير اللعب', 'ربح', 'ارباح', 'مالي'])) {
+            $this->addTool($tools, new GetRevenueReportTool);
+        }
+
+        if ($this->containsAny($normalized, ['مصروف', 'مصروفات', 'سلف', 'مرتب', 'مرتبات'])) {
+            $this->addTool($tools, new GetExpensesReportTool);
+        }
+
+        if ($this->containsAny($normalized, ['ورديه', 'شيفت', 'درج', 'ملخص الورد'])) {
+            $this->addTool($tools, new GetShiftSummaryTool);
+        }
+
+        if ($this->containsAny($normalized, ['جهاز', 'اجهزه', 'حاله المكان', 'جلسه', 'مشغول', 'متاح'])) {
+            $this->addTool($tools, new GetDevicesStatusTool);
+        }
+
+        if ($this->containsAny($normalized, ['اكثر جهاز', 'انشط جهاز', 'تشغيل الاجهزه'])) {
+            $this->addTool($tools, new GetMostActiveDevicesTool);
+        }
+
+        if ($this->containsAny($normalized, ['الاكثر مبيعا', 'اكثر صنف', 'اشهر منتج'])) {
+            $this->addTool($tools, new GetBestSellingProductsTool);
+        }
+
+        if ($this->containsAny($normalized, ['عميل', 'عملاء', 'مديوني', 'نقاط', 'ولاء'])) {
+            $this->addTool($tools, new GetCustomersBalancesTool);
+        }
+
+        if ($this->containsAny($normalized, ['موظف', 'مستخدم', 'كاشير', 'اداء', 'انتاجي'])) {
+            $this->addTool($tools, new GetStaffPerformanceTool);
+        }
+
+        if ($this->containsAny($normalized, ['حجز', 'حجوزات', 'موعد'])) {
+            $this->addTool($tools, new GetReservationsTool);
+        }
+
+        if ($this->containsAny($normalized, ['انتظار', 'منتظر', 'طابور'])) {
+            $this->addTool($tools, new GetWaitingListTool);
+        }
+
+        if ($this->containsAny($normalized, ['خزينه', 'خزنه', 'صندوق', 'رصيد الدرج'])) {
+            $this->addTool($tools, new GetCashBoxesBalancesTool);
+        }
+
+        if ($this->containsAny($normalized, ['ازاي', 'كيف', 'طريقه', 'مكان', 'صلاح', 'تفعيل', 'اضيف'])) {
+            $this->addTool($tools, new GetApplicationHelpTool);
+        }
+
+        if ($tools === [] && config('ai.assistant.allow_read_only_sql', false)) {
+            $this->addTool($tools, new ExecuteReadOnlySql);
+        }
+
+        return array_values($tools);
+    }
+
+    /**
+     * @param  array<int, string>  $terms
+     */
+    private function containsAny(string $question, array $terms): bool
+    {
+        foreach ($terms as $term) {
+            if (str_contains($question, ArabicSearch::normalize($term))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function routingQuestion(): string
+    {
+        $normalized = ArabicSearch::normalize($this->question);
+        if ($this->containsAny($normalized, ['شكرا', 'متشكر', 'تمام كده', 'لا تمام', 'تسلم'])) {
+            return $this->question;
+        }
+
+        $words = preg_split('/\s+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $wordCount = count($words);
+        $needsContext = $wordCount <= 3
+            || $this->containsAny($normalized, ['عليها', 'عليه', 'عندها', 'دول', 'دي', 'ده', 'نفس']);
+
+        if (! $needsContext || ! $this->currentConversation()) {
+            return $this->question;
+        }
+
+        $previousQuestion = DB::table(config('ai.conversations.tables.messages', 'agent_conversation_messages'))
+            ->where('conversation_id', $this->currentConversation())
+            ->where('role', 'user')
+            ->orderByDesc('id')
+            ->value('content');
+
+        return $previousQuestion ? $previousQuestion."\n".$this->question : $this->question;
+    }
+
+    /**
+     * @param  array<class-string<Tool>, Tool>  $tools
+     */
+    private function addTool(array &$tools, Tool $tool): void
+    {
+        $tools[$tool::class] = $tool;
     }
 }

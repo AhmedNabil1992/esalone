@@ -2,7 +2,9 @@
 
 namespace App\Ai\Tools;
 
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
@@ -12,13 +14,14 @@ class GetCustomersBalancesTool implements Tool
 {
     public function description(): Stringable|string
     {
-        return 'جلب أرصدة وحسابات ومديونيات العملاء ونقاط الولاء الخاصة بهم وفئات اشتراكاتهم.';
+        return 'Search actual customers by tolerant Arabic name or phone and return their balances, debts, points, and membership levels.';
     }
 
     public function handle(Request $request): Stringable|string
     {
-        $searchName = $request['search_name'] ?? null;
-        $onlyDebtors = $request['only_debtors'] ?? false;
+        $search = trim((string) ($request['search_name'] ?? ''));
+        $onlyDebtors = (bool) ($request['only_debtors'] ?? false);
+        $limit = min(max((int) ($request['limit'] ?? 25), 1), 50);
 
         $query = DB::table('customers')
             ->leftJoin('customer_levels', 'customers.customer_level_id', '=', 'customer_levels.id')
@@ -29,44 +32,64 @@ class GetCustomersBalancesTool implements Tool
                 'customers.balance',
                 'customers.points',
                 'customer_levels.name AS level_name'
-            );
+            )
+            ->when($onlyDebtors, fn (Builder $builder): Builder => $builder->where('customers.balance', '<', 0))
+            ->orderBy('customers.balance')
+            ->orderBy('customers.id');
 
-        if ($searchName) {
-            $query->where('customers.name', 'like', '%'.$searchName.'%')
-                ->orWhere('customers.phone', 'like', '%'.$searchName.'%');
-        }
+        $matches = [];
+        $candidateNames = [];
 
-        if ($onlyDebtors) {
-            $query->where('customers.balance', '<', 0);
-        }
+        foreach ($query->cursor() as $customer) {
+            if ($search !== '' && ! ArabicSearch::matches($customer->name, $search) && ! $this->phoneMatches($customer->phone, $search)) {
+                if (count($candidateNames) < 100) {
+                    $candidateNames[] = (string) $customer->name;
+                }
 
-        $results = $query->orderBy('customers.balance', 'asc')->get();
+                continue;
+            }
 
-        $output = [];
-        foreach ($results as $row) {
-            $balance = (float) $row->balance;
-
-            $output[] = [
-                'customer_id' => $row->id,
-                'customer_name' => $row->name,
-                'customer_phone' => $row->phone ?? 'بدون هاتف',
+            $balance = (float) $customer->balance;
+            $matches[] = [
+                'customer_id' => (int) $customer->id,
+                'customer_name' => (string) $customer->name,
+                'customer_phone' => $customer->phone,
                 'balance' => $balance,
-                'financial_status' => $balance < 0 ? 'عليه مديونية (دين)' : ($balance > 0 ? 'له رصيد (دائن)' : 'خالص الحساب'),
-                'points' => (float) $row->points,
-                'level' => $row->level_name ?? 'فئة افتراضية',
+                'financial_status' => $balance < 0 ? 'debtor' : ($balance > 0 ? 'creditor' : 'settled'),
+                'points' => (float) $customer->points,
+                'level' => $customer->level_name,
             ];
+
+            if (count($matches) >= $limit) {
+                break;
+            }
         }
 
-        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        return json_encode([
+            'status' => $matches === [] ? 'customer_not_matched' : 'customers_found',
+            'search' => $search !== '' ? $search : null,
+            'only_debtors' => $onlyDebtors,
+            'customers' => $matches,
+            'suggestions' => $search !== '' && $matches === []
+                ? ArabicSearch::suggestions($candidateNames, $search)
+                : [],
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'search_name' => $schema->string()
-                ->description('اسم العميل أو رقم هاتفه المطلوب البحث عنه - اختياري.'),
-            'only_debtors' => $schema->boolean()
-                ->description('تحديد true لعرض العملاء الذين عليهم مديونيات فقط (رصيد سالب).'),
+            'search_name' => $schema->string()->description('Customer name in Arabic or English, or phone number. Optional.'),
+            'only_debtors' => $schema->boolean()->description('True to return customers with a negative balance only.'),
+            'limit' => $schema->integer()->description('Maximum rows to return. Defaults to 25 and never exceeds 50.'),
         ];
+    }
+
+    private function phoneMatches(?string $phone, string $search): bool
+    {
+        $phoneDigits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+        $searchDigits = preg_replace('/\D+/', '', $search) ?? '';
+
+        return $searchDigits !== '' && str_contains($phoneDigits, $searchDigits);
     }
 }
