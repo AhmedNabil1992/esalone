@@ -443,6 +443,19 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals(49, $stock2->quantity); // 50 - 1
 
         $this->assertSame('240.00', $cashBox->fresh()->current_balance);
+        $this->assertEquals(
+            240.00,
+            (float) DB::table('cash_box_ledger_entries')
+                ->where('reference_type', Invoice::class)
+                ->where('reference_id', $invoice->id)
+                ->selectRaw("SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END) as net_amount")
+                ->value('net_amount'),
+        );
+        $this->assertDatabaseMissing('cash_box_ledger_entries', [
+            'reference_type' => Invoice::class,
+            'reference_id' => $invoice->id,
+            'operation' => 'direct_sale_discount',
+        ]);
         $this->assertSame('24.00', $customer->fresh()->points);
         $this->assertSame('0.00', $customer->fresh()->balance);
         $this->assertDatabaseCount('customer_credits', 0);
@@ -452,6 +465,76 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals($cashBox->id, $payment->cash_box_id);
         $this->assertEquals(240.00, (float) $payment->amount);
         $this->assertSame('cash', $payment->payment_method);
+    }
+
+    public function test_direct_sale_allows_warehouse_stock_to_become_negative(): void
+    {
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => 'negative-stock@example.com',
+            'password' => bcrypt('password'),
+        ]);
+        Shift::create([
+            'shift_no' => random_int(1000, 9999),
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        $cashBox = CashBox::create([
+            'name' => 'Cash Box 1',
+            'is_active' => true,
+            'current_balance' => 0,
+        ]);
+        $group = InventoryGroup::create([
+            'name' => 'Test Group',
+            'is_active' => true,
+        ]);
+        $item = CatalogItem::create([
+            'inventory_group_id' => $group->id,
+            'name' => 'Out of stock item',
+            'sale_price' => 50.00,
+            'purchase_price' => 30.00,
+            'is_product' => true,
+        ]);
+
+        $warehouseId = DB::table('warehouses')->insertGetId([
+            'name' => 'Main Warehouse',
+            'code' => 'WH001',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('warehouse_stocks')->insert([
+            'warehouse_id' => $warehouseId,
+            'catalog_item_id' => $item->id,
+            'quantity' => 0,
+            'amount' => 0,
+            'min_quantity' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $result = app(CreateDirectSaleAction::class)->execute(
+            items: [[
+                'catalog_item_id' => $item->id,
+                'quantity' => 2,
+                'unit_price' => 50.00,
+                'total_amount' => 100.00,
+            ]],
+            cashBoxId: $cashBox->id,
+            actor: $user,
+        );
+
+        $this->assertDatabaseHas('warehouse_stocks', [
+            'warehouse_id' => $warehouseId,
+            'catalog_item_id' => $item->id,
+            'quantity' => -2,
+            'amount' => 0,
+        ]);
+        $this->assertDatabaseHas('stock_movements', [
+            'invoice_no' => $result['invoice_no'],
+            'catalog_item_id' => $item->id,
+            'quantity' => -2,
+        ]);
     }
 
     public function test_manual_discount_requires_device_control_discount_permission(): void
@@ -477,7 +560,7 @@ class CreateDirectSaleActionTest extends TestCase
         );
     }
 
-    public function test_overpayment_does_not_inflate_cash_box_and_can_be_saved_as_customer_credit(): void
+    public function test_overpayment_saved_as_customer_credit_is_fully_added_to_the_cash_box(): void
     {
         $uniqueId = (string) Str::uuid();
         $user = User::create([
@@ -533,7 +616,7 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals(75.00, $invoice->final_amount);
         $this->assertEquals(75.00, $invoice->paid_amount);
         $this->assertEquals(0.00, $invoice->remain_amount);
-        $this->assertSame('75.00', $cashBox->fresh()->current_balance);
+        $this->assertSame('100.00', $cashBox->fresh()->current_balance);
         $this->assertSame('25.00', $customer->fresh()->balance);
         $this->assertSame('7.50', $customer->fresh()->points);
 
@@ -545,6 +628,15 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertNotNull($credit);
         $this->assertSame('deposit', $credit->type);
         $this->assertEquals(25.00, (float) $credit->amount);
+
+        $this->assertEquals(
+            100.00,
+            (float) DB::table('cash_box_ledger_entries')
+                ->where('reference_type', Invoice::class)
+                ->where('reference_id', $invoice->id)
+                ->selectRaw("SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END) as net_amount")
+                ->value('net_amount'),
+        );
     }
 
     public function test_throws_exception_when_no_items_provided(): void

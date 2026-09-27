@@ -92,6 +92,7 @@ return new class extends Migration
 
             // 3. إعدادات النظام
             ['key' => 'sys_control_active', 'value' => '1', 'group' => 'system'],
+            ['key' => 'sys_iot_connection_type', 'value' => 'bridge', 'group' => 'system'],
             ['key' => 'sys_alarm_sound', 'value' => '1', 'group' => 'system'],
             ['key' => 'sys_qr_customer', 'value' => '1', 'group' => 'system'],
             ['key' => 'sys_shop_name', 'value' => 'PlayStation', 'group' => 'system'],

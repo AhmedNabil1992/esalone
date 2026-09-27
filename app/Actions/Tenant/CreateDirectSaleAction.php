@@ -134,7 +134,8 @@ class CreateDirectSaleAction
                 throw new RuntimeException('لا يمكن حفظ الفاتورة بدون عميل إذا لم يتم تحصيل كامل المبلغ.');
             }
 
-            $appliedPaidAmount = $this->resolveAppliedPaidAmount($finalAmount, $enteredPaidAmount);
+            $cashPaidAmount = $this->resolveAppliedPaidAmount($finalAmount, $enteredPaidAmount);
+            $settledPaidAmount = $cashPaidAmount;
             $customerBalanceDelta = $this->resolveCustomerBalanceDelta(
                 $finalAmount,
                 $enteredPaidAmount,
@@ -143,9 +144,11 @@ class CreateDirectSaleAction
             $storedRemainAmount = $this->resolveStoredRemainAmount($finalAmount, $enteredPaidAmount, $customerBalanceDelta);
 
             if ($customerBalanceDelta < 0) {
-                $appliedPaidAmount = round($appliedPaidAmount + abs($customerBalanceDelta), 2);
+                $settledPaidAmount = round($settledPaidAmount + abs($customerBalanceDelta), 2);
                 $storedRemainAmount = 0.00;
             }
+
+            $cashReceivedAmount = round($cashPaidAmount + max(0, $customerBalanceDelta), 2);
 
             // Create invoice
             $invoiceNo = $this->generateInvoiceNo();
@@ -170,7 +173,7 @@ class CreateDirectSaleAction
                 'tax_amount' => $taxAmount,
                 'deposit_amount' => 0,
                 'final_amount' => $finalAmount,
-                'paid_amount' => $appliedPaidAmount,
+                'paid_amount' => $settledPaidAmount,
                 'remain_amount' => $storedRemainAmount,
                 'status' => 'posted',
                 'issued_at' => now(),
@@ -226,7 +229,7 @@ class CreateDirectSaleAction
 
                         // Deduct component from stock
                         if ($defaultWarehouse && $compStock) {
-                            $newQty = max(0.0, (float) $compStock->quantity - $componentQtyNeeded);
+                            $newQty = (float) $compStock->quantity - $componentQtyNeeded;
                             $newAmount = max(0.0, (float) $compStock->amount - $compTotalCost);
 
                             if ($newQty <= 0.0) {
@@ -285,7 +288,7 @@ class CreateDirectSaleAction
                     // Deduct from stock
                     if ($defaultWarehouse) {
                         if ($warehouseStock) {
-                            $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                            $newQty = (float) $warehouseStock->quantity - $qtySold;
                             $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
 
                             if ($newQty <= 0.0) {
@@ -337,12 +340,13 @@ class CreateDirectSaleAction
 
             // Update cash box balance and record ledger entry
             $cashBoxToUpdate = CashBox::query()->whereKey($defaultCashBox->id)->first();
-            if ($cashBoxToUpdate && $appliedPaidAmount > 0) {
+            if ($cashBoxToUpdate && $cashReceivedAmount > 0) {
                 $cashBoxToUpdate->update([
-                    'current_balance' => $cashBoxToUpdate->current_balance + $appliedPaidAmount,
+                    'current_balance' => $cashBoxToUpdate->current_balance + $cashReceivedAmount,
                 ]);
+            }
 
-                // Record cash box ledger entry
+            if ($cashBoxToUpdate && $cashPaidAmount > 0) {
                 CashBoxLedgerEntry::query()->create([
                     'shift_id' => $activeShift->id,
                     'cash_box_id' => $defaultCashBox->id,
@@ -351,7 +355,7 @@ class CreateDirectSaleAction
                     'reference_id' => $invoice->id,
                     'direction' => 'in',
                     'operation' => 'direct_sale',
-                    'amount' => $appliedPaidAmount,
+                    'amount' => $cashPaidAmount,
                     'description' => 'بيع مباشر - '.$invoiceNo,
                     'occurred_at' => now(),
                 ]);
@@ -361,25 +365,12 @@ class CreateDirectSaleAction
                     'cash_box_id' => $defaultCashBox->id,
                     'created_by_user_id' => $actor->id,
                     'payment_method' => 'cash',
-                    'amount' => $appliedPaidAmount,
+                    'amount' => $cashPaidAmount,
                     'notes' => null,
                 ]);
             }
 
-            if ($totalDiscount > 0 && $defaultCashBox) {
-                $discountLedger = CashBoxLedgerEntry::query()->create([
-                    'shift_id' => $activeShift->id,
-                    'cash_box_id' => $defaultCashBox->id,
-                    'created_by_user_id' => $actor->id,
-                    'reference_type' => Invoice::class,
-                    'reference_id' => $invoice->id,
-                    'direction' => 'out',
-                    'operation' => 'direct_sale_discount',
-                    'amount' => $totalDiscount,
-                    'description' => 'خصم مبيعات مباشرة - '.$invoiceNo,
-                    'occurred_at' => now(),
-                ]);
-
+            if ($totalDiscount > 0) {
                 DiscountHistory::query()->create([
                     'branch_id' => $invoice->branch_id ?? $resolvedBranchId,
                     'invoice_id' => $invoice->id,
@@ -388,7 +379,7 @@ class CreateDirectSaleAction
                     'reason' => $invoice->discount_reason ?? 'خصم مبيعات مباشرة',
                     'shift_id' => $activeShift->id,
                     'user_id' => $actor->id,
-                    'ledger_entry_id' => $discountLedger->id,
+                    'ledger_entry_id' => null,
                     'occurred_at' => now(),
                 ]);
             }

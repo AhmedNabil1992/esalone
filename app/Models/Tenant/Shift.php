@@ -148,7 +148,7 @@ class Shift extends Model
             - (float) $this->discount_amount
             - (float) $this->customer_credit_amount
             - (float) $this->customer_minus_amount
-            + (float) $this->credit_amount,
+            - (float) $this->credit_amount,
             2,
         );
     }

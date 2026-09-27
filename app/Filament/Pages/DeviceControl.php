@@ -10,6 +10,7 @@ use App\Actions\Tenant\DispatchDeviceControlCommandAction;
 use App\Actions\Tenant\LimitSessionTimeAction;
 use App\Actions\Tenant\ManageSessionOrderAction;
 use App\Actions\Tenant\SendDeviceControlCommandViaBridgeAction;
+use App\Actions\Tenant\SendDeviceControlCommandViaMqttAction;
 use App\Actions\Tenant\StartSessionAction;
 use App\Actions\Tenant\SwitchDeviceAction;
 use App\Actions\Tenant\SwitchPlayAction;
@@ -85,6 +86,8 @@ class DeviceControl extends Page
     public bool $showBusyActionsModal = false;
 
     public bool $showBusyActionDetailsModal = false;
+
+    public bool $showCurrentDeviceOrdersModal = false;
 
     public ?int $selectedDeviceId = null;
 
@@ -183,6 +186,22 @@ class DeviceControl extends Page
             return;
         }
 
+        $connectionType = SystemConfig::get('sys_iot_connection_type', 'bridge');
+        if ($connectionType === 'mqtt') {
+            $this->bridgeUnavailable = ! app(SendDeviceControlCommandViaMqttAction::class)->isBrokerOnline();
+
+            if ($this->bridgeUnavailable) {
+                Notification::make()
+                    ->title('نظام التحكم متوقف')
+                    ->body('تعذر اتصال السيرفر بوسيط MQTT.')
+                    ->warning()
+                    ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
+                    ->send();
+            }
+
+            return;
+        }
+
         $bridgeUrl = (string) (config('services.bridge.url') ?: 'ws://127.0.0.1:9000');
 
         // إذا كان الاتصال عبر WebSocket، فمتصفح العميل هو من يراقب الاتصال لحظياً ولا يتم إيقاف التحكم في السيرفر
@@ -215,7 +234,11 @@ class DeviceControl extends Page
             return false;
         }
 
-        $ipAddress = trim((string) ($device->ip_address ?? ''));
+        if (SystemConfig::get('sys_iot_connection_type', 'bridge') === 'mqtt') {
+            return $device->is_time;
+        }
+
+        $ipAddress = trim((string) $device->ip_address);
 
         return $ipAddress !== '' && $ipAddress !== '127.0.0.1';
     }
@@ -368,8 +391,111 @@ class DeviceControl extends Page
         $this->selectedBusyDeviceId = null;
     }
 
+    public function reviewBusyDevice(): void
+    {
+        $device = $this->selectedBusyDevice;
+
+        if (! $device || $device->status !== 'busy') {
+            Notification::make()
+                ->title('الجهاز غير مشغول حالياً')
+                ->warning()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        if ($this->bridgeUnavailable && $this->isBridgeRequiredForDevice($device)) {
+            Notification::make()
+                ->title('غير متاح')
+                ->body('نظام التحكم متوقف حالياً. لا يمكن إرسال أمر التحكم بدون Bridge.')
+                ->warning()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        /** @var PlaySessions|null $activeSession */
+        $activeSession = $device->activeSession;
+        $latestDetail = $activeSession?->latestDetail;
+
+        if (! $activeSession || ! $latestDetail) {
+            Notification::make()
+                ->title('تنبيه')
+                ->body('لا توجد جلسة نشطة لهذا الجهاز.')
+                ->danger()
+                ->send();
+
+            $this->closeBusyActionsModal();
+
+            return;
+        }
+
+        $isTimed = $latestDetail->period !== null && $latestDetail->end_time !== null;
+
+        if ($isTimed) {
+            $now = now();
+            $remainingMinutes = (int) floor((float) $now->diffInMinutes($latestDetail->end_time, false));
+
+            if ($remainingMinutes <= 2) {
+                Notification::make()
+                    ->title('تنبيه')
+                    ->body('لا يمكن إرسال أمر الفتح، الوقت المتبقي دقيقتان أو أقل (أو انتهى بالفعل).')
+                    ->warning()
+                    ->send();
+
+                $this->closeBusyActionsModal();
+
+                return;
+            }
+
+            $bridgeAction = 'ON,Limit,'.(string) $remainingMinutes;
+            $successBody = 'تم إرسال كود الفتح لجهاز: '.$device->name.' بوقت متبقي ('.$remainingMinutes.' دقيقة).';
+        } else {
+            $bridgeAction = 'ON,Unlimited,0';
+            $successBody = 'تم إرسال كود الفتح (وقت مفتوح) لجهاز: '.$device->name.'.';
+        }
+
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+
+            app(DispatchDeviceControlCommandAction::class)->execute(
+                $device,
+                $user,
+                $bridgeAction,
+                'Review Device'
+            );
+
+            Notification::make()
+                ->title('تم إرسال أمر الفتح بنجاح')
+                ->body($successBody)
+                ->success()
+                ->send();
+
+            $this->broadcastDeviceControlRefresh('Review Device');
+            $this->closeBusyActionsModal();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('فشل إرسال أمر التحكم')
+                ->body($e->getMessage())
+                ->danger()
+                ->duration(self::NOTIFICATION_DURATION_MILLISECONDS)
+                ->send();
+        }
+    }
+
     public function openBusyActionDetails(string $actionLabel): void
     {
+        if ($actionLabel === 'مراجعة') {
+            $this->reviewBusyDevice();
+
+            return;
+        }
+
         $this->lastCloseInvoiceError = null;
         $this->lastCloseInvoiceDeviceName = null;
         $this->selectedBusyActionLabel = $actionLabel;
@@ -523,6 +649,7 @@ class DeviceControl extends Page
         }
 
         $this->showBusyActionDetailsModal = false;
+        $this->showCurrentDeviceOrdersModal = false;
         $this->selectedBusyActionLabel = null;
         $this->busyActionAmount = null;
         $this->busyActionMinutes = null;
@@ -611,6 +738,21 @@ class DeviceControl extends Page
                 'activeSession.orderSessionDetails.user',
             ])
             ->find($this->selectedBusyDeviceId);
+    }
+
+    /** @return Collection<int, OrderSessionDetail> */
+    public function getSelectedBusyDeviceOrdersProperty(): Collection
+    {
+        $session = $this->selectedBusyDevice?->activeSession;
+        if (! $session) {
+            return collect();
+        }
+
+        return OrderSessionDetail::query()
+            ->with(['catalogItem', 'user'])
+            ->where('play_session_id', $session->id)
+            ->latest('id')
+            ->get();
     }
 
     /** @return Collection<int, PlayPrice> */
@@ -921,6 +1063,20 @@ class DeviceControl extends Page
         $this->orderItemNotes = null;
     }
 
+    public function openCurrentDeviceOrdersModal(): void
+    {
+        if ($this->selectedBusyDeviceOrders->isEmpty()) {
+            return;
+        }
+
+        $this->showCurrentDeviceOrdersModal = true;
+    }
+
+    public function closeCurrentDeviceOrdersModal(): void
+    {
+        $this->showCurrentDeviceOrdersModal = false;
+    }
+
     public function addOrderItemToBusySession(): void
     {
         if ($this->selectedBusyActionLabel !== 'إضافة طلبات') {
@@ -928,8 +1084,6 @@ class DeviceControl extends Page
         }
 
         if (! $this->selectedBusyDeviceId || ! $this->selectedCatalogItemId) {
-            Notification::make()->title('بيانات الطلب غير مكتملة')->warning()->send();
-
             return;
         }
 

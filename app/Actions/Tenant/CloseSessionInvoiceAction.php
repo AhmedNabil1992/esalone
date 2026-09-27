@@ -163,7 +163,9 @@ class CloseSessionInvoiceAction
 
             $preview = $this->buildPreviewPayload($device, $session, $discountAmount, $paidAmount, $limitTimeMeta ?? null);
             $tenderedPaidAmount = round((float) ($preview['paid_amount'] ?? $paidAmount), 2);
-            $appliedPaidAmount = $this->resolveAppliedPaidAmount((float) $preview['final_amount'], $tenderedPaidAmount);
+            $cashPaidAmount = $this->resolveAppliedPaidAmount((float) $preview['final_amount'], $tenderedPaidAmount);
+            $settledPaidAmount = $cashPaidAmount;
+            $prepaidAmount = round((float) ($preview['deposit_amount'] ?? 0), 2);
             $customerBalanceDelta = $this->resolveCustomerBalanceDelta(
                 (float) $preview['final_amount'],
                 $tenderedPaidAmount,
@@ -176,9 +178,12 @@ class CloseSessionInvoiceAction
             );
 
             if ($customerBalanceDelta < 0) {
-                $appliedPaidAmount = round($appliedPaidAmount + abs($customerBalanceDelta), 2);
+                $settledPaidAmount = round($settledPaidAmount + abs($customerBalanceDelta), 2);
                 $storedRemainAmount = 0.00;
             }
+
+            $totalPaidAmount = round($settledPaidAmount + $prepaidAmount, 2);
+            $totalCashPaidAmount = round($cashPaidAmount + $prepaidAmount, 2);
 
             $resolvedCustomerId = is_numeric($session->customer_id)
                 ? (int) $session->customer_id
@@ -220,8 +225,8 @@ class CloseSessionInvoiceAction
 
             $shiftNo = (int) (Shift::query()->whereKey($shiftId)->value('shift_no') ?? $shiftId);
             if (count($resolvedAllocations) === 0) {
-                $targetCashBox = null;
-                $targetCashBoxId = null;
+                $targetCashBox = $this->resolveDefaultCashBox(true);
+                $targetCashBoxId = $targetCashBox?->id;
             } elseif (count($resolvedAllocations) === 1) {
                 $targetCashBox = $resolvedAllocations[0]['cash_box'];
                 $targetCashBoxId = $targetCashBox?->id;
@@ -252,36 +257,31 @@ class CloseSessionInvoiceAction
                 'tax_amount' => $preview['tax_amount'],
                 'deposit_amount' => $preview['deposit_amount'],
                 'final_amount' => $preview['final_amount'],
-                'paid_amount' => $appliedPaidAmount,
+                'paid_amount' => $totalPaidAmount,
                 'remain_amount' => $storedRemainAmount,
                 'status' => 'posted',
                 'issued_at' => now(),
             ]);
 
             if ($resolvedAllocations !== []) {
-                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $tenderedPaidAmount);
-                $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $normalizedAllocations);
-                $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
-                $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
-                $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
+                $normalizedAllocations = $this->normalizeAllocationsToAppliedAmount($resolvedAllocations, $cashPaidAmount);
+                $normalizedAllocations = $this->addPrepaidAmountToAllocations($normalizedAllocations, $prepaidAmount, $resolvedAllocations[0]['cash_box']);
             } else {
-                $cashBoxId = $this->applyCashReceiptToCashBox($tenderedPaidAmount, $targetCashBox);
-                if ($tenderedPaidAmount > 0 && $cashBoxId) {
-                    $this->recordInvoicePaymentRows($invoice, $actor, [
-                        [
-                            'cash_box' => $targetCashBox,
-                            'cash_box_id' => $cashBoxId,
-                            'amount' => $tenderedPaidAmount,
-                            'payment_method' => 'cash',
-                        ],
-                    ]);
-                }
-
-                $coreLedgerEntries = $this->recordInvoiceCoreLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
-                $breakdownLedgerEntries = $this->recordInvoiceBreakdownLedgerEntries($invoice, $shiftId, $actor, $cashBoxId, $targetCashBox, $preview);
+                $normalizedAllocations = $targetCashBox && $totalCashPaidAmount > 0
+                    ? [[
+                        'cash_box' => $targetCashBox,
+                        'cash_box_id' => (int) $targetCashBox->id,
+                        'amount' => $totalCashPaidAmount,
+                    ]]
+                    : [];
             }
 
-            // Create customer balance payment row and ledger entry (common)
+            $paymentLedgerEntries = $this->applySplitCashBoxPayments($invoice, $shiftId, $actor, $normalizedAllocations);
+            $this->recordInvoicePaymentRows($invoice, $actor, $normalizedAllocations);
+            $coreLedgerEntries = ['play' => null, 'orders' => $paymentLedgerEntries[0] ?? null];
+            $breakdownLedgerEntries = ['tax' => null, 'service' => null, 'discount' => null];
+
+            // Customer balance settles the invoice without moving cash in a cash box.
             if ($customerBalanceDelta < 0) {
                 $cbId = $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id;
                 InvoicePayment::query()->create([
@@ -293,39 +293,6 @@ class CloseSessionInvoiceAction
                     'notes' => 'خصم من رصيد حساب العميل',
                 ]);
 
-                if ($cbId) {
-                    CashBoxLedgerEntry::query()->create([
-                        'shift_id' => $shiftId,
-                        'cash_box_id' => $cbId,
-                        'created_by_user_id' => $actor->id,
-                        'reference_type' => Invoice::class,
-                        'reference_id' => $invoice->id,
-                        'direction' => 'out',
-                        'operation' => 'customer_credit_payment',
-                        'amount' => abs($customerBalanceDelta),
-                        'description' => 'دفع برصيد المحفظة - فاتورة رقم '.$invoice->invoice_no,
-                        'occurred_at' => now(),
-                    ]);
-                }
-            }
-
-            // Create unpaid debt ledger entry (common)
-            if ($storedRemainAmount < 0) {
-                $cbId = $targetCashBoxId ?? $targetCashBox?->id ?? $this->resolveDefaultCashBox(true)?->id;
-                if ($cbId) {
-                    CashBoxLedgerEntry::query()->create([
-                        'shift_id' => $shiftId,
-                        'cash_box_id' => $cbId,
-                        'created_by_user_id' => $actor->id,
-                        'reference_type' => Invoice::class,
-                        'reference_id' => $invoice->id,
-                        'direction' => 'out',
-                        'operation' => 'invoice_unpaid_debt',
-                        'amount' => abs($storedRemainAmount),
-                        'description' => 'آجل غير مدفوع - فاتورة رقم '.$invoice->invoice_no,
-                        'occurred_at' => now(),
-                    ]);
-                }
             }
 
             if ((float) $preview['tax_amount'] > 0) {
@@ -953,7 +920,7 @@ class CloseSessionInvoiceAction
 
                     // Deduct component from stock
                     if ($defaultWarehouse && $compStock) {
-                        $newQty = max(0.0, (float) $compStock->quantity - $componentQtyNeeded);
+                        $newQty = (float) $compStock->quantity - $componentQtyNeeded;
                         $newAmount = max(0.0, (float) $compStock->amount - $compTotalCost);
 
                         if ($newQty <= 0.0) {
@@ -1012,7 +979,7 @@ class CloseSessionInvoiceAction
                 // Deduct from stock
                 if ($defaultWarehouse) {
                     if ($warehouseStock) {
-                        $newQty = max(0.0, (float) $warehouseStock->quantity - $qtySold);
+                        $newQty = (float) $warehouseStock->quantity - $qtySold;
                         $newAmount = max(0.0, (float) $warehouseStock->amount - $totalCost);
 
                         if ($newQty <= 0.0) {
@@ -1229,6 +1196,29 @@ class CloseSessionInvoiceAction
         }
 
         return $normalizedAllocations;
+    }
+
+    /**
+     * @param  array<int,array{cash_box:CashBox,cash_box_id:int,amount:float}>  $allocations
+     * @return array<int,array{cash_box:CashBox,cash_box_id:int,amount:float}>
+     */
+    private function addPrepaidAmountToAllocations(array $allocations, float $prepaidAmount, CashBox $cashBox): array
+    {
+        if ($prepaidAmount <= 0) {
+            return $allocations;
+        }
+
+        if ($allocations === []) {
+            return [[
+                'cash_box' => $cashBox,
+                'cash_box_id' => (int) $cashBox->id,
+                'amount' => round($prepaidAmount, 2),
+            ]];
+        }
+
+        $allocations[0]['amount'] = round((float) $allocations[0]['amount'] + $prepaidAmount, 2);
+
+        return $allocations;
     }
 
     /**

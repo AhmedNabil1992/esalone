@@ -127,7 +127,9 @@ class CloseShift extends Page
         $tax_amount = (float) $invoices->sum('tax_amount');
         $service_amount = (float) $invoices->sum('service_amount');
         $discount_amount = (float) $invoices->sum('discount_amount');
-        $credit_amount = (float) $invoices->sum('remain_amount'); // debt left on invoices
+        $credit_amount = abs((float) $invoices
+            ->where('remain_amount', '<', 0)
+            ->sum('remain_amount'));
 
         // Payments via customer balance
         $customer_credit_amount = (float) InvoicePayment::query()

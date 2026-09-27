@@ -33,6 +33,8 @@
                                 type="button"
                                 @if ($action['label'] === 'تقفيل الحساب' && $busyIsTimed && $busyLatestDetail?->end_time?->isFuture())
                                     @click.stop="if (confirm('الوقت الخاص بالجهاز ده لسه منتهاش هل أنت متأكد من إنك تريد تقفيل الوقت الأن ؟')) { $wire.openBusyActionDetails('تقفيل الحساب') }"
+                                @elseif ($action['label'] === 'مراجعة')
+                                    wire:click="reviewBusyDevice"
                                 @else
                                     wire:click="openBusyActionDetails('{{ $action['label'] }}')"
                                 @endif

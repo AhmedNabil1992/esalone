@@ -1,9 +1,10 @@
 @php
     $bridgeUrl = config('services.bridge.url') ?: 'ws://127.0.0.1:9000';
     $isControlActive = in_array((string) \App\Models\Tenant\SystemConfig::get('sys_control_active', '0'), ['1', 'true', 'on', 'yes'], true);
+    $usesBridge = \App\Models\Tenant\SystemConfig::get('sys_iot_connection_type', 'bridge') !== 'mqtt';
 @endphp
 
-@if ($isControlActive)
+@if ($isControlActive && $usesBridge)
 <script>
     (function() {
         const bridgeUrl = @js($bridgeUrl);

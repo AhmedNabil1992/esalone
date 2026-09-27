@@ -20,12 +20,13 @@
 
             @php
                 $isControlActive = in_array((string) \App\Models\Tenant\SystemConfig::get('sys_control_active', '0'), ['1', 'true', 'on', 'yes'], true);
+                $usesMqtt = \App\Models\Tenant\SystemConfig::get('sys_iot_connection_type', 'bridge') === 'mqtt';
             @endphp
             @if ($isControlActive)
-                <div id="bridge-status-indicator" wire:ignore class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> جاري فحص الـ Bridge...
+                <div id="bridge-status-indicator" @if (! $usesMqtt) wire:ignore @endif class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full {{ $usesMqtt && ! $this->bridgeUnavailable ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : ($usesMqtt ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20') }}">
+                    <span class="w-2 h-2 rounded-full {{ $usesMqtt && ! $this->bridgeUnavailable ? 'bg-emerald-500 animate-pulse' : ($usesMqtt ? 'bg-rose-500' : 'bg-amber-500 animate-pulse') }}"></span>
+                    {{ $usesMqtt ? ($this->bridgeUnavailable ? 'MQTT غير متصل' : 'MQTT متصل') : 'جاري فحص الـ Bridge...' }}
                 </div>
             @endif
         </div>
         @endif
-

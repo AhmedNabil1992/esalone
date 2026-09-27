@@ -24,15 +24,16 @@ class DispatchDeviceControlCommandAction
             ];
         }
 
+        $connectionType = $this->connectionType();
         $ipAddress = trim((string) ($device->ip_address ?? ''));
-        if ($ipAddress === '127.0.0.1') {
+        if ($connectionType === 'bridge' && $ipAddress === '127.0.0.1') {
             return [
                 'ok' => true,
                 'error' => null,
             ];
         }
 
-        if ($ipAddress === '') {
+        if ($connectionType === 'bridge' && $ipAddress === '') {
             throw new RuntimeException('IP جهاز التحكم غير صالح.');
         }
 
@@ -51,7 +52,7 @@ class DispatchDeviceControlCommandAction
         $deviceName = trim((string) ($device->name ?? 'DEVICE_CONTROL'));
 
         try {
-            if (app()->bound('livewire') && ($component = app('livewire')->current())) {
+            if ($connectionType === 'bridge' && app()->bound('livewire') && ($component = app('livewire')->current())) {
                 $component->dispatch('send-bridge-device-command', [
                     'ip' => $ipAddress,
                     'command' => $normalizedAction,
@@ -62,11 +63,13 @@ class DispatchDeviceControlCommandAction
             // Ignore if outside of a Livewire component request
         }
 
-        $result = app(SendDeviceControlCommandViaBridgeAction::class)->execute(
-            ipAddress: $ipAddress,
-            action: $normalizedAction,
-            deviceName: $deviceName,
-        );
+        $result = $connectionType === 'mqtt'
+            ? app(SendDeviceControlCommandViaMqttAction::class)->execute($device, $normalizedAction)
+            : app(SendDeviceControlCommandViaBridgeAction::class)->execute(
+                ipAddress: $ipAddress,
+                action: $normalizedAction,
+                deviceName: $deviceName,
+            );
 
         if (! $result['ok']) {
             $message = trim((string) ($result['error'] ?? 'فشل تنفيذ أمر التحكم.'));
@@ -84,6 +87,11 @@ class DispatchDeviceControlCommandAction
     private function isControlActive(): bool
     {
         return in_array((string) SystemConfig::get('sys_control_active', '0'), ['1', 'true', 'on', 'yes'], true);
+    }
+
+    private function connectionType(): string
+    {
+        return SystemConfig::get('sys_iot_connection_type', 'bridge') === 'mqtt' ? 'mqtt' : 'bridge';
     }
 
     private function normalizeAction(string $action): ?string
