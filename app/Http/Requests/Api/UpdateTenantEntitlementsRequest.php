@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateTenantEntitlementsRequest extends FormRequest
 {
@@ -21,5 +23,14 @@ class UpdateTenantEntitlementsRequest extends FormRequest
             'has_ai_subscription' => ['required_without_all:branches_limit,ai_requests_limit', 'boolean'],
             'ai_requests_limit' => ['required_without_all:branches_limit,has_ai_subscription', 'integer', 'min:0'],
         ];
+    }
+
+    protected function failedValidation(Validator $validator): never
+    {
+        throw new HttpResponseException(response()->json([
+            'error_code' => 'INVALID_ENTITLEMENTS',
+            'message' => 'The tenant entitlements are invalid.',
+            'errors' => $validator->errors(),
+        ], 422));
     }
 }

@@ -16,18 +16,26 @@ class EnsureTenantProvisioningTokenIsValid
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $configuredToken = (string) config('services.tenant_provisioning.token', '');
+        $configuredTokens = array_values(array_unique(array_filter(array_merge(
+            (array) config('services.tenant_provisioning.tokens', []),
+            [(string) config('services.tenant_provisioning.token', '')]
+        ))));
         $providedToken = (string) $request->bearerToken();
 
-        if ($configuredToken === '') {
+        if ($configuredTokens === []) {
             return new JsonResponse([
                 'message' => 'Tenant provisioning API token is not configured.',
+                'error_code' => 'UNAUTHORIZED',
             ], 503);
         }
 
-        if ($providedToken === '' || ! hash_equals($configuredToken, $providedToken)) {
+        $isValid = $providedToken !== '' && collect($configuredTokens)
+            ->contains(fn (mixed $token): bool => is_string($token) && hash_equals($token, $providedToken));
+
+        if (! $isValid) {
             return new JsonResponse([
                 'message' => 'Unauthorized.',
+                'error_code' => 'UNAUTHORIZED',
             ], 401);
         }
 

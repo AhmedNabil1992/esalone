@@ -6,42 +6,83 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\RenewTenantRequest;
 use App\Models\Tenant;
+use App\Services\TenantWebhookService;
 use App\Tenancy\TenantLifecycleLock;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\ValidationException;
 
 class TenantRenewalController extends Controller
 {
-    public function __invoke(RenewTenantRequest $request, Tenant $tenant, TenantLifecycleLock $lock): JsonResponse
-    {
-        try {
-            return $lock->run((string) $tenant->getTenantKey(), function () use ($request, $tenant): JsonResponse {
-                $tenant = $tenant->fresh();
-                abort_if(! $tenant, 404, 'Tenant not found.');
-                abort_if($tenant->getAttribute('deletion_started_at') !== null, 410, 'Tenant deletion has started.');
-                abort_if($tenant->getAttribute('provisioning_status') === 'provisioning', 409, 'Tenant is still being provisioned.');
-                abort_if($tenant->ended_at && now()->greaterThanOrEqualTo(
-                    $tenant->ended_at->copy()->addDays((int) config('tenancy.expiration_grace_days', 3))
-                ), 410, 'The renewal grace period has ended.');
+    public function __invoke(
+        RenewTenantRequest $request,
+        string $tenant,
+        TenantLifecycleLock $lock,
+        TenantWebhookService $webhooks,
+    ): JsonResponse {
+        $model = Tenant::query()->find($tenant);
+        if (! $model) {
+            return $this->error('TENANT_NOT_FOUND', 'Tenant not found.', 404);
+        }
 
-                $endedAt = Carbon::parse($request->validated('ended_at'))->utc();
-                if ($tenant->ended_at && $endedAt->isBefore($tenant->ended_at)) {
-                    throw ValidationException::withMessages(['ended_at' => 'The renewal cannot shorten the current subscription.']);
+        try {
+            return $lock->run($tenant, function () use ($request, $model, $webhooks): JsonResponse {
+                $current = $model->fresh();
+                if (! $current) {
+                    return $this->error('TENANT_NOT_FOUND', 'Tenant not found.', 404);
+                }
+                if ($current->deletion_started_at !== null) {
+                    return $this->error('TENANT_DELETION_STARTED', 'Tenant deletion has started.', 410);
+                }
+                if ($current->provisioning_status === 'provisioning') {
+                    return $this->error('TENANT_BUSY', 'Tenant is still being provisioned.', 409);
+                }
+                if ($current->ended_at && now()->greaterThanOrEqualTo(
+                    $current->ended_at->addDays((int) config('tenancy.expiration_grace_days', 3))
+                )) {
+                    return $this->error('RENEWAL_GRACE_PERIOD_ENDED', 'The renewal grace period has ended.', 410);
                 }
 
-                $tenant->update(['ended_at' => $endedAt, 'is_active' => true]);
+                $endedAt = CarbonImmutable::parse($request->validated('ended_at'))->utc();
+                if ($current->ended_at && $endedAt->isBefore($current->ended_at)) {
+                    return response()->json([
+                        'error_code' => 'INVALID_ENTITLEMENTS',
+                        'message' => 'The renewal cannot shorten the current subscription.',
+                        'errors' => ['ended_at' => ['The renewal cannot shorten the current subscription.']],
+                    ], 422);
+                }
+
+                $current->update([
+                    'ended_at' => $endedAt,
+                    'is_active' => true,
+                    'provisioning_status' => 'ready',
+                ]);
+
+                if ($current->external_subscription_id) {
+                    $webhooks->dispatch('tenant.renewed', $current->external_subscription_id, [
+                        'provisioning_request_id' => $current->provisioning_request_id,
+                        'user_id' => $current->user_id,
+                        'domain' => $current->domains()->value('domain'),
+                        'ended_at' => $current->ended_at?->utc()->toIso8601String(),
+                        'is_active' => true,
+                    ], $current);
+                }
 
                 return response()->json([
-                    'tenant_id' => $tenant->getTenantKey(),
-                    'ended_at' => $tenant->ended_at->toIso8601String(),
-                    'is_active' => $tenant->is_active,
+                    'tenant_id' => $current->getTenantKey(),
+                    'external_subscription_id' => $current->external_subscription_id,
+                    'ended_at' => $current->ended_at?->utc()->toIso8601String(),
+                    'is_active' => $current->is_active,
                 ]);
             });
         } catch (LockTimeoutException) {
-            return response()->json(['message' => 'Tenant is busy. Retry the renewal shortly.'], 409);
+            return $this->error('TENANT_BUSY', 'Tenant is busy. Retry the renewal shortly.', 409);
         }
+    }
+
+    private function error(string $code, string $message, int $status): JsonResponse
+    {
+        return response()->json(['error_code' => $code, 'message' => $message, 'errors' => []], $status);
     }
 }

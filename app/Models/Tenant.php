@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Tenant\Branch;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -26,6 +26,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     protected $fillable = [
         'id',
+        'external_subscription_id',
+        'provisioning_request_id',
         'user_id',
         'plan_id',
         'started_at',
@@ -36,6 +38,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'ai_requests_limit',
         'branches_limit',
         'provisioning_status',
+        'error_code',
+        'error_message',
+        'retryable',
+        'completed_at',
+        'deletion_started_at',
     ];
 
     protected $casts = [
@@ -46,12 +53,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'has_ai_subscription' => 'boolean',
         'ai_requests_limit' => 'integer',
         'branches_limit' => 'integer',
+        'retryable' => 'boolean',
+        'completed_at' => 'immutable_datetime',
+        'deletion_started_at' => 'immutable_datetime',
     ];
 
+    /** @return array<int, string> */
     public static function getCustomColumns(): array
     {
         return [
             'id',
+            'external_subscription_id',
+            'provisioning_request_id',
             'user_id',
             'plan_id',
             'started_at',
@@ -61,6 +74,12 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'has_ai_subscription',
             'ai_requests_limit',
             'branches_limit',
+            'provisioning_status',
+            'error_code',
+            'error_message',
+            'retryable',
+            'completed_at',
+            'deletion_started_at',
         ];
     }
 
@@ -106,7 +125,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             return false;
         }
 
-        return Carbon::now()->isAfter($this->ended_at);
+        return CarbonImmutable::now()->isAfter($this->ended_at);
     }
 
     /**
@@ -132,18 +151,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             return 0;
         }
 
-        return (int) max(0, Carbon::now()->diffInDays($this->ended_at, false));
+        return (int) max(0, CarbonImmutable::now()->diffInDays($this->ended_at, false));
     }
 
     /**
      * Start a new subscription
      */
-    public function startSubscription(?Carbon $startsAt = null): void
+    public function startSubscription(?CarbonImmutable $startsAt = null): void
     {
-        $periodStart = $startsAt?->copy() ?? Carbon::now();
+        $periodStart = $startsAt ?? CarbonImmutable::now();
 
         $this->started_at = $periodStart;
-        $this->ended_at = $periodStart->copy();
+        $this->ended_at = $periodStart;
         $this->is_active = true;
         $this->save();
     }

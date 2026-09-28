@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\DeleteTenantJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Stancl\Tenancy\Events\DeletingTenant;
 use Tests\TestCase;
@@ -18,6 +20,7 @@ class DeleteTenantTest extends TestCase
     public function test_tenant_can_be_deleted_using_provisioning_token(): void
     {
         Event::fake([DeletingTenant::class]);
+        Queue::fake();
 
         config()->set('services.tenant_provisioning.token', 'test-token');
 
@@ -42,12 +45,15 @@ class DeleteTenantTest extends TestCase
             ->deleteJson('/api/tenants/'.$tenantId);
 
         $response
-            ->assertOk()
-            ->assertJsonPath('tenant_id', $tenantId);
+            ->assertAccepted()
+            ->assertJsonPath('tenant_id', $tenantId)
+            ->assertJsonPath('status', 'deleting');
 
-        $this->assertDatabaseMissing('tenants', [
+        $this->assertDatabaseHas('tenants', [
             'id' => $tenantId,
+            'provisioning_status' => 'deleting',
         ]);
+        Queue::assertPushed(DeleteTenantJob::class, fn (DeleteTenantJob $job): bool => $job->tenantId === $tenantId);
     }
 
     public function test_delete_tenant_requires_valid_token(): void

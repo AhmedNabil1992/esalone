@@ -24,9 +24,10 @@ class ProvisionTenantTest extends TestCase
             'domain' => 'my-subdomain.ps-web.test',
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'started_at' => '2026-08-31',
-            'ended_at' => '2027-08-31',
+            'started_at' => '2026-09-27T10:00:00Z',
+            'ended_at' => '2027-08-31T10:00:00Z',
             'user_id' => 123,
+            'external_subscription_id' => 'online-instance:481',
             'auto_renew' => true,
             'branches_limit' => 2,
         ];
@@ -35,7 +36,12 @@ class ProvisionTenantTest extends TestCase
             ->postJson('/api/tenants', $payload);
 
         $response->assertStatus(202);
-        $response->assertJsonStructure(['message']);
+        $response->assertExactJson([
+            'message' => 'Tenant provisioning request has been queued.',
+            'external_subscription_id' => 'online-instance:481',
+            'status' => 'queued',
+            'domain' => 'my-subdomain.ps-web.test',
+        ]);
 
         Queue::assertPushed(ProvisionTenantJob::class, function (ProvisionTenantJob $job) use ($payload) {
             return $job->data['domain'] === $payload['domain']
@@ -82,6 +88,7 @@ class ProvisionTenantTest extends TestCase
             'ended_at',
             'user_id',
             'auto_renew',
+            'external_subscription_id',
         ]);
     }
 

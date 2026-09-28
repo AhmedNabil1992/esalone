@@ -46,7 +46,10 @@ class UpdateTenantEntitlementsTest extends TestCase
             $this->withToken('entitlements-test-token')
                 ->patchJson('/api/tenants/'.$tenant->id.'/entitlements', $payload)
                 ->assertOk()
-                ->assertExactJson(['tenant_id' => $tenant->id] + $payload);
+                ->assertExactJson([
+                    'tenant_id' => $tenant->id,
+                    'external_subscription_id' => null,
+                ] + $payload);
         }
 
         $tenant->refresh();

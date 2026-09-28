@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckTenantBranchLimit;
 use App\Http\Middleware\CheckTenantSubscriptionExpiry;
+use App\Http\Middleware\EnforceApiIdempotency;
 use App\Http\Middleware\EnsureTenantProvisioningTokenIsValid;
 use App\Http\Middleware\InitializeTenancyByDomainIfExists;
 use App\Http\Middleware\InjectProductionSecurityGuard;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant.provisioning.token' => EnsureTenantProvisioningTokenIsValid::class,
+            'api.idempotency' => EnforceApiIdempotency::class,
             'tenant.branch.limit' => CheckTenantBranchLimit::class,
         ]);
     })

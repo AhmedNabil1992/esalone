@@ -56,8 +56,15 @@ class AppServiceProvider extends ServiceProvider
         }
 
         RateLimiter::for('tenant-provisioning', function (Request $request): Limit {
-            return Limit::perMinute(10)
-                ->by($request->ip());
+            $identity = hash('sha256', (string) $request->bearerToken().'|'.$request->ip());
+
+            return Limit::perMinute(60)
+                ->by($identity)
+                ->response(fn (Request $request, array $headers) => response()->json([
+                    'error_code' => 'RATE_LIMIT_EXCEEDED',
+                    'message' => 'Too many tenant API requests. Retry later.',
+                    'errors' => [],
+                ], 429, $headers));
         });
 
         DB::prohibitDestructiveCommands(

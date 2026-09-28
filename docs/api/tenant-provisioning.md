@@ -254,7 +254,33 @@ curl -X POST "https://your-domain.com/api/tenants/01J...ULID/renew" \
 
 ---
 
-### 2.4 تحديث مزايا وحدود التينت (Update Tenant Entitlements)
+### 2.4 إيقاف وتفعيل التينت (Suspend / Activate Tenant)
+
+يستخدم النظام الأساسي هذين المسارين لتغيير حالة الوصول فقط، دون تعديل تاريخ انتهاء الاشتراك أو إنشاء أي حركة مالية.
+
+```http
+POST /api/tenants/{tenantId}/suspend
+POST /api/tenants/{tenantId}/activate
+```
+
+نفس ترويسات المصادقة و`Idempotency-Key` المستخدمة في باقي Lifecycle APIs مطلوبة. لا يوجد Request Body.
+
+الإيقاف يضبط `is_active=false` والحالة `suspended` ويرسل Webhook من نوع `tenant.suspended`. التفعيل مسموح فقط لتينانت جاهز وغير منتهي، ويضبط `is_active=true` والحالة `ready` ويرسل `tenant.activated`. يجب تجديد الاشتراك المنتهي قبل تفعيله.
+
+```json
+{
+    "tenant_id": "01J...ULID",
+    "external_subscription_id": "online-instance:481",
+    "status": "suspended",
+    "is_active": false
+}
+```
+
+قد ترجع العملية `404 TENANT_NOT_FOUND` أو `409 TENANT_BUSY` أو `409 TENANT_NOT_READY` أو `409 SUBSCRIPTION_EXPIRED` أو `410 TENANT_DELETION_STARTED` حسب حالة التينانت.
+
+---
+
+### 2.5 تحديث مزايا وحدود التينت (Update Tenant Entitlements)
 
 تُستخدم هذه النقطة بعد نجاح الترقية أو شراء إضافة على الموقع الأساسي لتحديث القيم النهائية الحالية المسموح بها للتينت، مثل عدد الفروع وتفعيل AI Chat وحد الرسائل اليومي.
 
@@ -375,7 +401,7 @@ curl -X PATCH "https://your-domain.com/api/tenants/01J...ULID/entitlements" \
 
 ---
 
-### 2.5 حذف تينت (Delete Tenant)
+### 2.6 حذف تينت (Delete Tenant)
 
 - **Method:** `DELETE`
 - **URL:** `https://your-domain.com/api/tenants/{tenantId}`

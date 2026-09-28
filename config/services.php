@@ -37,6 +37,17 @@ return [
 
     'tenant_provisioning' => [
         'token' => env('TENANT_PROVISIONING_API_TOKEN'),
+        'tokens' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TENANT_PROVISIONING_API_TOKENS', env('TENANT_PROVISIONING_API_TOKEN', '')))
+        ))),
+        'idempotency_ttl_hours' => (int) env('TENANT_PROVISIONING_IDEMPOTENCY_TTL_HOURS', 72),
+        'webhook' => [
+            'base_url' => env('AUREUSERP_BASE_URL'),
+            'path' => env('SOFTWARE_ONLINE_WEBHOOK_PATH', 'api/webhooks/ps-web/tenant-events'),
+            'secret' => env('TENANT_WEBHOOK_SECRET'),
+            'system' => env('TENANT_WEBHOOK_SYSTEM', 'ps-web'),
+        ],
     ],
 
     'bridge' => [
