@@ -8,6 +8,7 @@ use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Http\Controllers\Tenant\PublicInvoiceController;
 use App\Http\Controllers\Tenant\QuickOpenShiftController;
+use App\Http\Middleware\EnsureTenantIsActive;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -30,6 +31,7 @@ Route::middleware([
     'web',
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
+    EnsureTenantIsActive::class,
 ])->group(function () {
     Broadcast::routes();
 
