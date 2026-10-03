@@ -11,6 +11,7 @@ use App\Filament\Widgets\PurchaseOverviewWidget;
 use App\Filament\Widgets\SalesChartWidget;
 use App\Http\Middleware\CheckTenantSubscriptionExpiry;
 use App\Http\Middleware\EnsureTenantHasOpenShift;
+use App\Http\Middleware\EnsureTenantIsActive;
 use App\Http\Middleware\SetTenantTimezone;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\SystemConfig as Setting;
@@ -286,6 +287,7 @@ class AdminPanelProvider extends PanelProvider
             ->middleware([
                 InitializeTenancyByDomain::class,
                 PreventAccessFromCentralDomains::class,
+                EnsureTenantIsActive::class,
                 SetTenantTimezone::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
