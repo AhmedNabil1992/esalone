@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Tenant\Invoices\RelationManagers;
 
+use App\Support\Tenant\TenantClock;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -46,7 +47,8 @@ class InvoicePaymentsRelationManager extends RelationManager
                     ->limit(50),
                 TextColumn::make('created_at')
                     ->label('وقت التسجيل')
-                    ->dateTime('Y-m-d h:i A'),
+                    ->dateTime('Y-m-d h:i A')
+                    ->timezone(app(TenantClock::class)->timezone()),
             ])
             ->defaultSort('id', 'asc')
             ->headerActions([])

@@ -11,6 +11,7 @@ use App\Filament\Resources\Tenant\Invoices\RelationManagers\PlaySessionDetailsRe
 use App\Filament\Resources\Tenant\Invoices\Tables\InvoicesTable;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\MarketHistory;
+use App\Support\Tenant\TenantClock;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Tests\TestCase;
@@ -43,5 +44,15 @@ class InvoiceResourceTest extends TestCase
 
         $this->assertArrayHasKey('shift_id', $filters);
         $this->assertArrayHasKey('issued_at', $filters);
+    }
+
+    public function test_invoice_payments_display_created_at_in_the_tenant_timezone(): void
+    {
+        $this->app->instance(TenantClock::class, new TenantClock('Africa/Cairo'));
+
+        $relationManager = new InvoicePaymentsRelationManager;
+        $table = $relationManager->table(new Table($relationManager));
+
+        $this->assertSame('Africa/Cairo', $table->getColumn('created_at')->getTimezone());
     }
 }

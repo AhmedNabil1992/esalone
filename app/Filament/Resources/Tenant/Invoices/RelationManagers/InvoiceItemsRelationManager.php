@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Tenant\Invoices\RelationManagers;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Support\Tenant\TenantClock;
 
 class InvoiceItemsRelationManager extends RelationManager
 {
@@ -44,6 +45,7 @@ class InvoiceItemsRelationManager extends RelationManager
                 TextColumn::make('transaction_time')
                     ->label('وقت العملية')
                     ->time('h:i A')
+                    ->timezone(app(TenantClock::class)->timezone())
                     ->placeholder('-'),
                 TextColumn::make('createdBy.name')
                     ->label('بواسطة')

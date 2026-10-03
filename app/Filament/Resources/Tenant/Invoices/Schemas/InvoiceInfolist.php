@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Tenant\Invoices\Schemas;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use App\Support\Tenant\TenantClock;
 
 class InvoiceInfolist
 {
@@ -22,7 +23,8 @@ class InvoiceInfolist
                             ->color('primary'),
                         TextEntry::make('issued_at')
                             ->label('التاريخ')
-                            ->dateTime('Y-m-d h:i A'),
+                            ->dateTime('Y-m-d h:i A')
+                            ->timezone(app(TenantClock::class)->timezone()),
                         TextEntry::make('status')
                             ->label('الحالة')
                             ->badge()
