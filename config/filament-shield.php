@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Filament\Resources\RoleResource;
+use App\Filament\Resources\Tenant\Sales\SalesResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -123,7 +124,7 @@ return [
 
     'policies' => [
         'path' => app_path('Policies'),
-        'merge' => true,
+        'merge' => false,
         'generate' => true,
         'methods' => [
             'viewAny', 'view', 'create', 'update', 'delete', 'deleteAny',
@@ -171,6 +172,9 @@ return [
                 'create',
                 'update',
                 'delete',
+            ],
+            SalesResource::class => [
+                'create',
             ],
         ],
         'exclude' => [

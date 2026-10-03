@@ -17,4 +17,9 @@ class DirectSales extends Page
     {
         return 'مبيعات الأصناف';
     }
+
+    public static function canAccess(array $parameters = []): bool
+    {
+        return auth()->user()?->can('Create:DirectSale') ?? false;
+    }
 }
