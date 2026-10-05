@@ -6,6 +6,7 @@ use App\Http\Controllers\Tenant\ImpersonateUserController;
 use App\Http\Controllers\Tenant\LandingPageController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
+use App\Http\Controllers\Tenant\PrintShiftCloseController;
 use App\Http\Controllers\Tenant\PublicInvoiceController;
 use App\Http\Controllers\Tenant\QuickOpenShiftController;
 use App\Http\Middleware\EnsureTenantIsActive;
@@ -55,6 +56,9 @@ Route::middleware([
 
     Route::middleware('auth')->get('/tenant/order-prepares/print', [PrintOrderPrepareController::class, 'print'])
         ->name('tenant.order-prepares.print');
+
+    Route::middleware('auth')->get('/tenant/shifts/{shift}/print-close', PrintShiftCloseController::class)
+        ->name('tenant.shifts.print-close');
 
     Route::middleware('auth')->post('/tenant/shifts/quick-open', QuickOpenShiftController::class)
         ->name('tenant.shifts.quick-open');

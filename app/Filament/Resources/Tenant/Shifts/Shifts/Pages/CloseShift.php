@@ -435,6 +435,15 @@ class CloseShift extends Page
 
         Notification::make()->title('تم تقفيل الشيفت وحفظ البيانات بنجاح')->success()->send();
 
+        if ($this->shiftClosePrintingIsEnabled()) {
+            $this->redirect(route('tenant.shifts.print-close', [
+                'shift' => $this->record->id,
+                'auto' => 1,
+            ]), navigate: false);
+
+            return;
+        }
+
         $this->redirect(ShiftResource::getUrl('index'));
     }
 
@@ -448,5 +457,15 @@ class CloseShift extends Page
         $user = Auth::user();
 
         return $user?->can('Create:Shift') === true || $user?->can('Update:Shift') === true;
+    }
+
+    private function shiftClosePrintingIsEnabled(): bool
+    {
+        return $this->settingIsEnabled('print_active') && $this->settingIsEnabled('print_shift_close');
+    }
+
+    private function settingIsEnabled(string $key): bool
+    {
+        return in_array((string) SystemConfig::get($key, '0'), ['1', 'true', 'on', 'yes'], true);
     }
 }
