@@ -708,5 +708,11 @@ class CloseShiftRealtimeUpdateTest extends TestCase
         $this->assertStringContainsString('Receipt Printer', $html);
         $this->assertStringContainsString('PRINT|${printerName}|${printableHtml}', $html);
         $this->assertStringContainsString('browserPrint()', $html);
+        $this->assertStringContainsString('width: 75mm', $html);
+        $this->assertStringContainsString('@page { size: 75mm auto; margin: 0; }', $html);
+        $this->assertStringContainsString('<html lang="ar" dir="ltr">', $html);
+        $this->assertStringContainsString('<body dir="rtl">', $html);
+        $this->assertStringContainsString('class="money-list"', $html);
+        $this->assertStringContainsString('إضافة رصيد عملاء', $html);
     }
 }

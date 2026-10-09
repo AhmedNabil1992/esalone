@@ -1,39 +1,44 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="ltr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>تقرير تقفيل الشيفت رقم {{ $shift->shift_no }}</title>
     <style>
-        @page { size: 80mm auto; margin: 0; }
+        @page { size: 75mm auto; margin: 0; }
         * { box-sizing: border-box; }
-        html, body { width: 80mm; max-width: 80mm; margin: 0; padding: 0; }
-        body { color: #000; background: #fff; font: 11px/1.45 "DejaVu Sans", Cairo, Arial, sans-serif; }
-        .receipt { width: 100%; padding: 3mm 4mm; }
-        .center, .breakdown th, .breakdown td, .closing th, .closing td { text-align: center; }
+        html, body { width: 100%; max-width: 75mm; margin: 0; padding: 0; overflow-x: hidden; }
+        body { color: #000; background: #fff; font: 11px/1.4 "DejaVu Sans", Cairo, Arial, sans-serif; direction: rtl; }
+        .receipt { width: 100%; max-width: 75mm; padding: 2mm; overflow: hidden; }
+        .center, .closing th, .closing td { text-align: center; }
         .logo { display: block; max-width: 54mm; max-height: 20mm; margin: 0 auto 4px; object-fit: contain; }
         h1 { margin: 0; font-size: 17px; } h2 { margin: 2px 0 0; font-size: 13px; }
         .rule { margin: 6px 0; border-top: 1px dashed #000; }
         .section-title { margin: 6px 0 3px; font-size: 12px; font-weight: 800; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 2px 0; vertical-align: top; } th { text-align: right; font-weight: 600; }
-        td.amount { direction: ltr; text-align: left; white-space: nowrap; }
-        .breakdown { table-layout: fixed; border: 1px solid #000; }
-        .breakdown th, .breakdown td { padding: 3px 1px; border: 1px solid #000; font-size: 9px; }
+        th, td { padding: 2px 1mm; vertical-align: top; } th { width: 42%; text-align: right; font-weight: 600; }
+        td.amount { direction: ltr; text-align: left; padding-left: 2mm; white-space: normal; overflow-wrap: anywhere; }
+        .money-list { border-top: 1px solid #000; }
+        .money-list tr { border-bottom: 1px dotted #777; }
+        .money-list th, .money-list td { padding-top: 3px; padding-bottom: 3px; }
+        .money-list td { direction: ltr; text-align: left; padding-left: 2mm; font-weight: 700; white-space: nowrap; }
         .summary tr.total th, .summary tr.total td { padding-top: 4px; border-top: 1px solid #000; font-size: 12px; font-weight: 800; }
-        .closing { margin-top: 6px; border: 1px solid #000; }
-        .closing th, .closing td { padding: 4px 3px; border: 1px solid #000; }
-        .closing th { font-size: 9px; } .closing td { direction: ltr; font-weight: 800; }
+        .closing { margin-top: 6px; table-layout: fixed; border: 1px solid #000; }
+        .closing th, .closing td { width: 25%; padding: 4px 1px; border: 1px solid #000; overflow-wrap: anywhere; }
+        .closing th { font-size: 8px; line-height: 1.3; } .closing td { direction: ltr; font-size: 10px; font-weight: 800; }
         .notes { margin-top: 6px; white-space: pre-wrap; }
         .footer { margin-top: 8px; text-align: center; font-size: 9px; }
-        .screen-actions { display: flex; width: 80mm; margin: 12px auto; padding: 0 4mm; gap: 8px; }
+        .screen-actions { display: flex; width: 100%; max-width: 75mm; margin: 12px 0; padding: 0 2mm; gap: 8px; }
         .screen-actions button, .screen-actions a { flex: 1; padding: 9px; border: 0; border-radius: 6px; color: #fff; background: #2563eb; font: 700 12px Cairo, Arial, sans-serif; text-align: center; text-decoration: none; cursor: pointer; }
         .screen-actions a { background: #475569; }
-        @media screen { body { margin: 0 auto; } }
-        @media print { .screen-actions { display: none; } }
+        @media screen { html, body { margin: 0 auto; } }
+        @media print {
+            html, body, .receipt { width: 100%; max-width: 75mm; margin: 0; }
+            .screen-actions { display: none; }
+        }
     </style>
 </head>
-<body>
+<body dir="rtl">
 @php
     $logoUrl = $logoPath;
     if (filled($logoPath) && ! str_starts_with($logoPath, 'data:') && ! str_starts_with($logoPath, 'http://') && ! str_starts_with($logoPath, 'https://')) {
@@ -58,14 +63,24 @@
     </table>
     <div class="rule"></div>
     <div class="section-title">الإيرادات</div>
-    <table class="breakdown"><thead><tr><th>لعب</th><th>مبيعات</th><th>+ رصيد عملاء</th><th>أخرى</th><th>ضريبة</th><th>خدمة</th></tr></thead><tbody><tr>
-        <td>{{ number_format((float) $shift->playstation_amount, 2) }}</td><td>{{ number_format((float) $shift->sales_amount, 2) }}</td><td>{{ number_format((float) $shift->customer_add_amount, 2) }}</td><td>{{ number_format((float) $shift->income_history_amount, 2) }}</td><td>{{ number_format((float) $shift->tax_amount, 2) }}</td><td>{{ number_format((float) $shift->service_amount, 2) }}</td>
-    </tr></tbody></table>
+    <table class="money-list"><tbody>
+        <tr><th>إيراد اللعب</th><td>{{ number_format((float) $shift->playstation_amount, 2) }}</td></tr>
+        <tr><th>المبيعات</th><td>{{ number_format((float) $shift->sales_amount, 2) }}</td></tr>
+        <tr><th>إضافة رصيد عملاء</th><td>{{ number_format((float) $shift->customer_add_amount, 2) }}</td></tr>
+        <tr><th>إيرادات أخرى</th><td>{{ number_format((float) $shift->income_history_amount, 2) }}</td></tr>
+        <tr><th>الضريبة</th><td>{{ number_format((float) $shift->tax_amount, 2) }}</td></tr>
+        <tr><th>الخدمة</th><td>{{ number_format((float) $shift->service_amount, 2) }}</td></tr>
+    </tbody></table>
     <table class="summary"><tr class="total"><th>إجمالي الإيرادات</th><td class="amount">{{ number_format($incomeTotal, 2) }}</td></tr></table>
     <div class="section-title">المستقطع من الإيراد</div>
-    <table class="breakdown"><thead><tr><th>مشتريات</th><th>مصروفات</th><th>خصومات</th><th>- رصيد عملاء</th><th>مديونية</th><th>دفع بالرصيد</th></tr></thead><tbody><tr>
-        <td>{{ number_format((float) $shift->purchase_amount, 2) }}</td><td>{{ number_format((float) $shift->expenses_amount, 2) }}</td><td>{{ number_format((float) $shift->discount_amount, 2) }}</td><td>{{ number_format((float) $shift->customer_minus_amount, 2) }}</td><td>{{ number_format((float) $shift->credit_amount, 2) }}</td><td>{{ number_format((float) $shift->customer_credit_amount, 2) }}</td>
-    </tr></tbody></table>
+    <table class="money-list"><tbody>
+        <tr><th>المشتريات</th><td>{{ number_format((float) $shift->purchase_amount, 2) }}</td></tr>
+        <tr><th>المصروفات</th><td>{{ number_format((float) $shift->expenses_amount, 2) }}</td></tr>
+        <tr><th>الخصومات</th><td>{{ number_format((float) $shift->discount_amount, 2) }}</td></tr>
+        <tr><th>سحب رصيد عملاء</th><td>{{ number_format((float) $shift->customer_minus_amount, 2) }}</td></tr>
+        <tr><th>مديونية العملاء</th><td>{{ number_format((float) $shift->credit_amount, 2) }}</td></tr>
+        <tr><th>الدفع برصيد العميل</th><td>{{ number_format((float) $shift->customer_credit_amount, 2) }}</td></tr>
+    </tbody></table>
     <table class="summary"><tr><th>إجمالي الاستقطاعات</th><td class="amount">{{ number_format($deductionTotal, 2) }}</td></tr><tr class="total"><th>صافي حركة الشيفت</th><td class="amount">{{ number_format($incomeTotal - $deductionTotal, 2) }}</td></tr></table>
     <div class="section-title">التقفيل</div>
     <table class="closing"><thead><tr><th>إجمالي الشيفت</th><th>المتبقي المتوقع</th><th>الفعلي</th><th>الفرق</th></tr></thead><tbody><tr>
