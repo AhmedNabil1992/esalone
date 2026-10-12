@@ -435,7 +435,7 @@ class CloseShift extends Page
 
         Notification::make()->title('تم تقفيل الشيفت وحفظ البيانات بنجاح')->success()->send();
 
-        $this->redirect(ShiftResource::getUrl('index'));
+        $this->redirect(route('filament.admin.pages.dashboard'));
     }
 
     public function getTitle(): string

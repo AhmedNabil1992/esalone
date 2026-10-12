@@ -451,7 +451,8 @@ class CloseShiftRealtimeUpdateTest extends TestCase
 
         // Now user reviews and updates actual amount if necessary, and closes
         $component->set('cashbox_actuals.'.$box->id, 70);
-        $component->call('close');
+        $component->call('close')
+            ->assertRedirect(route('filament.admin.pages.dashboard'));
 
         // Now shift is closed successfully
         $this->assertEquals('close', $shift->fresh()->status);
