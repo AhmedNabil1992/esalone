@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\TenantProvisioningController;
 use App\Http\Controllers\Api\TenantRenewalController;
 use App\Http\Controllers\Api\TenantStatusController;
 use App\Http\Controllers\Api\TenantSuspensionController;
+use App\Http\Controllers\Api\TenantTrialDataResetController;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['GET', 'POST'], '/tenants/check-domain', TenantDomainCheckController::class)
@@ -28,6 +29,10 @@ Route::delete('/tenants/{tenant}', TenantDeletionController::class)
 Route::post('/tenants/{tenant}/renew', TenantRenewalController::class)
     ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning', 'api.idempotency'])
     ->name('api.tenants.renew');
+
+Route::post('/tenants/{tenant}/reset-trial-data', TenantTrialDataResetController::class)
+    ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning', 'api.idempotency'])
+    ->name('api.tenants.trial-data.reset');
 
 Route::post('/tenants/{tenant}/suspend', TenantSuspensionController::class)
     ->middleware(['tenant.provisioning.token', 'throttle:tenant-provisioning', 'api.idempotency'])

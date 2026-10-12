@@ -5,9 +5,9 @@ namespace App\Filament\Resources\Tenant\Shifts\Shifts\Tables;
 use App\Filament\Resources\Tenant\Shifts\Shifts\ShiftResource;
 use Carbon\Carbon;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -183,16 +183,27 @@ class ShiftsTable
             ->filtersLayout(FiltersLayout::Modal)
             ->pluralModelLabel('الصفحات')
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-                Action::make('close')
-                    ->label('تقفيل الوردية')
-                    ->color('danger')
-                    ->icon('heroicon-o-lock-closed')
-                    ->url(fn ($record) => ShiftResource::getUrl('close', ['record' => $record]))
-                    ->visible(fn ($record): bool => $record->status === 'open'
-                        && $record->is_active
-                        && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    Action::make('shift_close_report')
+                        ->label('عرض / طباعة التقرير')
+                        ->icon('heroicon-o-printer')
+                        ->color('info')
+                        ->url(fn ($record): string => route('tenant.shifts.print-close', ['shift' => $record]))
+                        ->openUrlInNewTab()
+                        ->visible(fn ($record): bool => $record->status === 'close'
+                            && (auth()->user()?->can('View:Shift') === true
+                                || auth()->user()?->can('Create:Shift') === true
+                                || auth()->user()?->can('Update:Shift') === true)),
+                    Action::make('close')
+                        ->label('تقفيل الوردية')
+                        ->color('danger')
+                        ->icon('heroicon-o-lock-closed')
+                        ->url(fn ($record) => ShiftResource::getUrl('close', ['record' => $record]))
+                        ->visible(fn ($record): bool => $record->status === 'open'
+                            && $record->is_active
+                            && (auth()->user()?->can('Create:Shift') === true || auth()->user()?->can('Update:Shift') === true)),
+                ]),
             ])
             ->toolbarActions([
                 // BulkActionGroup::make([

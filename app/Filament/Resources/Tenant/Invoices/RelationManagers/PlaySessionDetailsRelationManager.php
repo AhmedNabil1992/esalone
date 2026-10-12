@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Tenant\Invoices\RelationManagers;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Support\Tenant\TenantClock;
 
 class PlaySessionDetailsRelationManager extends RelationManager
 {
@@ -48,7 +49,8 @@ class PlaySessionDetailsRelationManager extends RelationManager
                 TextColumn::make('end_time')
                     ->label('نهاية الوقت')
                     ->dateTime('Y-m-d h:i A')
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->timezone(app(TenantClock::class)->timezone()),
                 TextColumn::make('username')
                     ->label('بواسطة')
                     ->placeholder('-')

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature\Tenant;
 
 use App\Filament\Resources\Tenant\Shifts\Shifts\Pages\CloseShift;
+use App\Http\Controllers\Tenant\PrintShiftCloseController;
 use App\Models\Tenant\Branch;
 use App\Models\Tenant\CashBox;
 use App\Models\Tenant\CashBoxLedgerEntry;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Shift;
+use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
 use App\Scopes\BranchScope;
 use Filament\Facades\Filament;
@@ -664,5 +666,54 @@ class CloseShiftRealtimeUpdateTest extends TestCase
             ->assertSet('hasNewTransactions', false);
 
         $this->assertEquals($initialFingerprint, $component->get('dataFingerprint'));
+    }
+
+    public function test_closing_shift_redirects_to_thermal_report_when_printing_is_enabled(): void
+    {
+        $branch = Branch::query()->create(['name' => 'Main Branch', 'code' => 'PRINT']);
+        $user = User::query()->create(['name' => 'Admin', 'email' => 'print@test.com', 'password' => bcrypt('password')]);
+        $user->assignRole('super_admin');
+        $this->actingAs($user);
+
+        $cashBox = CashBox::query()->create([
+            'branch_id' => $branch->id,
+            'name' => 'Main Cash Box',
+            'current_balance' => 100,
+        ]);
+        $shift = Shift::query()->create([
+            'branch_id' => $branch->id,
+            'opened_by_user_id' => $user->id,
+            'shift_no' => 12,
+            'shift_date' => now()->toDateString(),
+            'shift_from' => now(),
+            'start_amount' => 100,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        SystemConfig::set('print_active', '1', 'print');
+        SystemConfig::set('print_shift_close', '1', 'print');
+        SystemConfig::set('sys_invoice_printer', 'Receipt Printer', 'print');
+
+        Livewire::test(CloseShift::class, ['record' => $shift->id])
+            ->set('cashbox_actuals.'.$cashBox->id, 100)
+            ->call('close')
+            ->assertRedirect(route('tenant.shifts.print-close', ['shift' => $shift->id, 'auto' => 1]));
+
+        $view = app(PrintShiftCloseController::class)($shift->fresh());
+        $html = $view->render();
+
+        $this->assertStringContainsString('تقرير تقفيل الشيفت', $html);
+        $this->assertStringContainsString('Main Cash Box', $html);
+        $this->assertStringContainsString('طباعة التقرير', $html);
+        $this->assertStringContainsString('new WebSocket(bridgeUrl)', $html);
+        $this->assertStringContainsString('Receipt Printer', $html);
+        $this->assertStringContainsString('PRINT|${printerName}|${printableHtml}', $html);
+        $this->assertStringContainsString('browserPrint()', $html);
+        $this->assertStringContainsString('width: 75mm', $html);
+        $this->assertStringContainsString('@page { size: 75mm auto; margin: 0; }', $html);
+        $this->assertStringContainsString('<html lang="ar" dir="ltr">', $html);
+        $this->assertStringContainsString('<body dir="rtl">', $html);
+        $this->assertStringContainsString('class="money-list"', $html);
+        $this->assertStringContainsString('إضافة رصيد عملاء', $html);
     }
 }

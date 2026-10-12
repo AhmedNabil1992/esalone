@@ -46,6 +46,8 @@ class DirectSalesForm extends Component
 
     public function mount(): void
     {
+        abort_unless(auth()->user()?->can('Create:DirectSale'), 403);
+
         $this->inventory_group_id = $this->orderGroups->first()?->id;
         $this->selected_cash_box_id = $this->defaultCashBoxId();
         $this->paid_amount = 0;
@@ -292,6 +294,8 @@ class DirectSalesForm extends Component
 
     public function saveSale(): void
     {
+        abort_unless(auth()->user()?->can('Create:DirectSale'), 403);
+
         $this->validate();
 
         if (empty($this->selectedItems)) {
