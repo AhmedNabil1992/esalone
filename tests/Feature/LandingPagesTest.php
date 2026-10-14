@@ -17,6 +17,10 @@ class LandingPagesTest extends TestCase
 {
     public function test_central_landing_uses_real_product_screenshots_in_rtl(): void
     {
+        $this->assertFileExists(public_path('images/ps-web-venue-hero.webp'));
+        $this->assertFileExists(public_path('images/ps-web-venue-operations.webp'));
+        $this->assertFileExists(public_path('images/ps-web-venue-shift.webp'));
+
         $response = $this->view('landing');
 
         $response->assertSee('dir="rtl"', false)
@@ -25,6 +29,13 @@ class LandingPagesTest extends TestCase
             ->assertSee('images/ps-web-device-control.webp', false)
             ->assertSee('images/ps-web-direct-sales.webp', false)
             ->assertSee('images/ps-web-shift-close.webp', false)
+            ->assertSee('images/ps-web-venue-hero.webp', false)
+            ->assertSee('images/ps-web-venue-operations.webp', false)
+            ->assertSee('images/ps-web-venue-shift.webp', false)
+            ->assertSee('class="step-visual"', false)
+            ->assertSee('إضافة طلبات الكافيه')
+            ->assertSee('class="operations-media venue-stage venue-stage--operations"', false)
+            ->assertSee('class="feature-lead venue-stage venue-stage--shift"', false)
             ->assertSee('PS Web — التحكم في الأجهزة')
             ->assertSee('object-fit:contain', false)
             ->assertDontSee('ps-web-operations.webp', false)
