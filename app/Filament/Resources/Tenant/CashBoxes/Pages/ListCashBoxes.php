@@ -65,12 +65,20 @@ class ListCashBoxes extends ListRecords
                     /** @var User $actor */
                     $actor = Auth::user();
 
-                    app(TransferCashBetweenCashBoxesAction::class)->execute($data, $actor);
+                    try {
+                        app(TransferCashBetweenCashBoxesAction::class)->execute($data, $actor);
 
-                    Notification::make()
-                        ->title('تم تحويل المبلغ بنجاح')
-                        ->success()
-                        ->send();
+                        Notification::make()
+                            ->title('تم تحويل المبلغ بنجاح')
+                            ->success()
+                            ->send();
+                    } catch (\RuntimeException $e) {
+                        Notification::make()
+                            ->title('تعذر إتمام التحويل')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
                 }),
         ];
     }

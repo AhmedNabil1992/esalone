@@ -41,7 +41,9 @@ class DeviceForm
                 TextInput::make('limit_time')
                     ->label('أقل وقت للتشغيل (بالدقائق)')
                     ->default(0)
-                    ->numeric(),
+                    ->numeric()
+                    ->minValue(0)
+                    ->required(),
                 Toggle::make('is_time')
                     ->label('جهاز يعتمد على الوقت')
                     ->onColor('success')

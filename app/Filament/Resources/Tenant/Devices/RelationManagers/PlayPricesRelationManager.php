@@ -9,6 +9,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -37,9 +38,12 @@ class PlayPricesRelationManager extends RelationManager
                     ->label('السعر')
                     ->numeric()
                     ->required(),
-                TextInput::make('start_from')
-                    ->label('يبدأ من (دقيقة)')
-                    ->numeric(),
+                TimePicker::make('start_from')
+                    ->label('وقت بدء السعر')
+                    ->seconds()
+                    ->default('00:00:00')
+                    ->required()
+                    ->helperText('حدد الوقت المحدد لبدء تطبيق هذا السعر (ساعة:دقيقة:ثانية).'),
             ]);
     }
 

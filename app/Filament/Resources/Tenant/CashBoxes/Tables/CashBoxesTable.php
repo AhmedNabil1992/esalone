@@ -93,12 +93,20 @@ class CashBoxesTable
                             'description' => $data['description'] ?? null,
                         ];
 
-                        (new AdjustCashBoxBalanceAction)->execute($payload, auth()->user());
+                        try {
+                            (new AdjustCashBoxBalanceAction)->execute($payload, auth()->user());
 
-                        Notification::make()
-                            ->title('تم تعديل رصيد الخزينة وحفظ القيد بنجاح')
-                            ->success()
-                            ->send();
+                            Notification::make()
+                                ->title('تم تعديل رصيد الخزينة وحفظ القيد بنجاح')
+                                ->success()
+                                ->send();
+                        } catch (\RuntimeException $e) {
+                            Notification::make()
+                                ->title('تعذر تعديل رصيد الخزينة')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
             ])
             ->toolbarActions([

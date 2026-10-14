@@ -24,7 +24,8 @@ class UserForm
                         TextInput::make('email')
                             ->label('البريد الإلكتروني')
                             ->email()
-                            ->required(),
+                            ->required()
+                            ->unique(ignoreRecord: true),
                         TextInput::make('password')
                             ->label('كلمة المرور')
                             ->password()

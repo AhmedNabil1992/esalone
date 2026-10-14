@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -107,14 +108,25 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             $contentEncoding = ContentEncoding::from($contentEncoding);
         }
 
-        /** @var PushSubscription $subscription */
-        $subscription = app(config('webpush.model'))->firstOrNew(['endpoint' => $endpoint]);
-        $subscription->subscribable_id = $this->getKey();
-        $subscription->subscribable_type = $this->getMorphClass();
-        $subscription->public_key = $key;
-        $subscription->auth_token = $token;
-        $subscription->content_encoding = $contentEncoding;
-        $subscription->save();
+        try {
+            /** @var PushSubscription $subscription */
+            $subscription = app(config('webpush.model'))->firstOrNew(['endpoint' => $endpoint]);
+            $subscription->subscribable_id = $this->getKey();
+            $subscription->subscribable_type = $this->getMorphClass();
+            $subscription->public_key = $key;
+            $subscription->auth_token = $token;
+            $subscription->content_encoding = $contentEncoding;
+            $subscription->save();
+        } catch (UniqueConstraintViolationException) {
+            /** @var PushSubscription $subscription */
+            $subscription = app(config('webpush.model'))->where('endpoint', $endpoint)->firstOrFail();
+            $subscription->subscribable_id = $this->getKey();
+            $subscription->subscribable_type = $this->getMorphClass();
+            $subscription->public_key = $key;
+            $subscription->auth_token = $token;
+            $subscription->content_encoding = $contentEncoding;
+            $subscription->save();
+        }
 
         return $subscription;
     }

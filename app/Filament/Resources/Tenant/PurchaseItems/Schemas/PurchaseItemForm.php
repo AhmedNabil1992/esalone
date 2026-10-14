@@ -20,15 +20,16 @@ class PurchaseItemForm
                     ->required(),
                 TextInput::make('quantity')
                     ->label('الكمية')
-                    ->numeric(step: '0.001')
+                    ->numeric()
+                    ->step('0.001')
                     ->required(),
                 TextInput::make('unit_cost')
                     ->label('سعر الوحدة')
-                    ->numeric(decimalPlaces: 2)
+                    ->numeric()
                     ->required(),
                 TextInput::make('total_cost')
                     ->label('التكلفة الإجمالية')
-                    ->numeric(decimalPlaces: 2)
+                    ->numeric()
                     ->readOnly(),
             ]);
     }

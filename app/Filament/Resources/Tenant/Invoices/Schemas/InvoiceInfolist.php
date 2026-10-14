@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Tenant\Invoices\Schemas;
 
+use App\Support\Tenant\TenantClock;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use App\Support\Tenant\TenantClock;
 
 class InvoiceInfolist
 {

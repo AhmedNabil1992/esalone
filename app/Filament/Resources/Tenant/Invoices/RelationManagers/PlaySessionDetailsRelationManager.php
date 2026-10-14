@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Tenant\Invoices\RelationManagers;
 
+use App\Support\Tenant\TenantClock;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use App\Support\Tenant\TenantClock;
 
 class PlaySessionDetailsRelationManager extends RelationManager
 {
