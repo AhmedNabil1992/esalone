@@ -6,10 +6,14 @@ use App\Models\Tenant\CashBox;
 use App\Models\Tenant\SystemConfig as Setting;
 use App\Models\Tenant\Warehouse;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -51,6 +55,10 @@ class SystemConfig extends Page
             } elseif (is_string($value) && (str_starts_with($value, '[') || str_starts_with($value, '{'))) {
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
+                    if ($key === 'landing_services' && is_array($decoded)) {
+                        $decoded = $this->normalizeLandingServicesForForm($decoded);
+                    }
+
                     $savedSettings[$key] = $decoded;
                 }
             }
@@ -371,55 +379,210 @@ class SystemConfig extends Page
                             ->icon('heroicon-o-globe-alt')
                             ->schema([
                                 Grid::make(2)->schema([
-                                    Section::make('معلومات التواصل والعنوان')
+                                    Section::make('هوية الصفحة ومظهرها')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            Select::make('landing_theme')
+                                                ->label('نمط التصميم')
+                                                ->options([
+                                                    'neon' => 'Midnight Violet — بنفسجي وتركواز',
+                                                    'ember' => 'Graphite Amber — فحمي وعنبر',
+                                                    'electric' => 'Deep Cobalt — أزرق وسماوي',
+                                                    'royal' => 'Royal Plum — بنفسجي ووردي',
+                                                    'forest' => 'Evergreen — أخضر طبيعي',
+                                                    'gold' => 'Espresso Gold — بني وذهبي',
+                                                    'crimson' => 'Burgundy — نبيتي وبرتقالي',
+                                                ])
+                                                ->default('neon')
+                                                ->required(),
+                                            ColorPicker::make('landing_accent_color')
+                                                ->label('اللون الرئيسي المخصص')
+                                                ->helperText('اختياري. عند تركه فارغًا يستخدم النظام لون النمط المختار.')
+                                                ->rules(['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']),
+                                            ColorPicker::make('landing_secondary_accent_color')
+                                                ->label('اللون المساعد المخصص')
+                                                ->helperText('اختياري. يستخدم في التدرجات والأزرار مع اللون الرئيسي.')
+                                                ->rules(['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']),
+                                            ColorPicker::make('landing_background_color')
+                                                ->label('لون خلفية الصفحة')
+                                                ->helperText('اختياري. اتركه فارغًا للحفاظ على خلفية الباقة المتناسقة.')
+                                                ->rules(['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']),
+                                            ColorPicker::make('landing_surface_color')
+                                                ->label('لون الكروت والأسطح')
+                                                ->helperText('اختياري. يفضل أن يكون أفتح قليلًا من لون الخلفية.')
+                                                ->rules(['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']),
+                                            ColorPicker::make('landing_text_color')
+                                                ->label('لون النص الرئيسي')
+                                                ->helperText('اختياري. اختر لونًا واضحًا على الخلفية، أو استخدم لون الباقة تلقائيًا.')
+                                                ->rules(['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']),
+                                            Select::make('landing_hero_layout')
+                                                ->label('شكل مقدمة الصفحة')
+                                                ->options([
+                                                    'split' => 'النص بجوار الصورة',
+                                                    'immersive' => 'صورة كبيرة ثم المحتوى',
+                                                ])
+                                                ->default('split')
+                                                ->required(),
+                                            FileUpload::make('landing_logo')
+                                                ->label('شعار الصالة')
+                                                ->image()
+                                                ->disk('public')
+                                                ->directory('landing-branding')
+                                                ->visibility('public')
+                                                ->maxSize(2048)
+                                                ->getUploadedFileUsing(self::tenantUploadResolver())
+                                                ->imageEditor(),
+                                            FileUpload::make('landing_hero_image')
+                                                ->label('صورة مقدمة الصفحة')
+                                                ->helperText('يفضل صورة أفقية واضحة بنسبة 16:9 أو أعرض.')
+                                                ->image()
+                                                ->disk('public')
+                                                ->directory('landing-branding')
+                                                ->visibility('public')
+                                                ->maxSize(5120)
+                                                ->getUploadedFileUsing(self::tenantUploadResolver())
+                                                ->imageEditor()
+                                                ->imageEditorAspectRatioOptions(['16:9', '3:2']),
+                                        ]),
+
+                                    Section::make('المحتوى الرئيسي')
                                         ->columnSpan(1)
                                         ->schema([
                                             TextInput::make('landing_title')
                                                 ->label('عنوان الصفحة الرئيسية :')
-                                                ->placeholder('أهلاً بكم في صالة بلاي ستيشن'),
-                                            TextInput::make('landing_description')
-                                                ->label('الوصف الفرعي للصفحة الرئيسية :'),
-                                            TextInput::make('landing_phone')
-                                                ->label('رقم الهاتف للتواصل :'),
-                                            TextInput::make('landing_whatsapp')
-                                                ->label('رقم الواتساب (مسبوق بمفتاح الدولة بدون أصفار، مثلاً: 201200000000) :'),
-                                            TextInput::make('landing_address')
-                                                ->label('العنوان بالتفصيل :'),
-                                            TextInput::make('landing_facebook')
-                                                ->label('رابط الفيس بوك (Facebook URL) :'),
-                                            TextInput::make('landing_instagram')
-                                                ->label('رابط انستجرام (Instagram URL) :'),
+                                                ->placeholder('ليفل أب بلايستيشن لاونج')
+                                                ->maxLength(80),
+                                            Textarea::make('landing_description')
+                                                ->label('الوصف الفرعي للصفحة الرئيسية :')
+                                                ->rows(3)
+                                                ->maxLength(240),
+                                            TextInput::make('landing_primary_cta')
+                                                ->label('نص زر العروض')
+                                                ->placeholder('شوف العروض')
+                                                ->maxLength(40),
+                                            TextInput::make('landing_secondary_cta')
+                                                ->label('نص زر المنيو')
+                                                ->placeholder('افتح المنيو')
+                                                ->maxLength(40),
+                                            Textarea::make('landing_about')
+                                                ->label('نبذة عن الصالة')
+                                                ->rows(4)
+                                                ->maxLength(600)
+                                                ->helperText('فقرة قصيرة تشرح تجربة اللعب وما يميز المكان.'),
                                         ]),
 
-                                    Section::make('النبذة ومعرض الصور')
+                                    Section::make('معلومات التواصل')
                                         ->columnSpan(1)
                                         ->schema([
-                                            TextInput::make('landing_about')
-                                                ->label('نبذة عن الصالة :')
-                                                ->helperText('اكتب فقرة تعريفية قصيرة تصف المميزات والمكان.'),
+                                            TextInput::make('landing_phone')
+                                                ->label('رقم الهاتف للتواصل :')
+                                                ->tel()
+                                                ->maxLength(30),
+                                            TextInput::make('landing_whatsapp')
+                                                ->label('رقم الواتساب بمفتاح الدولة')
+                                                ->helperText('أرقام فقط، مثال: 201200000000')
+                                                ->rules(['nullable', 'regex:/^[0-9]{8,15}$/']),
+                                            TextInput::make('landing_email')
+                                                ->label('البريد الإلكتروني')
+                                                ->email()
+                                                ->maxLength(160),
+                                            TextInput::make('landing_address')
+                                                ->label('العنوان بالتفصيل :')
+                                                ->maxLength(240),
+                                            TextInput::make('landing_location_url')
+                                                ->label('رابط الموقع على الخريطة')
+                                                ->helperText('يدعم روابط Google Maps وApple Maps وOpenStreetMap، وتظهر الخريطة وزر الاتجاهات تلقائيًا.')
+                                                ->url()
+                                                ->maxLength(500),
+                                            TextInput::make('landing_opening_hours')
+                                                ->label('مواعيد العمل')
+                                                ->placeholder('يوميًا من 12 ظهرًا إلى 2 صباحًا')
+                                                ->maxLength(120),
+                                            TextInput::make('landing_facebook')
+                                                ->label('رابط فيسبوك')
+                                                ->url()
+                                                ->maxLength(255),
+                                            TextInput::make('landing_instagram')
+                                                ->label('رابط إنستجرام')
+                                                ->url()
+                                                ->maxLength(255),
+                                        ]),
+
+                                    Section::make('الأقسام التي تظهر للعملاء')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            Select::make('landing_section_order')
+                                                ->label('ترتيب أقسام الصفحة')
+                                                ->options([
+                                                    'offers_experience_gallery' => 'العروض ثم التجربة ثم الصور',
+                                                    'experience_offers_gallery' => 'التجربة ثم العروض ثم الصور',
+                                                    'gallery_offers_experience' => 'الصور ثم العروض ثم التجربة',
+                                                ])
+                                                ->default('offers_experience_gallery')
+                                                ->required(),
+                                            Toggle::make('landing_show_offers')->label('إظهار العروض')->default(true),
+                                            Toggle::make('landing_show_services')->label('إظهار الخدمات والمرافق')->default(true),
+                                            Toggle::make('landing_show_experience')->label('إظهار مميزات تجربة اللعب')->default(true),
+                                            Toggle::make('landing_show_gallery')->label('إظهار معرض الصور')->default(true),
+                                            Toggle::make('landing_show_loyalty')->label('إظهار النقاط والمحفظة للعميل')->default(true),
+                                            Toggle::make('landing_show_about')->label('إظهار نبذة عن الصالة')->default(true),
+                                            Toggle::make('landing_show_contact')->label('إظهار بيانات التواصل')->default(true),
                                             FileUpload::make('landing_gallery')
-                                                ->label('معرض صور الصالة :')
+                                                ->label('معرض صور الصالة')
                                                 ->multiple()
                                                 ->image()
                                                 ->disk('public')
                                                 ->directory('landing-gallery')
                                                 ->visibility('public')
-                                                ->getUploadedFileUsing(static function (FileUpload $component, string $file, string|array|null $storedFileNames): ?array {
-                                                    /** @var FilesystemAdapter $storage */
-                                                    $storage = $component->getDisk();
-
-                                                    if (! $storage->exists($file)) {
-                                                        return null;
-                                                    }
-
-                                                    return [
-                                                        'name' => (is_array($storedFileNames) ? ($storedFileNames[$file] ?? null) : $storedFileNames) ?? basename($file),
-                                                        'size' => $storage->size($file),
-                                                        'type' => $storage->mimeType($file),
-                                                        'url' => tenant_asset($file),
-                                                    ];
-                                                })
+                                                ->maxFiles(8)
+                                                ->maxSize(4096)
+                                                ->reorderable()
+                                                ->getUploadedFileUsing(self::tenantUploadResolver())
                                                 ->imageEditor()
+                                                ->columnSpanFull(),
+                                        ]),
+
+                                    Section::make('الخدمات والمرافق المتاحة')
+                                        ->description('أضف البلايستيشن أو الكافيه أو مساحات العمل أو أي خدمة أخرى بصورة حقيقية من المكان.')
+                                        ->columnSpan(2)
+                                        ->schema([
+                                            Repeater::make('landing_services')
+                                                ->label('الخدمات')
+                                                ->schema([
+                                                    TextInput::make('title')
+                                                        ->label('اسم الخدمة')
+                                                        ->placeholder('مثال: بلايستيشن أو كافيه')
+                                                        ->required()
+                                                        ->maxLength(60),
+                                                    Textarea::make('description')
+                                                        ->label('وصف مختصر')
+                                                        ->rows(2)
+                                                        ->maxLength(160),
+                                                    FileUpload::make('image')
+                                                        ->label('صور الخدمة')
+                                                        ->helperText('ارفع من صورة إلى 6 صور. أول صورة هي الصورة الرئيسية ويمكنك سحب الصور لتغيير ترتيبها.')
+                                                        ->image()
+                                                        ->multiple()
+                                                        ->disk('public')
+                                                        ->directory('landing-services')
+                                                        ->visibility('public')
+                                                        ->maxFiles(6)
+                                                        ->maxSize(4096)
+                                                        ->reorderable()
+                                                        ->required()
+                                                        ->getUploadedFileUsing(self::tenantUploadResolver())
+                                                        ->imageEditor()
+                                                        ->imageEditorAspectRatioOptions(['4:3', '3:2', '16:9'])
+                                                        ->columnSpanFull(),
+                                                ])
+                                                ->columns(2)
+                                                ->defaultItems(0)
+                                                ->maxItems(8)
+                                                ->reorderable()
+                                                ->collapsible()
+                                                ->cloneable()
+                                                ->itemLabel(fn (array $state): string => $state['title'] ?? 'خدمة جديدة')
+                                                ->addActionLabel('إضافة خدمة أو مرفق')
                                                 ->columnSpanFull(),
                                         ]),
                                 ]),
@@ -446,6 +609,45 @@ class SystemConfig extends Page
         }
 
         Notification::make()->title('تم حفظ كافة إعدادات الصالة بنجاح')->success()->send();
+    }
+
+    private static function tenantUploadResolver(): Closure
+    {
+        return static function (FileUpload $component, string $file, string|array|null $storedFileNames): ?array {
+            /** @var FilesystemAdapter $storage */
+            $storage = $component->getDisk();
+
+            if (! $storage->exists($file)) {
+                return null;
+            }
+
+            return [
+                'name' => (is_array($storedFileNames) ? ($storedFileNames[$file] ?? null) : $storedFileNames) ?? basename($file),
+                'size' => $storage->size($file),
+                'type' => $storage->mimeType($file),
+                'url' => tenant_asset($file),
+            ];
+        };
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $services
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeLandingServicesForForm(array $services): array
+    {
+        return collect($services)
+            ->filter(fn ($service): bool => is_array($service))
+            ->map(function (array $service): array {
+                $images = $service['image'] ?? [];
+                $service['image'] = is_array($images)
+                    ? array_values(array_filter($images, 'is_string'))
+                    : (is_string($images) && $images !== '' ? [$images] : []);
+
+                return $service;
+            })
+            ->values()
+            ->all();
     }
 
     public function getPrintersOptions(): array
