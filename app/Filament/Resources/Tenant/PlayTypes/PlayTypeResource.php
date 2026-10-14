@@ -20,6 +20,11 @@ class PlayTypeResource extends Resource
 {
     protected static ?string $model = PlayType::class;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-video-camera';
 
     protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';

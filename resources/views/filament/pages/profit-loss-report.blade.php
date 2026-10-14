@@ -4,6 +4,9 @@
     @endphp
 
     <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="padding: 12px 16px; border-radius: 10px; background: #eff6ff; color: #1e40af; font-size: .84rem;">
+            صافي الربح تقديري: يستبعد الضريبة وتكلفة المنتجات والخامات المباعة أو المستهلكة، ويعرض مشتريات المخزون منفصلة حتى لا تُخصم قبل بيعها.
+        </div>
         
         <!-- Filters Card -->
         <div style="background: #fff; padding: 16px 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -29,9 +32,9 @@
                     🎮
                 </div>
                 <div>
-                    <div style="font-size: .78rem; color: #6b7280;">إيرادات ألعاب البلاي ستيشن</div>
+                    <div style="font-size: .78rem; color: #6b7280;">إيرادات المواعيد</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #111827; margin-top: 4px;">
-                        {{ number_format($financials['play_revenue'], 2) }} ج.م
+                        {{ number_format($financials['appointment_revenue'], 2) }} ج.م
                     </div>
                 </div>
             </div>
@@ -42,9 +45,9 @@
                     ☕
                 </div>
                 <div>
-                    <div style="font-size: .78rem; color: #6b7280;">مبيعات الكافيه والبوفيه</div>
+                    <div style="font-size: .78rem; color: #6b7280;">مبيعات المنتجات والمبيعات الأخرى</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #111827; margin-top: 4px;">
-                        {{ number_format($financials['cafe_revenue'], 2) }} ج.م
+                        {{ number_format($financials['other_sales_revenue'], 2) }} ج.م
                     </div>
                 </div>
             </div>
@@ -81,9 +84,22 @@
                     🛒
                 </div>
                 <div>
-                    <div style="font-size: .78rem; color: #6b7280;">إجمالي مشتريات البضاعة</div>
+                    <div style="font-size: .78rem; color: #6b7280;">مشتريات المخزون خلال الفترة</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #d97706; margin-top: 4px;">
                         {{ number_format($financials['purchases'], 2) }} ج.م
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost of Sales -->
+            <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px;">
+                <div style="background: #fff7ed; color: #c2410c; border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: center;">
+                    🧴
+                </div>
+                <div>
+                    <div style="font-size: .78rem; color: #6b7280;">تكلفة المنتجات والخامات المستهلكة</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #c2410c; margin-top: 4px;">
+                        {{ number_format($financials['cost_of_sales'], 2) }} ج.م
                     </div>
                 </div>
             </div>
@@ -94,7 +110,7 @@
                     👑
                 </div>
                 <div>
-                    <div style="font-size: .78rem; color: #4b5563;">صافي الربح الفعلي (Net Profit)</div>
+                    <div style="font-size: .78rem; color: #4b5563;">صافي الربح التشغيلي التقريبي</div>
                     <div style="font-size: 1.4rem; font-weight: 900; color: {{ $financials['net_profit'] >= 0 ? '#065f46' : '#991b1b' }}; margin-top: 4px;">
                         {{ number_format($financials['net_profit'], 2) }} ج.م
                     </div>

@@ -21,6 +21,11 @@ class DeviceResource extends Resource
 {
     protected static ?string $model = Devices::class;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-device-tablet';
 
     protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';

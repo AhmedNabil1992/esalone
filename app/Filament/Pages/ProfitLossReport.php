@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
+use App\Models\Tenant\MarketHistory;
 use App\Models\Tenant\Purchase;
 use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
@@ -45,17 +46,18 @@ class ProfitLossReport extends Page
         $fromUtc = $this->from ? $clock->localDateStartUtc($this->from) : null;
         $untilUtc = $this->until ? $clock->localDateEndUtc($this->until) : null;
 
-        $playRevenue = (float) Invoice::query()
+        $postedInvoices = Invoice::query()
             ->where('status', 'posted')
             ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
-            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
-            ->sum('play_amount');
+            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc));
 
-        $cafeRevenue = (float) Invoice::query()
-            ->where('status', 'posted')
-            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
-            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
-            ->sum('order_amount');
+        $appointmentRevenue = (float) (clone $postedInvoices)
+            ->whereHas('appointment')
+            ->sum('final_amount');
+
+        $otherSalesRevenue = (float) (clone $postedInvoices)
+            ->whereDoesntHave('appointment')
+            ->sum('final_amount');
 
         $discounts = (float) Invoice::query()
             ->where('status', 'posted')
@@ -75,11 +77,10 @@ class ProfitLossReport extends Page
             ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
             ->sum('tax_amount');
 
-        $totalRevenue = (float) Invoice::query()
-            ->where('status', 'posted')
-            ->when($fromUtc, fn ($q) => $q->where('issued_at', '>=', $fromUtc))
-            ->when($untilUtc, fn ($q) => $q->where('issued_at', '<=', $untilUtc))
-            ->sum('final_amount');
+        $totalRevenue = (float) (clone $postedInvoices)->sum('final_amount');
+        $costOfSales = (float) MarketHistory::query()
+            ->whereIn('invoice_no', (clone $postedInvoices)->select('invoice_no'))
+            ->sum('total_cost');
 
         $expenses = (float) ExpenseHistory::query()
             ->when($fromUtc, fn ($q) => $q->where('created_at', '>=', $fromUtc))
@@ -92,7 +93,7 @@ class ProfitLossReport extends Page
             ->when($untilUtc, fn ($q) => $q->where('purchased_at', '<=', $untilUtc))
             ->sum('total_amount');
 
-        $netProfit = $totalRevenue - $expenses - $purchases;
+        $netProfit = $totalRevenue - $taxAmount - $expenses - $costOfSales;
 
         // Breakdown of expenses by type
         $expensesByType = ExpenseHistory::query()
@@ -124,14 +125,15 @@ class ProfitLossReport extends Page
             ->toArray();
 
         return [
-            'play_revenue' => $playRevenue,
-            'cafe_revenue' => $cafeRevenue,
+            'appointment_revenue' => $appointmentRevenue,
+            'other_sales_revenue' => $otherSalesRevenue,
             'discounts' => $discounts,
             'service_amount' => $serviceAmount,
             'tax_amount' => $taxAmount,
             'total_revenue' => $totalRevenue,
             'expenses' => $expenses,
             'purchases' => $purchases,
+            'cost_of_sales' => $costOfSales,
             'net_profit' => $netProfit,
             'expenses_breakdown' => $expensesByType,
             'purchases_breakdown' => $purchasesBySupplier,

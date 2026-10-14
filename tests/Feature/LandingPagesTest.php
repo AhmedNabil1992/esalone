@@ -5,68 +5,94 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Http\Controllers\Tenant\LandingPageController;
-use App\Models\Tenant\Offer;
+use App\Models\Tenant\Branch;
+use App\Models\Tenant\SalonService;
 use App\Models\Tenant\SystemConfig;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LandingPagesTest extends TestCase
 {
-    public function test_central_landing_uses_real_product_screenshots_in_rtl(): void
+    public function test_central_landing_promotes_salon_management_with_illustrative_workflow_and_gallery_screens(): void
     {
-        $this->assertFileExists(public_path('images/ps-web-venue-hero.webp'));
-        $this->assertFileExists(public_path('images/ps-web-venue-operations.webp'));
-        $this->assertFileExists(public_path('images/ps-web-venue-shift.webp'));
-
         $response = $this->view('landing');
+        $renderedView = (string) $response;
+
+        foreach ([
+            'esalone-appointments.svg',
+            'esalone-services.svg',
+            'esalone-checkout.svg',
+            'esalone-dashboard.svg',
+        ] as $image) {
+            $this->assertFileExists(public_path('images/'.$image));
+            $this->assertSame(2, substr_count($renderedView, $image));
+        }
+
+        $this->assertSame(8, substr_count($renderedView, 'class="image-zoom-trigger"'));
 
         $response->assertSee('dir="rtl"', false)
-            ->assertSee('شغّل صالتك بذكاء')
-            ->assertSee('كل عمليات صالتك في رحلة واحدة مترابطة')
-            ->assertSee('images/ps-web-device-control.webp', false)
-            ->assertSee('images/ps-web-direct-sales.webp', false)
-            ->assertSee('images/ps-web-shift-close.webp', false)
-            ->assertSee('images/ps-web-venue-hero.webp', false)
-            ->assertSee('images/ps-web-venue-operations.webp', false)
-            ->assertSee('images/ps-web-venue-shift.webp', false)
-            ->assertSee('class="step-visual"', false)
-            ->assertSee('إضافة طلبات الكافيه')
-            ->assertSee('class="operations-media venue-stage venue-stage--operations"', false)
-            ->assertSee('class="feature-lead venue-stage venue-stage--shift"', false)
-            ->assertSee('PS Web — التحكم في الأجهزة')
+            ->assertSee('Esalone | إدارة متكاملة للصالونات ومراكز التجميل')
+            ->assertSee('كل تفاصيل صالونك')
+            ->assertSee('تصوّر توضيحي لجدول مواعيد الصالون')
+            ->assertSee('href="https://etech-valley.com/customer"', false)
+            ->assertSee('طلب الاشتراك')
+            ->assertSee('رحلة العميل من الحجز إلى التحصيل')
+            ->assertSee('مواعيد بلا تعارض')
+            ->assertSee('الخدمات وفريق العمل')
+            ->assertSee('مخزون المنتجات')
+            ->assertSee('class="workflow-image"', false)
             ->assertSee('object-fit:contain', false)
-            ->assertDontSee('ps-web-operations.webp', false)
-            ->assertDontSee('unsplash.com', false);
+            ->assertSee('id="image-lightbox"', false)
+            ->assertSee('aria-label="إغلاق الصورة"', false)
+            ->assertSee('معرض الواجهات')
+            ->assertSee('واجهة جدول مواعيد Esalone، تصميم توضيحي')
+            ->assertSee('واجهة نقطة البيع وتحصيل الخدمة في Esalone، تصميم توضيحي')
+            ->assertSee('id="workflow"', false)
+            ->assertSee('id="gallery"', false)
+            ->assertSee('class="skip-link"', false)
+            ->assertSee('prefers-reduced-motion', false)
+            ->assertDontSee('دخول الموظفين')
+            ->assertDontSee('/admin/login')
+            ->assertDontSee('بلايستيشن')
+            ->assertDontSee('الكافيه')
+            ->assertDontSee('PS Web')
+            ->assertDontSee('images/ps-web-', false);
     }
 
-    public function test_tenant_landing_renders_owner_customization_and_real_offers(): void
+    public function test_tenant_landing_renders_service_catalog_and_owner_customization(): void
     {
-        $offer = new Offer([
-            'name' => 'عرض الأبطال',
-            'play_type' => 'زوجي',
-            'period' => 120,
-            'price' => 150,
-            'devices' => 'PS5',
+        $salonService = new SalonService([
+            'name' => 'قص وتصفيف',
+            'category' => 'الشعر',
+            'description' => 'قص وتصفيف يناسبك.',
+            'duration_minutes' => 45,
+            'price' => 250,
             'is_active' => true,
         ]);
+        $branch = new Branch(['name' => 'الفرع الرئيسي', 'is_active' => true]);
+        $branch->setAttribute('id', 1);
 
         $view = $this->view('tenant.landing', $this->tenantViewData([
-            'offers' => collect([$offer]),
             'shopName' => 'ليفل أب',
             'title' => 'أهلاً بكم في ليفل أب',
             'accentColor' => '#123456',
             'heroLayout' => 'immersive',
+            'salonServices' => collect([$salonService]),
+            'branches' => collect([$branch]),
+            'selectedBranchId' => 1,
             'services' => [[
-                'title' => 'ركن البلايستيشن',
-                'description' => 'أحدث الأجهزة والألعاب.',
+                'title' => 'ركن العناية',
+                'description' => 'خدمات عناية واسترخاء.',
                 'images' => [
-                    'landing-services/playstation.jpg',
-                    'landing-services/playstation-side.jpg',
-                    'landing-services/playstation-room.jpg',
-                    'landing-services/playstation-extra.jpg',
+                    'landing-services/salon.jpg',
+                    'landing-services/salon-side.jpg',
+                    'landing-services/salon-room.jpg',
+                    'landing-services/salon-extra.jpg',
                 ],
             ]],
         ]));
@@ -74,21 +100,24 @@ class LandingPagesTest extends TestCase
         $view->assertSee('dir="rtl"', false)
             ->assertSee('--accent:#123456', false)
             ->assertSee('hero immersive', false)
-            ->assertSee('عرض الأبطال')
-            ->assertSee('ركن البلايستيشن')
-            ->assertSee('landing-services/playstation.jpg', false)
-            ->assertSee('landing-services/playstation-side.jpg', false)
-            ->assertSee('landing-services/playstation-room.jpg', false)
-            ->assertDontSee('landing-services/playstation-extra.jpg', false)
+            ->assertSee('href="https://wa.me/201234567890?text=', false)
+            ->assertSee('قص وتصفيف')
+            ->assertSee('45 دقيقة')
+            ->assertSee('250 ج.م')
+            ->assertSee('ركن العناية')
+            ->assertSee('landing-services/salon.jpg', false)
+            ->assertSee('landing-services/salon-side.jpg', false)
+            ->assertSee('landing-services/salon-room.jpg', false)
+            ->assertDontSee('landing-services/salon-extra.jpg', false)
             ->assertSee('+1')
             ->assertSee('services-showcase-grid', false)
             ->assertSee('عن ليفل أب')
             ->assertDontSee('عن أهلاً بكم في ليفل أب')
             ->assertSee('id="location"', false)
             ->assertSee('افتح الاتجاهات')
-            ->assertSee('150')
             ->assertSee('افتح المنيو')
-            ->assertDontSee('gaming-lounge-fallback', false)
+            ->assertSee('class="salon-hero-art"', false)
+            ->assertDontSee('GAME ON')
             ->assertDontSee('unsplash.com', false);
     }
 
@@ -106,6 +135,32 @@ class LandingPagesTest extends TestCase
             $table->string('group')->nullable();
             $table->timestamps();
         });
+        Schema::create('branches', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+        Schema::create('salon_services', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('branch_id');
+            $table->string('name');
+            $table->string('category')->nullable();
+            $table->text('description')->nullable();
+            $table->unsignedSmallInteger('duration_minutes');
+            $table->decimal('price', 10, 2);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+        DB::table('branches')->insert([
+            ['id' => 1, 'name' => 'الفرع الأول', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 2, 'name' => 'الفرع الثاني', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        DB::table('salon_services')->insert([
+            ['branch_id' => 1, 'name' => 'قص شعر', 'category' => 'الشعر', 'description' => 'قص احترافي', 'duration_minutes' => 30, 'price' => 150, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => 2, 'name' => 'صبغة شعر', 'category' => 'الشعر', 'description' => 'ألوان مختارة', 'duration_minutes' => 90, 'price' => 500, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['branch_id' => 1, 'name' => 'خدمة مخفية', 'category' => 'تجربة', 'description' => null, 'duration_minutes' => 10, 'price' => 1, 'is_active' => false, 'created_at' => now(), 'updated_at' => now()],
+        ]);
 
         SystemConfig::set('landing_title', '<script>alert(1)</script> صالة آمنة', 'landing');
         SystemConfig::set('landing_theme', 'unsupported-theme', 'landing');
@@ -137,11 +192,11 @@ class LandingPagesTest extends TestCase
             ],
         ], JSON_UNESCAPED_UNICODE), 'landing');
 
-        $html = app(LandingPageController::class)->index()->render();
+        $html = app(LandingPageController::class)->index(Request::create('/', 'GET'))->render();
 
         $this->assertStringContainsString('alert(1) صالة آمنة', $html);
         $this->assertStringNotContainsString('<script>', $html);
-        $this->assertStringContainsString('--accent:#7c5cff', $html);
+        $this->assertStringContainsString('--accent:#966b43', $html);
         $this->assertStringNotContainsString('javascript:alert(1)', $html);
         $this->assertStringNotContainsString('id="offers"', $html);
         $this->assertStringNotContainsString('id="gallery"', $html);
@@ -152,17 +207,26 @@ class LandingPagesTest extends TestCase
         $this->assertStringContainsString('landing-services/cafe.jpg', $html);
         $this->assertStringContainsString('landing-services/cafe-seating.jpg', $html);
         $this->assertStringContainsString('landing-services/legacy.jpg', $html);
+        $this->assertStringContainsString('قص شعر', $html);
+        $this->assertStringNotContainsString('صبغة شعر', $html);
+        $this->assertStringNotContainsString('خدمة مخفية', $html);
         $this->assertStringContainsString('2 صور', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringNotContainsString('outside.jpg', $html);
+        $this->assertStringNotContainsString('href=""', $html);
+        $this->assertStringNotContainsString('id="offers"', $html);
 
         SystemConfig::set('landing_location_url', 'https://maps.app.goo.gl/example', 'landing');
-        $mapHtml = app(LandingPageController::class)->index()->render();
+        $mapHtml = app(LandingPageController::class)->index(Request::create('/', 'GET', ['branch_id' => 2]))->render();
 
         $this->assertStringContainsString('id="location"', $mapHtml);
         $this->assertStringContainsString('https://maps.app.goo.gl/example', $mapHtml);
+        $this->assertStringContainsString('صبغة شعر', $mapHtml);
+        $this->assertStringNotContainsString('قص شعر', $mapHtml);
 
         Schema::dropIfExists('system_configs');
+        Schema::dropIfExists('salon_services');
+        Schema::dropIfExists('branches');
     }
 
     /**
@@ -172,10 +236,10 @@ class LandingPagesTest extends TestCase
     private function tenantViewData(array $overrides = []): array
     {
         return array_merge([
-            'title' => 'صالة الاختبار',
-            'shopName' => 'صالة الاختبار',
-            'description' => 'جلسات لعب ممتعة وعروض مناسبة.',
-            'about' => 'صالة مجهزة للعب واللمة.',
+            'title' => 'صالون الاختبار',
+            'shopName' => 'صالون الاختبار',
+            'description' => 'خدمات عناية وجمال تناسبك.',
+            'about' => 'صالون يقدم خدمات متخصصة للعناية والجمال.',
             'phone' => '',
             'whatsapp' => '',
             'email' => '',
@@ -187,9 +251,12 @@ class LandingPagesTest extends TestCase
             'instagram' => '',
             'gallery' => [],
             'services' => [],
-            'offers' => new Collection,
+            'salonServices' => new Collection,
+            'branches' => new Collection,
+            'selectedBranchId' => 0,
             'pointsRate' => 10,
             'primaryCta' => 'شوف العروض',
+            'primaryCtaUrl' => 'https://wa.me/201234567890?text=Booking',
             'secondaryCta' => 'افتح المنيو',
             'theme' => 'neon',
             'accentColor' => '',
@@ -198,9 +265,8 @@ class LandingPagesTest extends TestCase
             'surfaceColor' => '',
             'textColor' => '',
             'heroLayout' => 'split',
-            'sectionOrder' => 'offers_experience_gallery',
+            'sectionOrder' => 'services_experience_gallery',
             'visibility' => [
-                'offers' => true,
                 'services' => true,
                 'experience' => true,
                 'gallery' => true,

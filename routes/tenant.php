@@ -7,6 +7,7 @@ use App\Http\Controllers\Tenant\LandingPageController;
 use App\Http\Controllers\Tenant\PrintOrderPrepareController;
 use App\Http\Controllers\Tenant\PrintPlayInvoiceController;
 use App\Http\Controllers\Tenant\PrintShiftCloseController;
+use App\Http\Controllers\Tenant\PublicBookingController;
 use App\Http\Controllers\Tenant\PublicInvoiceController;
 use App\Http\Controllers\Tenant\QuickOpenShiftController;
 use App\Http\Middleware\EnsureTenantIsActive;
@@ -38,6 +39,20 @@ Route::middleware([
 
     Route::get('/', [LandingPageController::class, 'index'])
         ->name('tenant.landing');
+
+    Route::get('/bookings/create', [PublicBookingController::class, 'create'])
+        ->name('tenant.bookings.create');
+
+    Route::middleware('throttle:5,1')->post('/bookings', [PublicBookingController::class, 'store'])
+        ->name('tenant.bookings.store');
+
+    Route::get('/bookings/confirmation/{token}', [PublicBookingController::class, 'confirmation'])
+        ->where('token', '[a-f0-9]{64}')
+        ->name('tenant.bookings.confirmation');
+
+    Route::middleware('throttle:5,1')->post('/bookings/confirmation/{token}/cancel', [PublicBookingController::class, 'cancel'])
+        ->where('token', '[a-f0-9]{64}')
+        ->name('tenant.bookings.cancel');
 
     Route::get('/menu', [LandingPageController::class, 'menu'])
         ->name('tenant.menu');

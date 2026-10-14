@@ -5,7 +5,7 @@
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 16px; border-radius: 12px; font-size: .84rem; display: flex; align-items: center; gap: 10px; line-height: 1.5;">
             <span>ℹ️</span>
             <div>
-                يساعدك هذا التقرير في فهم تفاعل عملائك وتصنيفهم بناءً على إنفاقهم وترددهم على المحل، بالإضافة إلى التعرف على العملاء الراكدين (المنقطعين عن المجيء منذ أكثر من 14 يوماً) لاستعادتهم بعروض خاصة.
+                يساعدك هذا التقرير في فهم تفاعل عملائك وتصنيفهم بناءً على إنفاقهم وترددهم على الصالون، بالإضافة إلى التعرف على العملاء الذين لم يزوروا الصالون منذ 60 يوماً لاستعادتهم بعروض مناسبة.
             </div>
         </div>
 
@@ -105,7 +105,7 @@
             <!-- Table 3: Churn Risk -->
             <div style="background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column;">
                 <div style="padding: 16px 20px; font-size: .94rem; font-weight: 700; color: #111827; border-bottom: 1px solid #e5e7eb; background: #fafafa; display: flex; align-items: center; gap: 8px;">
-                    ⚠️ <span>العملاء الراكدون (Churn Risk > 14 يوم)</span>
+                    ⚠️ <span>عملاء يحتاجون متابعة (لا زيارة منذ 60 يوماً)</span>
                 </div>
                 <div style="overflow-x: auto; flex: 1;">
                     <table style="width: 100%; text-align: right; border-collapse: collapse; font-size: .82rem;">

@@ -23,9 +23,9 @@ class ProductsProfitReport extends Page implements HasTable
     use HasPageShield;
     use InteractsWithTable;
 
-    protected static ?string $title = 'أرباح ومبيعات المنتجات';
+    protected static ?string $title = 'أرباح ومبيعات المنتجات والخدمات';
 
-    protected static ?string $navigationLabel = 'أرباح ومبيعات المنتجات';
+    protected static ?string $navigationLabel = 'أرباح المنتجات والخدمات';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-gift';
 
@@ -45,7 +45,7 @@ class ProductsProfitReport extends Page implements HasTable
             )
             ->columns([
                 TextColumn::make('name')
-                    ->label('اسم المنتج')
+                    ->label('المنتج أو الخدمة')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -77,7 +77,7 @@ class ProductsProfitReport extends Page implements HasTable
                     })
                     ->summarize(
                         Summarizer::make()
-                            ->label('إجمالي قطع البوفيه المباعة')
+                            ->label('إجمالي الكميات المباعة')
                             ->using(function ($query): int {
                                 $itemIds = $query->clone()->pluck('id');
                                 $filterData = $this->tableFilters['issued_at'] ?? [];

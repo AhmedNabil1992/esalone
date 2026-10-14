@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">واجهة متابعة الفروع والورديات في Esalone</title>
+  <desc id="desc">تصميم توضيحي لملخص أداء الفروع والمواعيد والمبيعات والمخزون.</desc>
+  <rect width="960" height="560" rx="24" fill="#f7f3ed"/>
+  <rect x="18" y="18" width="924" height="524" rx="18" fill="#fffdf9" stroke="#e9e1d8"/>
+  <rect x="18" y="18" width="924" height="54" rx="18" fill="#39302a"/><path d="M18 54h924v18H18z" fill="#39302a"/>
+  <circle cx="46" cy="45" r="5" fill="#d8a6a0"/><circle cx="66" cy="45" r="5" fill="#d9bd98"/><circle cx="86" cy="45" r="5" fill="#9eae9a"/>
+  <text x="908" y="51" text-anchor="end" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#fffaf3">Esalone · ملخص التشغيل</text>
+  <text x="908" y="117" text-anchor="end" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#332b25">نظرة عامة على الصالون</text>
+  <text x="908" y="143" text-anchor="end" font-family="Arial,sans-serif" font-size="13" fill="#786f67">الثلاثاء، 20 أكتوبر · كل الفروع</text>
+  <g>
+    <rect x="672" y="165" width="243" height="95" rx="13" fill="#f5eee6" stroke="#eee3d7"/><text x="890" y="194" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#786f67">مواعيد اليوم</text><text x="890" y="232" text-anchor="end" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="#49392e">24</text><text x="704" y="232" font-family="Arial,sans-serif" font-size="11" fill="#758a69">18 مكتمل · 6 قادم</text>
+    <rect x="411" y="165" width="243" height="95" rx="13" fill="#eff2eb" stroke="#e5eadf"/><text x="629" y="194" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#786f67">مبيعات اليوم</text><text x="629" y="232" text-anchor="end" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#49392e">8,450 ج.م</text><text x="443" y="232" font-family="Arial,sans-serif" font-size="11" fill="#758a69">الخدمات والمنتجات</text>
+    <rect x="150" y="165" width="243" height="95" rx="13" fill="#f4eae8" stroke="#eee0dd"/><text x="368" y="194" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#786f67">الفريق النشط</text><text x="368" y="232" text-anchor="end" font-family="Arial,sans-serif" font-size="28" font-weight="700" fill="#49392e">8</text><text x="182" y="232" font-family="Arial,sans-serif" font-size="11" fill="#786f67">في 3 فروع</text>
+  </g>
+  <rect x="480" y="282" width="435" height="222" rx="14" fill="#fff" stroke="#e9e1d8"/>
+  <text x="891" y="313" text-anchor="end" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#49392e">ملخص الفروع</text>
+  <rect x="500" y="328" width="395" height="35" rx="8" fill="#f4f0ea"/><text x="865" y="350" text-anchor="end" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#786f67">الفرع</text><text x="690" y="350" text-anchor="end" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#786f67">الوردية</text><text x="555" y="350" text-anchor="end" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#786f67">المبيعات</text>
+  <path d="M500 363h395M500 407h395M500 451h395" stroke="#eee8e1"/>
+  <g font-family="Arial,sans-serif" font-size="12" fill="#49392e"><text x="865" y="391" text-anchor="end">الفرع الرئيسي</text><text x="690" y="391" text-anchor="end" fill="#758a69">مفتوحة</text><text x="555" y="391" text-anchor="end">4,200 ج.م</text><text x="865" y="435" text-anchor="end">فرع المعادي</text><text x="690" y="435" text-anchor="end" fill="#758a69">مفتوحة</text><text x="555" y="435" text-anchor="end">2,750 ج.م</text><text x="865" y="479" text-anchor="end">فرع مدينة نصر</text><text x="690" y="479" text-anchor="end" fill="#966b43">مغلقة</text><text x="555" y="479" text-anchor="end">1,500 ج.م</text></g>
+  <rect x="45" y="282" width="416" height="222" rx="14" fill="#fff" stroke="#e9e1d8"/>
+  <text x="436" y="313" text-anchor="end" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#49392e">متابعة المخزون</text>
+  <text x="436" y="338" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#786f67">حركة المنتجات خلال اليوم</text>
+  <path d="M80 458h333M80 426h333M80 394h333M80 362h333" stroke="#eee8e1"/>
+  <rect x="105" y="405" width="35" height="53" rx="5" fill="#c5a17e"/><rect x="157" y="382" width="35" height="76" rx="5" fill="#966b43"/><rect x="209" y="416" width="35" height="42" rx="5" fill="#d8a6a0"/><rect x="261" y="369" width="35" height="89" rx="5" fill="#9eae9a"/><rect x="313" y="394" width="35" height="64" rx="5" fill="#c5a17e"/>
+  <text x="122" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#786f67">شعر</text><text x="174" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#786f67">بشرة</text><text x="226" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#786f67">عناية</text><text x="278" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#786f67">أظافر</text><text x="330" y="480" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#786f67">أخرى</text>
+</svg>

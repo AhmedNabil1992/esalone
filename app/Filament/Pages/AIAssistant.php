@@ -10,6 +10,11 @@ use Filament\Pages\Page;
 
 class AIAssistant extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
 
     protected string $view = 'filament.pages.ai-assistant';

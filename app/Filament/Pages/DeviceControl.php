@@ -43,6 +43,11 @@ use Throwable;
 
 class DeviceControl extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
 
     private const int NOTIFICATION_DURATION_MILLISECONDS = 60_000;

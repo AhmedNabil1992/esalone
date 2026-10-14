@@ -13,9 +13,9 @@ class ProductSalesAnalytics extends Page
 {
     use HasPageShield;
 
-    protected static ?string $title = 'إحصائيات مبيعات الكافيه والطلبات';
+    protected static ?string $title = 'إحصائيات مبيعات المنتجات والخدمات';
 
-    protected static ?string $navigationLabel = 'إحصائيات المبيعات والطلبات';
+    protected static ?string $navigationLabel = 'مبيعات المنتجات والخدمات';
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-shopping-bag';
 
@@ -119,6 +119,7 @@ class ProductSalesAnalytics extends Page
             ->where('is_active', true)
             ->whereNotIn('id', $soldItemIds)
             ->where('is_component', false)
+            ->whereDoesntHave('salonService')
             ->get()
             ->map(fn ($item) => [
                 'name' => (string) $item->name,

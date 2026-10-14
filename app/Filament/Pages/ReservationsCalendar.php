@@ -14,6 +14,11 @@ use UnitEnum;
 
 class ReservationsCalendar extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
 
     protected string $view = 'filament.pages.reservations-calendar';

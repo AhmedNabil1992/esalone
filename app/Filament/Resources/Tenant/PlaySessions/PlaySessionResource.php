@@ -22,6 +22,11 @@ class PlaySessionResource extends Resource
 {
     protected static ?string $model = PlaySessions::class;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
     protected static string|UnitEnum|null $navigationGroup = 'اللعب';

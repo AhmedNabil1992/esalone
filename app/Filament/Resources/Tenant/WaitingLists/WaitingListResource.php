@@ -18,6 +18,11 @@ class WaitingListResource extends Resource
 {
     protected static ?string $model = WaitingList::class;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-queue-list';
 
     protected static string|UnitEnum|null $navigationGroup = 'اللعب';

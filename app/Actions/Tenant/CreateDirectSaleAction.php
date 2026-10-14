@@ -191,7 +191,9 @@ class CreateDirectSaleAction
                 $itemModel = $catalogItem['item'];
 
                 // Load product components (eager loaded relationship)
-                $components = $itemModel->components()->with('component')->get();
+                $components = $itemModel->is_product
+                    ? $itemModel->components()->with('component')->get()
+                    : collect();
 
                 $averageCost = 0.0;
                 $totalCost = 0.0;
@@ -264,7 +266,7 @@ class CreateDirectSaleAction
 
                     $averageCost = round($totalProductCost / $qtySold, 4);
                     $totalCost = $totalProductCost;
-                } else {
+                } elseif ($itemModel->is_product) {
                     // Regular item. Deduct directly from stock.
                     $warehouseStock = null;
 
@@ -317,6 +319,9 @@ class CreateDirectSaleAction
                             'occurred_at' => $now,
                         ]);
                     }
+                } else {
+                    $averageCost = 0.0;
+                    $totalCost = 0.0;
                 }
 
                 // Create MarketHistory record for the sold item (using calculated cost)

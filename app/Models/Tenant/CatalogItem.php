@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CatalogItem extends Model
 {
@@ -48,6 +49,11 @@ class CatalogItem extends Model
     public function inventoryGroup(): BelongsTo
     {
         return $this->belongsTo(InventoryGroup::class, 'inventory_group_id');
+    }
+
+    public function salonService(): HasOne
+    {
+        return $this->hasOne(SalonService::class);
     }
 
     public function components(): HasMany

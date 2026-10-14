@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class CustomerResource extends Resource
@@ -45,6 +46,15 @@ class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return CustomersTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withMax([
+            'invoices' => fn (Builder $query): Builder => $query
+                ->where('status', 'posted')
+                ->whereNotNull('issued_at'),
+        ], 'issued_at');
     }
 
     public static function getRelations(): array

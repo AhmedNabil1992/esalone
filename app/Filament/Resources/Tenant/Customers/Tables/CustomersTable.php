@@ -2,20 +2,25 @@
 
 namespace App\Filament\Resources\Tenant\Customers\Tables;
 
+use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerCredit;
 use App\Models\Tenant\SystemConfig;
 use App\Models\Tenant\User;
+use App\Support\Tenant\WhatsAppPhoneNumber;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class CustomersTable
@@ -55,6 +60,12 @@ class CustomersTable
                     ->sortable()
                     ->color(fn ($state) => $state < 0 ? 'danger' : ($state > 0 ? 'success' : 'gray')),
 
+                TextColumn::make('invoices_max_issued_at')
+                    ->label('آخر زيارة')
+                    ->date('Y-m-d')
+                    ->placeholder('لا توجد زيارات')
+                    ->sortable(),
+
                 ToggleColumn::make('is_active')
                     ->label('مفعّل')
                     ->onColor('success')
@@ -67,11 +78,61 @@ class CustomersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('name', 'asc')
-            ->filters([])
+            ->filters([
+                Filter::make('needs_follow_up')
+                    ->label('عملاء يحتاجون متابعة')
+                    ->form([
+                        Select::make('inactive_days')
+                            ->label('مدة عدم الزيارة')
+                            ->options([
+                                30 => '30 يومًا',
+                                60 => '60 يومًا',
+                                90 => '90 يومًا',
+                            ])
+                            ->default(60)
+                            ->required(),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['inactive_days'] ?? null)) {
+                            return $query;
+                        }
+
+                        $lastVisitCutoff = now()->subDays((int) $data['inactive_days']);
+
+                        return $query
+                            ->whereHas('invoices', fn (Builder $invoices): Builder => $invoices
+                                ->where('status', 'posted')
+                                ->whereNotNull('issued_at'))
+                            ->whereDoesntHave('invoices', fn (Builder $invoices): Builder => $invoices
+                                ->where('status', 'posted')
+                                ->where('issued_at', '>=', $lastVisitCutoff));
+                    }),
+            ])
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
+                    Action::make('contactForReturn')
+                        ->label('دعوة للعودة عبر واتساب')
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->color('success')
+                        ->url(function (Customer $record): ?string {
+                            $phone = WhatsAppPhoneNumber::resolve(
+                                $record->phone,
+                                (string) SystemConfig::get('sys_country_code', ''),
+                            );
+
+                            if (! $phone) {
+                                return null;
+                            }
+
+                            $shopName = (string) SystemConfig::get('sys_shop_name', 'الصالون');
+                            $message = "مرحباً {$record->name}، نشتاق لزيارتك في {$shopName}. يسعدنا مساعدتك في حجز موعدك القادم.";
+
+                            return 'https://wa.me/'.$phone.'?text='.rawurlencode($message);
+                        })
+                        ->urlInNewTab()
+                        ->visible(fn (Customer $record): bool => filled($record->phone)),
                     Action::make('redeem_points')
                         ->label('استبدال نقاط')
                         ->icon('heroicon-o-gift')

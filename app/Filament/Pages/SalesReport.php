@@ -47,7 +47,7 @@ class SalesReport extends Page implements HasTable
             ->query(
                 Invoice::query()
                     ->where('status', 'posted')
-                    ->with(['customer', 'payments'])
+                    ->with(['appointment', 'customer', 'payments'])
                     ->latest('issued_at')
             )
             ->columns([
@@ -60,32 +60,30 @@ class SalesReport extends Page implements HasTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('invoice_type')
-                    ->label('نوع الفاتورة')
+                    ->label('مصدر الفاتورة')
                     ->badge()
+                    ->state(fn (Invoice $record): string => $record->appointment
+                        ? 'appointment'
+                        : ($record->invoice_type === 'direct_sale' ? 'direct_sale' : 'other'))
                     ->color(fn (string $state): string => match ($state) {
-                        'device_sale' => 'primary',
+                        'appointment' => 'primary',
                         'direct_sale' => 'success',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'device_sale' => 'جلسة لعب',
-                        'direct_sale' => 'بيع مباشر (بوفيه)',
-                        default => $state,
+                        'appointment' => 'تحصيل موعد',
+                        'direct_sale' => 'بيع منتجات',
+                        default => 'مبيعات أخرى',
                     })
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label('العميل')
                     ->placeholder('بدون عميل')
                     ->searchable(),
-                TextColumn::make('play_amount')
-                    ->label('مبلغ اللعب')
+                TextColumn::make('subtotal')
+                    ->label('الإجمالي قبل الخصم')
                     ->money('EGP')
-                    ->summarize(Sum::make()->label('إجمالي اللعب'))
-                    ->sortable(),
-                TextColumn::make('order_amount')
-                    ->label('مبيعات الطلبات')
-                    ->money('EGP')
-                    ->summarize(Sum::make()->label('إجمالي المبيعات'))
+                    ->summarize(Sum::make()->label('الإجمالي قبل الخصم'))
                     ->sortable(),
                 TextColumn::make('tax_amount')
                     ->label('الضريبة')
@@ -93,9 +91,9 @@ class SalesReport extends Page implements HasTable
                     ->summarize(Sum::make()->label('إجمالي الضرائب'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('service_amount')
-                    ->label('الخدمة')
+                    ->label('رسوم إضافية')
                     ->money('EGP')
-                    ->summarize(Sum::make()->label('إجمالي الخدمة'))
+                    ->summarize(Sum::make()->label('إجمالي الرسوم الإضافية'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('discount_amount')
                     ->label('الخصومات')
@@ -184,12 +182,25 @@ class SalesReport extends Page implements HasTable
 
                         return $indicators;
                     }),
-                SelectFilter::make('invoice_type')
-                    ->label('نوع الفاتورة')
+                SelectFilter::make('invoice_source')
+                    ->label('مصدر الفاتورة')
                     ->options([
-                        'device_sale' => 'جلسات ألعاب',
-                        'direct_sale' => 'بيع مباشر (بوفيه)',
-                    ]),
+                        'appointment' => 'تحصيل موعد',
+                        'direct_sale' => 'بيع منتجات',
+                        'other' => 'مبيعات أخرى',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'appointment' => $query->whereHas('appointment'),
+                            'direct_sale' => $query->whereDoesntHave('appointment')
+                                ->where('invoice_type', 'direct_sale'),
+                            'other' => $query->whereDoesntHave('appointment')
+                                ->where(fn (Builder $query): Builder => $query
+                                    ->whereNull('invoice_type')
+                                    ->orWhere('invoice_type', '!=', 'direct_sale')),
+                            default => $query,
+                        };
+                    }),
                 SelectFilter::make('customer_id')
                     ->label('العميل')
                     ->relationship('customer', 'name')

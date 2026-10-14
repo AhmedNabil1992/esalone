@@ -3,8 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tenant\Customer;
+use App\Support\Tenant\TenantClock;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
-use Carbon\Carbon;
 use Filament\Pages\Page;
 
 class CustomerAnalyticsReport extends Page
@@ -72,27 +72,32 @@ class CustomerAnalyticsReport extends Page
      */
     public function getChurnRiskCustomers(): array
     {
-        $cutoffDate = Carbon::now()->subDays(14);
+        $clock = app(TenantClock::class);
+        $cutoffDate = $clock->localToUtc($clock->nowLocal()->subDays(60));
 
         return Customer::query()
             ->where('is_active', true)
-            // Has not visited in the last 14 days
+            // Has not visited in the last 60 days
             ->whereDoesntHave('invoices', function ($q) use ($cutoffDate) {
                 $q->where('status', 'posted')
+                    ->whereNotNull('issued_at')
                     ->where('issued_at', '>=', $cutoffDate);
             })
             // But has visited historically at least once
             ->whereHas('invoices', function ($q) {
-                $q->where('status', 'posted');
+                $q->where('status', 'posted')
+                    ->whereNotNull('issued_at');
             })
-            ->withMax(['invoices' => fn ($q) => $q->where('status', 'posted')], 'issued_at')
+            ->withMax([
+                'invoices' => fn ($q) => $q->where('status', 'posted')->whereNotNull('issued_at'),
+            ], 'issued_at')
             ->with('level')
             ->orderBy('invoices_max_issued_at', 'asc') // Oldest visits first
             ->limit(15)
             ->get()
-            ->map(function ($c) {
-                $lastVisit = $c->invoices_max_issued_at ? Carbon::parse($c->invoices_max_issued_at) : null;
-                $days = $lastVisit ? (int) Carbon::now()->diffInDays($lastVisit) : 0;
+            ->map(function ($c) use ($clock) {
+                $lastVisit = $c->invoices_max_issued_at ? $clock->utcToLocal($c->invoices_max_issued_at) : null;
+                $days = $lastVisit ? (int) $clock->nowLocal()->diffInDays($lastVisit) : 0;
 
                 return [
                     'id' => (int) $c->id,

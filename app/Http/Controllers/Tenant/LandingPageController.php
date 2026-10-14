@@ -6,8 +6,9 @@ use App\Actions\Tenant\RedeemCustomerPointsAction;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant\Branch;
 use App\Models\Tenant\InventoryGroup;
-use App\Models\Tenant\Offer;
+use App\Models\Tenant\SalonService;
 use App\Models\Tenant\SystemConfig;
+use App\Scopes\BranchScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -15,12 +16,12 @@ use Illuminate\View\View;
 
 class LandingPageController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $shopName = $this->textSetting('sys_shop_name', 'صالة ألعاب بلاي ستيشن', 80);
+        $shopName = $this->textSetting('sys_shop_name', 'صالون التجميل', 80);
         $title = $this->textSetting('landing_title', $shopName, 80);
-        $description = $this->textSetting('landing_description', 'جلسات لعب ممتعة، أجهزة قوية، وعروض تناسب كل تجمع.', 240);
-        $about = $this->textSetting('landing_about', 'نقدم تجربة لعب متكاملة بأجهزة حديثة وشاشات واضحة وجلسات مريحة، مع منيو وعروض ونظام نقاط لعملائنا.', 600);
+        $description = $this->textSetting('landing_description', 'خدمات تجميل وعناية متخصصة، فريق من الخبراء، ومواعيد تناسبك.', 240);
+        $about = $this->textSetting('landing_about', 'نقدم خدمات متكاملة للعناية بالشعر والبشرة والتجميل، مع فريق متخصص وتجربة مريحة تناسب احتياجاتك.', 600);
         $phone = $this->textSetting('landing_phone', '', 30);
         $whatsapp = preg_replace('/\D+/', '', $this->textSetting('landing_whatsapp', '', 20)) ?? '';
         $email = filter_var($this->textSetting('landing_email', '', 160), FILTER_VALIDATE_EMAIL) ?: '';
@@ -30,17 +31,38 @@ class LandingPageController extends Controller
         $mapEmbedUrl = $locationUrl !== ''
             ? 'https://www.google.com/maps?q='.rawurlencode($address !== '' ? $address : $shopName).'&output=embed'
             : '';
+        $branches = Branch::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        $requestedBranchId = $request->integer('branch_id');
+        $selectedBranch = $branches->firstWhere('id', $requestedBranchId) ?? $branches->first();
+        $selectedBranchId = (int) ($selectedBranch?->id ?? 0);
+        $salonServices = $selectedBranch
+            ? SalonService::query()
+                ->withoutGlobalScope(BranchScope::class)
+                ->where('branch_id', $selectedBranchId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->limit(9)
+                ->get(['id', 'branch_id', 'name', 'category', 'description', 'duration_minutes', 'price'])
+            : collect();
         $facebook = $this->safeUrlSetting('landing_facebook');
         $instagram = $this->safeUrlSetting('landing_instagram');
-        $primaryCta = $this->textSetting('landing_primary_cta', 'شوف العروض', 40);
-        $secondaryCta = $this->textSetting('landing_secondary_cta', 'افتح المنيو', 40);
-        $theme = $this->allowedSetting('landing_theme', ['neon', 'ember', 'electric', 'royal', 'forest', 'gold', 'crimson'], 'neon');
+        $primaryCta = $this->textSetting('landing_primary_cta', 'احجز موعدك', 40);
+        $secondaryCta = $this->textSetting('landing_secondary_cta', 'استكشف المنتجات', 40);
+        $primaryCtaUrl = $branches->isNotEmpty()
+            ? route('tenant.bookings.create', $selectedBranchId > 0 ? ['branch_id' => $selectedBranchId] : [])
+            : ($whatsapp !== ''
+                ? 'https://wa.me/'.$whatsapp.'?text='.urlencode("مرحبًا، أود الاستفسار عن حجز موعد في {$shopName}.")
+                : ($phone !== '' ? "tel:{$phone}" : ''));
+        $theme = $this->allowedSetting('landing_theme', ['neon', 'ember', 'electric', 'royal', 'forest', 'gold', 'crimson'], 'gold');
         $heroLayout = $this->allowedSetting('landing_hero_layout', ['split', 'immersive'], 'split');
         $sectionOrder = $this->allowedSetting('landing_section_order', [
-            'offers_experience_gallery',
-            'experience_offers_gallery',
-            'gallery_offers_experience',
-        ], 'offers_experience_gallery');
+            'services_experience_gallery',
+            'experience_services_gallery',
+            'gallery_services_experience',
+        ], 'services_experience_gallery');
         $accentColor = $this->colorSetting('landing_accent_color');
         $secondaryAccentColor = $this->colorSetting('landing_secondary_accent_color');
         $backgroundColor = $this->colorSetting('landing_background_color');
@@ -51,7 +73,6 @@ class LandingPageController extends Controller
         $gallery = $this->uploadedGallery();
         $services = $this->uploadedServices();
         $visibility = [
-            'offers' => $this->booleanSetting('landing_show_offers', true),
             'services' => $this->booleanSetting('landing_show_services', true),
             'experience' => $this->booleanSetting('landing_show_experience', true),
             'gallery' => $this->booleanSetting('landing_show_gallery', true),
@@ -60,15 +81,6 @@ class LandingPageController extends Controller
             'loyalty' => $this->booleanSetting('landing_show_loyalty', true),
         ];
 
-        $offers = collect();
-        if ($visibility['offers']) {
-            $offers = Offer::query()
-                ->where('is_active', true)
-                ->latest()
-                ->limit(6)
-                ->get();
-        }
-
         // Points rate
         $pointsRate = (float) SystemConfig::get('sys_customer_points_redeem_ratio', 10);
         if ($pointsRate <= 0) {
@@ -76,7 +88,9 @@ class LandingPageController extends Controller
         }
 
         return view('tenant.landing', compact(
-            'offers',
+            'branches',
+            'selectedBranchId',
+            'salonServices',
             'shopName',
             'title',
             'description',
@@ -94,6 +108,7 @@ class LandingPageController extends Controller
             'services',
             'pointsRate',
             'primaryCta',
+            'primaryCtaUrl',
             'secondaryCta',
             'theme',
             'accentColor',
@@ -247,7 +262,7 @@ class LandingPageController extends Controller
             }
         }
 
-        $title = SystemConfig::get('landing_title', SystemConfig::get('sys_shop_name', 'صالة ألعاب بلاي ستيشن'));
+        $title = SystemConfig::get('landing_title', SystemConfig::get('sys_shop_name', 'صالون التجميل'));
 
         return view('tenant.menu', compact('groups', 'title', 'branches', 'selectedBranchId'));
     }

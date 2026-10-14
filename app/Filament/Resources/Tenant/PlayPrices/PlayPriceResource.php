@@ -21,6 +21,11 @@ class PlayPriceResource extends Resource
 {
     protected static ?string $model = PlayPrice::class;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
 
     protected static string|UnitEnum|null $navigationGroup = 'إدارة الأجهزة';

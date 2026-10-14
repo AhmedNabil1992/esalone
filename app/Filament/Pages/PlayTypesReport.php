@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\DB;
 
 class PlayTypesReport extends Page implements HasTable
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
     use InteractsWithTable;
 

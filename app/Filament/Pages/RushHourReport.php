@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class RushHourReport extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
 
     protected static ?string $title = 'تقرير أوقات الذروة والإشغال (Rush Hour)';

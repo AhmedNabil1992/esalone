@@ -1,0 +1,222 @@
+- generic [active] [ref=e1]:
+  - link "تجاوز إلى المحتوى" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "Esalone - الصفحة الرئيسية" [ref=e5] [cursor=pointer]:
+        - /url: "#top"
+        - text: Esalone
+      - navigation "التنقل الرئيسي" [ref=e13]:
+        - link "المنصة" [ref=e14] [cursor=pointer]:
+          - /url: "#platform"
+        - link "طريقة العمل" [ref=e15] [cursor=pointer]:
+          - /url: "#workflow"
+        - link "المميزات" [ref=e16] [cursor=pointer]:
+          - /url: "#features"
+        - link "معرض الواجهات" [ref=e17] [cursor=pointer]:
+          - /url: "#gallery"
+      - link "طلب الاشتراك" [ref=e19] [cursor=pointer]:
+        - /url: https://etech-valley.com/customer
+  - main [ref=e20]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: منصة إدارة صالونات الحلاقة والتجميل
+        - heading "كل تفاصيل صالونك، مرتبة في مكان واحد" [level=1] [ref=e26]
+        - paragraph [ref=e27]: من تنظيم المواعيد وتوزيع الخدمات على فريقك، إلى البيع والمخزون وإغلاق الوردية. Esalone يساعدك تدير شغلك اليومي بوضوح من أول عميل لآخر فاتورة.
+        - generic [ref=e28]:
+          - link "اطلب اشتراك Esalone" [ref=e29] [cursor=pointer]:
+            - /url: https://etech-valley.com/customer
+          - link "اكتشف طريقة العمل" [ref=e30] [cursor=pointer]:
+            - /url: "#workflow"
+        - generic "أهم وظائف النظام" [ref=e31]:
+          - generic [ref=e32]:
+            - generic [aria-hidden] [ref=e33]: ◷
+            - text: مواعيد وخدمات
+          - generic [ref=e34]:
+            - generic [aria-hidden] [ref=e35]: ♙
+            - text: فريق وفروع
+          - generic [ref=e36]:
+            - generic [aria-hidden] [ref=e37]: ▤
+            - text: مبيعات ومخزون
+      - generic "تصوّر توضيحي لجدول مواعيد الصالون" [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [aria-hidden] [ref=e41]: ◷
+            - generic [ref=e42]:
+              - text: جدول المواعيد
+              - generic [ref=e43]: متابعة يوم العمل
+          - generic [ref=e44]: الثلاثاء، 20 أكتوبر
+        - generic [ref=e45]:
+          - complementary [ref=e46]:
+            - generic [ref=e47]: فريق العمل
+            - generic [ref=e48]:
+              - generic [ref=e49]: م
+              - generic [ref=e50]:
+                - text: منى
+                - generic [ref=e51]: خبيرة شعر
+            - generic [ref=e53]:
+              - generic [ref=e54]: س
+              - generic [ref=e55]:
+                - text: سارة
+                - generic [ref=e56]: أخصائية تجميل
+            - generic [ref=e58]:
+              - generic [ref=e59]: أ
+              - generic [ref=e60]:
+                - text: أحمد
+                - generic [ref=e61]: حلاق
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - text: مواعيد اليوم
+              - generic [ref=e65]: عرض توضيحي
+            - generic [ref=e66]:
+              - time [ref=e67]: 10:00
+              - generic [ref=e68]:
+                - strong [ref=e69]: قص وتصفيف
+                - generic [ref=e70]: منى · 45 دقيقة
+              - generic [ref=e71]: مؤكد
+            - generic [ref=e72]:
+              - time [ref=e73]: 11:30
+              - generic [ref=e74]:
+                - strong [ref=e75]: عناية بالبشرة
+                - generic [ref=e76]: سارة · 60 دقيقة
+              - generic [ref=e77]: قادم
+            - generic [ref=e78]:
+              - time [ref=e79]: 12:15
+              - generic [ref=e80]:
+                - strong [ref=e81]: قص شعر
+                - generic [ref=e82]: أحمد · 30 دقيقة
+              - generic [ref=e83]: قادم
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - generic [ref=e86]: مواعيد اليوم
+            - strong [ref=e87]: مرتبة حسب الفريق
+          - generic [ref=e88]:
+            - generic [ref=e89]: متابعة أسهل
+            - strong [ref=e90]: حالة كل موعد واضحة
+        - generic [ref=e91]:
+          - text: واجهة توضيحية للمنصة
+          - generic [ref=e92]: تُدار الخدمات والمواعيد من لوحة الصالون
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - heading "رحلة العميل من الحجز إلى التحصيل" [level=2] [ref=e96]
+        - paragraph [ref=e97]: خطوات العمل مترابطة لتسهيل متابعة الفريق، وتسجيل الخدمة، ومعرفة نتيجة كل وردية.
+      - generic [ref=e98]:
+        - article [ref=e99]:
+          - img "تصميم توضيحي لجدول مواعيد الصالون" [ref=e100]
+          - generic [ref=e101]:
+            - generic [ref=e102]: "01"
+            - heading "نظّم المواعيد" [level=3] [ref=e103]
+            - paragraph [ref=e104]: سجّل الموعد والخدمات المطلوبة والفرع والموظف، وتابع حالته في لوحة واحدة.
+        - article [ref=e105]:
+          - img "تصميم توضيحي لإدارة الخدمات وفريق العمل" [ref=e106]
+          - generic [ref=e107]:
+            - generic [ref=e108]: "02"
+            - heading "وزّع الخدمات على فريقك" [level=3] [ref=e109]
+            - paragraph [ref=e110]: عرّف الخدمات وأسعارها ومددها، واربط كل موعد بالموظف المناسب.
+        - article [ref=e111]:
+          - img "تصميم توضيحي لفاتورة الخدمة ومنتجات العناية" [ref=e112]
+          - generic [ref=e113]:
+            - generic [ref=e114]: "03"
+            - heading "حصّل الخدمة والمنتجات" [level=3] [ref=e115]
+            - paragraph [ref=e116]: أنشئ فاتورة للموعد المكتمل وأضف منتجات العناية من نقطة البيع.
+        - article [ref=e117]:
+          - img "تصميم توضيحي لتقارير الفروع والورديات والمخزون" [ref=e118]
+          - generic [ref=e119]:
+            - generic [ref=e120]: "04"
+            - heading "راجع الوردية والفروع" [level=3] [ref=e121]
+            - paragraph [ref=e122]: طابق المبيعات والمصروفات وحركة المخزون قبل تسليم الوردية.
+    - generic [ref=e124]:
+      - generic [ref=e125]:
+        - heading "نظرة أقرب على واجهات Esalone" [level=2] [ref=e126]
+        - paragraph [ref=e127]: تصاميم توضيحية للواجهات والوظائف المتاحة لإدارة الصالون، من جدول المواعيد حتى متابعة الفروع.
+      - generic [ref=e128]:
+        - figure "جدول المواعيد تنظيم يوم العمل والفريق" [ref=e129]:
+          - img "واجهة جدول مواعيد Esalone، تصميم توضيحي" [ref=e130]
+          - generic [ref=e131]:
+            - text: جدول المواعيد
+            - generic [ref=e132]: تنظيم يوم العمل والفريق
+        - figure "الخدمات وفريق العمل إدارة الأسعار والمدد والتخصصات" [ref=e133]:
+          - img "واجهة قائمة الخدمات والفريق في Esalone، تصميم توضيحي" [ref=e134]
+          - generic [ref=e135]:
+            - text: الخدمات وفريق العمل
+            - generic [ref=e136]: إدارة الأسعار والمدد والتخصصات
+        - figure "الفاتورة ونقطة البيع الخدمات والمنتجات في حساب واحد" [ref=e137]:
+          - img "واجهة نقطة البيع وتحصيل الخدمة في Esalone، تصميم توضيحي" [ref=e138]
+          - generic [ref=e139]:
+            - text: الفاتورة ونقطة البيع
+            - generic [ref=e140]: الخدمات والمنتجات في حساب واحد
+        - figure "متابعة الفروع والورديات ملخص تشغيلي واضح لكل فرع" [ref=e141]:
+          - img "واجهة ملخص الفروع والورديات في Esalone، تصميم توضيحي" [ref=e142]
+          - generic [ref=e143]:
+            - text: متابعة الفروع والورديات
+            - generic [ref=e144]: ملخص تشغيلي واضح لكل فرع
+    - generic [ref=e146]:
+      - generic [ref=e147]:
+        - heading "إدارة تناسب طبيعة شغلك" [level=2] [ref=e148]
+        - paragraph [ref=e149]: الوظائف الأساسية التي يحتاجها صالون الحلاقة أو الكوافير أو مركز التجميل، بدون أدوات تشغيل لا تخص نشاطك.
+      - generic [ref=e150]:
+        - article [ref=e151]:
+          - generic [aria-hidden] [ref=e152]: ◷
+          - heading "مواعيد بلا تعارض" [level=3] [ref=e153]
+          - paragraph [ref=e154]: تابع حالة المواعيد ومدد الخدمات، مع التحقق من عدم تداخل مواعيد الموظف.
+        - article [ref=e155]:
+          - generic [aria-hidden] [ref=e156]: ✂
+          - heading "الخدمات وفريق العمل" [level=3] [ref=e157]
+          - paragraph [ref=e158]: نظّم قائمة الخدمات والأسعار والمدد، وملفات الموظفين حسب كل فرع.
+        - article [ref=e159]:
+          - generic [aria-hidden] [ref=e160]: ▤
+          - heading "نقطة بيع للصالون" [level=3] [ref=e161]
+          - paragraph [ref=e162]: حصّل خدماتك وبِع مستحضرات العناية في فاتورة واحدة مع متابعة الإيراد.
+        - article [ref=e163]:
+          - generic [aria-hidden] [ref=e164]: ▧
+          - heading "مخزون المنتجات" [level=3] [ref=e165]
+          - paragraph [ref=e166]: تابع مستحضرات البيع والمستهلكات وحركة المخزون والتنبيهات المرتبطة بها.
+        - article [ref=e167]:
+          - generic [aria-hidden] [ref=e168]: ♙
+          - heading "ملفات العملاء والولاء" [level=3] [ref=e169]
+          - paragraph [ref=e170]: احتفظ بسجل العميل ومشترياته واربطه بنقاط الولاء والمحفظة.
+        - article [ref=e171]:
+          - generic [aria-hidden] [ref=e172]: ⌂
+          - heading "الفروع والتقارير" [level=3] [ref=e173]
+          - paragraph [ref=e174]: تابع كل فرع بصلاحياته ووردياته ومبيعاته من مساحة عمل واحدة.
+    - generic [ref=e176]:
+      - generic [ref=e177]:
+        - generic [ref=e178]: لصالون مستقل أو علامة متعددة الفروع
+        - heading "كبر شغلك، وخلي إدارتك متناسقة" [level=2] [ref=e179]
+        - paragraph [ref=e180]: افصل الخدمات والموظفين والورديات حسب الفرع، واحتفظ برؤية مركزية تساعدك تتابع الأداء بدون خلط بيانات الفروع.
+      - generic [ref=e181]:
+        - generic [ref=e182]:
+          - generic [aria-hidden] [ref=e183]: ✓
+          - text: خدمات وموظفون لكل فرع
+        - generic [ref=e184]:
+          - generic [aria-hidden] [ref=e185]: ✓
+          - text: متابعة المواعيد والتحصيل
+        - generic [ref=e186]:
+          - generic [aria-hidden] [ref=e187]: ✓
+          - text: صلاحيات تشغيل واضحة
+        - generic [ref=e188]:
+          - generic [aria-hidden] [ref=e189]: ✓
+          - text: تقارير ومخزون منظم
+    - generic [ref=e191]:
+      - generic [ref=e192]:
+        - heading "ابدأ بتنظيم يوم صالونك" [level=2] [ref=e193]
+        - paragraph [ref=e194]: اجمع المواعيد والخدمات والفريق والمبيعات في نظام واحد، وخلي تفاصيل التشغيل أوضح لك ولطاقمك.
+      - generic [ref=e195]:
+        - link "اطلب الاشتراك عبر منصة الحسابات" [ref=e196] [cursor=pointer]:
+          - /url: https://etech-valley.com/customer
+        - link "تواصل معنا" [ref=e197] [cursor=pointer]:
+          - /url: https://wa.me/201558787680
+  - contentinfo [ref=e198]:
+    - generic [ref=e199]:
+      - link "Esalone" [ref=e200] [cursor=pointer]:
+        - /url: "#top"
+        - generic [aria-hidden] [ref=e201]: E
+        - text: Esalone
+      - navigation "روابط أسفل الصفحة" [ref=e202]:
+        - link "طريقة العمل" [ref=e203] [cursor=pointer]:
+          - /url: "#workflow"
+        - link "المميزات" [ref=e204] [cursor=pointer]:
+          - /url: "#features"
+        - link "تواصل معنا" [ref=e205] [cursor=pointer]:
+          - /url: "#contact"
+      - generic [ref=e206]: © 2026 جميع الحقوق محفوظة

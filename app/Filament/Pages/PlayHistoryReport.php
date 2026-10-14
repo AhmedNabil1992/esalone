@@ -22,6 +22,11 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PlayHistoryReport extends Page implements HasTable
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
     use InteractsWithTable;
 

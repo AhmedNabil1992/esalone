@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">واجهة نقطة البيع Esalone</title>
+  <desc id="desc">تصميم توضيحي لفاتورة موعد مكتمل مع خدمات ومنتجات عناية.</desc>
+  <rect width="960" height="560" rx="24" fill="#f7f3ed"/>
+  <rect x="18" y="18" width="924" height="524" rx="18" fill="#fffdf9" stroke="#e9e1d8"/>
+  <rect x="18" y="18" width="924" height="54" rx="18" fill="#39302a"/><path d="M18 54h924v18H18z" fill="#39302a"/>
+  <circle cx="46" cy="45" r="5" fill="#d8a6a0"/><circle cx="66" cy="45" r="5" fill="#d9bd98"/><circle cx="86" cy="45" r="5" fill="#9eae9a"/>
+  <text x="908" y="51" text-anchor="end" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#fffaf3">Esalone · نقطة البيع</text>
+  <text x="908" y="118" text-anchor="end" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#332b25">فاتورة موعد</text>
+  <rect x="696" y="138" width="218" height="353" rx="14" fill="#f8f4ee" stroke="#e9e1d8"/>
+  <text x="888" y="176" text-anchor="end" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#49392e">ملخص الحساب</text>
+  <text x="888" y="207" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#786f67">العميلة</text><text x="721" y="207" text-anchor="start" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#49392e">سلمى حسن</text>
+  <path d="M721 221h167" stroke="#e5ddd4"/>
+  <text x="888" y="250" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#786f67">الخدمات والمنتجات</text>
+  <text x="888" y="284" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#49392e">قص وتصفيف</text><text x="721" y="284" text-anchor="start" font-family="Arial,sans-serif" font-size="12" fill="#49392e">250</text>
+  <text x="888" y="311" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#49392e">سيروم عناية</text><text x="721" y="311" text-anchor="start" font-family="Arial,sans-serif" font-size="12" fill="#49392e">180</text>
+  <text x="888" y="338" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#49392e">خصم</text><text x="721" y="338" text-anchor="start" font-family="Arial,sans-serif" font-size="12" fill="#9f6c5d">-30</text>
+  <path d="M721 356h167" stroke="#e5ddd4"/>
+  <text x="888" y="387" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">الإجمالي</text><text x="721" y="387" text-anchor="start" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#966b43">400 ج.م</text>
+  <rect x="720" y="419" width="169" height="46" rx="10" fill="#966b43"/><text x="804" y="448" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">إتمام التحصيل</text>
+  <rect x="45" y="138" width="628" height="353" rx="14" fill="#fff" stroke="#e9e1d8"/>
+  <text x="647" y="173" text-anchor="end" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#49392e">أضف إلى الفاتورة</text>
+  <rect x="64" y="190" width="590" height="42" rx="9" fill="#f4f0ea"/>
+  <text x="625" y="217" text-anchor="end" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#786f67">الخدمات المكتملة</text>
+  <rect x="64" y="246" width="282" height="83" rx="11" fill="#fbf7f1" stroke="#eee5da"/>
+  <circle cx="312" cy="277" r="17" fill="#f0e4d7"/><text x="312" y="283" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#966b43">✂</text>
+  <text x="282" y="274" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">قص وتصفيف</text><text x="282" y="297" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#966b43">250 ج.م</text>
+  <rect x="364" y="246" width="271" height="83" rx="11" fill="#fbf7f1" stroke="#eee5da"/>
+  <circle cx="603" cy="277" r="17" fill="#e9efe4"/><text x="603" y="283" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#758a69">✦</text>
+  <text x="573" y="274" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">عناية بالأظافر</text><text x="573" y="297" text-anchor="end" font-family="Arial,sans-serif" font-size="12" fill="#966b43">180 ج.م</text>
+  <rect x="64" y="347" width="590" height="42" rx="9" fill="#f4f0ea"/>
+  <text x="625" y="374" text-anchor="end" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#786f67">منتجات العناية</text>
+  <rect x="64" y="403" width="182" height="65" rx="10" fill="#fffdf9" stroke="#e9e1d8"/><text x="224" y="430" text-anchor="end" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#49392e">سيروم شعر</text><text x="224" y="451" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#966b43">180 ج.م</text>
+  <rect x="255" y="403" width="182" height="65" rx="10" fill="#fffdf9" stroke="#e9e1d8"/><text x="415" y="430" text-anchor="end" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#49392e">كريم مرطب</text><text x="415" y="451" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#966b43">220 ج.م</text>
+  <rect x="446" y="403" width="189" height="65" rx="10" fill="#fffdf9" stroke="#e9e1d8"/><text x="613" y="430" text-anchor="end" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#49392e">زيت عناية</text><text x="613" y="451" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#966b43">160 ج.م</text>
+</svg>

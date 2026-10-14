@@ -45,7 +45,7 @@
             <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px;">
                 <div style="background: #faf5ff; color: #7c3aed; border-radius: 10px; padding: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">☕</div>
                 <div>
-                    <div style="font-size: .78rem; color: #6b7280;">إجمالي مبيعات البوفيه والكافيه</div>
+                    <div style="font-size: .78rem; color: #6b7280;">إجمالي مبيعات المنتجات والخدمات</div>
                     <div style="font-size: 1.3rem; font-weight: 800; color: #7c3aed; margin-top: 4px;">{{ number_format($totalRev, 2) }} ج.م</div>
                 </div>
             </div>
@@ -61,7 +61,7 @@
             <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px;">
                 <div style="background: #f0fdf4; color: #16a34a; border-radius: 10px; padding: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">📋</div>
                 <div>
-                    <div style="font-size: .78rem; color: #6b7280;">عدد الأصناف الفعالة بالمنيو</div>
+                    <div style="font-size: .78rem; color: #6b7280;">عدد المنتجات والخدمات الفعالة</div>
                     <div style="font-size: 1.3rem; font-weight: 800; color: #16a34a; margin-top: 4px;">{{ $activeProductsCount }} صنف</div>
                 </div>
             </div>

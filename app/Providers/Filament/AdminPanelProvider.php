@@ -132,12 +132,16 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 // 1. العمليات اليومية
                 NavigationGroup::make()
-                    ->label('اللعب')
-                    ->icon('heroicon-o-play'),
+                    ->label('إدارة الصالون')
+                    ->icon('heroicon-o-scissors'),
 
                 NavigationGroup::make()
                     ->label('الشيفتات')
                     ->icon('heroicon-o-clock'),
+
+                NavigationGroup::make()
+                    ->label('المبيعات')
+                    ->icon('heroicon-o-shopping-cart'),
 
                 NavigationGroup::make()
                     ->label('العملاء')
@@ -168,10 +172,6 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-document-chart-bar'),
 
                 // 4. الإعدادات (في الأسفل)
-                NavigationGroup::make()
-                    ->label('إدارة الأجهزة')
-                    ->icon('heroicon-o-tv'),
-
                 NavigationGroup::make()
                     ->label('إعدادات المستخدمين')
                     ->icon('heroicon-o-users'),
@@ -333,12 +333,12 @@ class AdminPanelProvider extends PanelProvider
     {
         try {
             if (! Schema::connection('tenant')->hasTable('system_configs')) {
-                return 'PS Web';
+                return 'Esalone';
             }
 
-            $brandName = trim((string) Setting::get('sys_shop_name', 'PS Web'));
+            $brandName = trim((string) Setting::get('sys_shop_name', 'Esalone'));
 
-            return blank($brandName) ? 'PS Web' : $brandName;
+            return blank($brandName) ? 'Esalone' : $brandName;
         } catch (Throwable) {
             return 'PS Web';
         }

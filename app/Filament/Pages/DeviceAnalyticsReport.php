@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class DeviceAnalyticsReport extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     use HasPageShield;
 
     protected static ?string $title = 'إحصائيات استخدام الأجهزة';

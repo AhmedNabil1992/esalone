@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Tenant\Appointment;
 use App\Models\Tenant\Customer;
-use App\Models\Tenant\Devices;
 use App\Models\Tenant\ExpenseHistory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Purchase;
@@ -21,7 +21,7 @@ class AdminStatsOverview extends StatsOverviewWidget
 
     protected static ?int $sort = 0;
 
-    protected ?string $heading = 'ملخص إحصائيات وعمليات النظام';
+    protected ?string $heading = 'ملخص أداء الصالون والفرع';
 
     protected function getStats(): array
     {
@@ -30,19 +30,16 @@ class AdminStatsOverview extends StatsOverviewWidget
             app(TenantClock::class)->nowLocal(),
         );
 
-        // 1. Devices Activity Stat
-        $totalDevices = Devices::count();
-        $busyDevices = Devices::where('status', 'busy')->count();
-        $devicesText = "{$busyDevices} من {$totalDevices} نشطة حالياً";
+        $todayAppointments = Appointment::query()
+            ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
+            ->whereBetween('start_at', [$todayStart, $todayEnd])
+            ->count();
 
-        // 2. Customers Stat
         $totalCustomers = Customer::count();
 
-        // 3. Current Open Shift Stat
         $openShift = Shift::currentOpenShift();
         $shiftNoText = $openShift ? "الشيفت النشط رقم #{$openShift->shift_no}" : 'لا يوجد شيفت مفتوح';
 
-        // 4. Today's Financials
         $todayInvoicesRevenue = (float) Invoice::query()
             ->where('status', 'posted')
             ->whereBetween('issued_at', [$todayStart, $todayEnd])
@@ -60,23 +57,23 @@ class AdminStatsOverview extends StatsOverviewWidget
         $netProfit = $todayInvoicesRevenue - $todayExpenses - $todayPurchases;
 
         return [
-            Stat::make('نشاط الأجهزة والرموز', $devicesText)
-                ->description('نسبة إشغال أجهزة الصالة بالوقت الحالي')
-                ->icon('heroicon-o-tv')
-                ->color($busyDevices > 0 ? 'success' : 'gray'),
+            Stat::make('مواعيد اليوم', number_format($todayAppointments))
+                ->description('مواعيد مجدولة أو مؤكدة أو قيد التنفيذ')
+                ->icon('heroicon-o-scissors')
+                ->color($todayAppointments > 0 ? 'success' : 'gray'),
 
             Stat::make('الوردية الحالية', $shiftNoText)
                 ->description($openShift ? 'الوردية مفتوحة ويتم تسجيل العمليات عليها' : 'يرجى فتح شيفت لبدء العمل')
                 ->icon('heroicon-o-clock')
                 ->color($openShift ? 'success' : 'danger'),
 
-            Stat::make('العملاء المشتركين', number_format($totalCustomers))
-                ->description('إجمالي حسابات العملاء المسجلة بالسيستم')
+            Stat::make('العملاء المسجلون', number_format($totalCustomers))
+                ->description('إجمالي العملاء المسجلين في الصالون')
                 ->icon('heroicon-o-user-group')
                 ->color('primary'),
 
             Stat::make('إجمالي إيرادات اليوم', Number::currency($todayInvoicesRevenue, $currencyCode, 'ar'))
-                ->description('إجمالي مبيعات المتجر وإيرادات اللعب اليوم')
+                ->description('إيرادات الخدمات ومبيعات المنتجات اليوم')
                 ->icon('heroicon-o-arrow-trending-up')
                 ->color('success'),
 

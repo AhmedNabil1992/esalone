@@ -6,6 +6,7 @@ use App\Traits\BelongsToBranch;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Invoice extends Model
 {
@@ -58,6 +59,11 @@ class Invoice extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function appointment(): HasOne
+    {
+        return $this->hasOne(Appointment::class);
     }
 
     public function shift(): BelongsTo

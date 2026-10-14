@@ -9,6 +9,7 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\InventoryGroup;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\MarketHistory;
+use App\Models\Tenant\ProductComponent;
 use App\Models\Tenant\Shift;
 use App\Models\Tenant\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -465,6 +466,89 @@ class CreateDirectSaleActionTest extends TestCase
         $this->assertEquals($cashBox->id, $payment->cash_box_id);
         $this->assertEquals(240.00, (float) $payment->amount);
         $this->assertSame('cash', $payment->payment_method);
+    }
+
+    public function test_sale_of_a_service_product_deducts_its_configured_materials(): void
+    {
+        $user = User::create([
+            'name' => 'Salon Manager',
+            'email' => 'salon-manager@example.test',
+            'password' => bcrypt('password'),
+        ]);
+        Shift::create([
+            'branch_id' => 1,
+            'shift_no' => 1001,
+            'status' => 'open',
+            'is_active' => true,
+        ]);
+        DB::table('warehouses')->insert([
+            'branch_id' => 1,
+            'name' => 'Salon Warehouse',
+            'code' => 'SALON-WH',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $warehouse = DB::table('warehouses')->first();
+        $cashBox = CashBox::create([
+            'branch_id' => 1,
+            'name' => 'Salon Cash Box',
+            'code' => 'SALON-CASH',
+            'is_active' => true,
+            'current_balance' => 0,
+        ]);
+        $component = CatalogItem::create([
+            'name' => 'Hair color material',
+            'purchase_price' => 20,
+            'is_product' => false,
+            'is_component' => true,
+            'is_active' => true,
+        ]);
+        $serviceItem = CatalogItem::create([
+            'name' => 'Hair color service',
+            'sale_price' => 200,
+            'purchase_price' => 0,
+            'is_product' => true,
+            'is_component' => false,
+            'is_active' => true,
+        ]);
+        ProductComponent::create([
+            'product_id' => $serviceItem->getKey(),
+            'component_id' => $component->getKey(),
+            'quantity' => 0.25,
+        ]);
+        DB::table('warehouse_stocks')->insert([
+            'warehouse_id' => $warehouse->id,
+            'catalog_item_id' => $component->getKey(),
+            'quantity' => 10,
+            'amount' => 200,
+            'min_quantity' => 1,
+        ]);
+
+        $result = app(CreateDirectSaleAction::class)->execute(
+            items: [[
+                'catalog_item_id' => (int) $serviceItem->getKey(),
+                'quantity' => 2,
+                'unit_price' => 200,
+                'total_amount' => 400,
+            ]],
+            cashBoxId: (int) $cashBox->getKey(),
+            actor: $user,
+        );
+
+        $remainingStock = DB::table('warehouse_stocks')
+            ->where('warehouse_id', $warehouse->id)
+            ->where('catalog_item_id', $component->getKey())
+            ->value('quantity');
+        $movement = DB::table('stock_movements')
+            ->where('invoice_no', $result['invoice_no'])
+            ->where('catalog_item_id', $component->getKey())
+            ->first();
+
+        $this->assertEquals(9.5, (float) $remainingStock);
+        $this->assertNotNull($movement);
+        $this->assertEquals(-0.5, (float) $movement->quantity);
+        $this->assertSame('direct_sale', $movement->invoice_type);
     }
 
     public function test_direct_sale_allows_warehouse_stock_to_become_negative(): void

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">واجهة جدول مواعيد Esalone</title>
+  <desc id="desc">تصميم توضيحي لجدول حجوزات موزع على فريق الصالون.</desc>
+  <rect width="960" height="560" rx="24" fill="#f7f3ed"/>
+  <rect x="18" y="18" width="924" height="524" rx="18" fill="#fffdf9" stroke="#e9e1d8"/>
+  <rect x="18" y="18" width="924" height="54" rx="18" fill="#39302a"/>
+  <path d="M18 54h924v18H18z" fill="#39302a"/>
+  <circle cx="46" cy="45" r="5" fill="#d8a6a0"/><circle cx="66" cy="45" r="5" fill="#d9bd98"/><circle cx="86" cy="45" r="5" fill="#9eae9a"/>
+  <text x="908" y="51" text-anchor="end" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#fffaf3">Esalone · المواعيد</text>
+  <rect x="780" y="93" width="132" height="45" rx="11" fill="#966b43"/>
+  <text x="846" y="121" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#fff">+ موعد جديد</text>
+  <text x="750" y="122" text-anchor="end" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#332b25">جدول المواعيد</text>
+  <text x="96" y="120" font-family="Arial,sans-serif" font-size="14" fill="#786f67">الثلاثاء، 20 أكتوبر 2026</text>
+  <rect x="45" y="158" width="870" height="337" rx="14" fill="#fff" stroke="#e9e1d8"/>
+  <path d="M45 211h870M45 281h870M45 351h870M45 421h870M175 158v337M360 158v337M545 158v337M730 158v337" stroke="#eee8e1"/>
+  <text x="823" y="190" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#786f67">منى · شعر</text>
+  <text x="638" y="190" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#786f67">سارة · تجميل</text>
+  <text x="453" y="190" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#786f67">أحمد · حلاقة</text>
+  <text x="268" y="190" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#786f67">نور · عناية</text>
+  <text x="112" y="249" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#786f67">10:00</text>
+  <text x="112" y="319" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#786f67">11:00</text>
+  <text x="112" y="389" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#786f67">12:00</text>
+  <text x="112" y="459" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#786f67">01:00</text>
+  <rect x="743" y="222" width="171" height="49" rx="9" fill="#f4ebe1"/><rect x="743" y="222" width="5" height="49" rx="2" fill="#966b43"/>
+  <text x="898" y="244" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">قص وتصفيف</text><text x="898" y="261" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#786f67">منى · 45 دقيقة</text>
+  <rect x="558" y="292" width="171" height="54" rx="9" fill="#f5e9e7"/><rect x="558" y="292" width="5" height="54" rx="2" fill="#c78985"/>
+  <text x="713" y="315" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">عناية بالبشرة</text><text x="713" y="334" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#786f67">سارة · 60 دقيقة</text>
+  <rect x="373" y="362" width="171" height="49" rx="9" fill="#eff2eb"/><rect x="373" y="362" width="5" height="49" rx="2" fill="#91a286"/>
+  <text x="528" y="384" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">قص شعر</text><text x="528" y="401" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#786f67">أحمد · 30 دقيقة</text>
+  <rect x="188" y="432" width="171" height="49" rx="9" fill="#f4ebe1"/><rect x="188" y="432" width="5" height="49" rx="2" fill="#966b43"/>
+  <text x="343" y="454" text-anchor="end" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#49392e">تسريح مناسبة</text><text x="343" y="471" text-anchor="end" font-family="Arial,sans-serif" font-size="11" fill="#786f67">نور · 45 دقيقة</text>
+  <rect x="45" y="509" width="870" height="18" rx="7" fill="#f6f2ec"/>
+</svg>

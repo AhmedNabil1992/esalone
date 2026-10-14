@@ -83,7 +83,6 @@ class SystemConfig extends Page
                                         ->columnSpan(1)
                                         ->schema([
                                             Toggle::make('print_active')->label('تفعيل الطباعة'),
-                                            Toggle::make('print_play_invoice')->label('طباعة فاتورة اللعب'),
                                             Toggle::make('print_shift_close')->label('طباعة تقفيل الشيفت'),
                                             Toggle::make('print_direct_sale')->label('طباعة فاتورة البيع المباشر'),
                                             Toggle::make('print_again')->label('طباعة مرة أخرى'),
@@ -148,40 +147,19 @@ class SystemConfig extends Page
                             ]),
 
                         // 2. تاب إعدادات التقريب
-                        Tabs\Tab::make('إعدادات التقريب')
+                        Tabs\Tab::make('تقريب المبالغ')
                             ->icon('heroicon-o-scale')
                             ->schema([
-                                Section::make('* يجب أن يكون تقريب الدقائق من 1 فأكثر , في حالة عدم تفعيل أي من أنواع التبديل يكون الناتج الطبيعي للعملية')
-                                    ->schema([
-                                        Grid::make(5)->schema([
-                                            Toggle::make('round_minutes_active')->label('تفعيل تقريب الدقائق'),
-                                            Toggle::make('round_minutes_up')->label('تقريب الدقائق لأعلى'),
-                                            // Toggle::make('round_minutes_s_play')->label('تبديل لعب'),
-                                            // Toggle::make('round_minutes_s_device')->label('تبديل أجهزة'),
-                                            // Toggle::make('round_minutes_active_time')->label('تفعيل وقت'),
-                                        ]),
-                                        Grid::make(3)->schema([
-                                            TextInput::make('round_minutes_new')->label('وقت جديد')->numeric()->minValue(1),
-                                            TextInput::make('round_minutes_add')->label('إضافة وقت')->numeric()->minValue(1),
-                                            TextInput::make('round_minutes_close')->label('تقفيل الوقت')->numeric()->minValue(1),
-                                        ]),
-                                    ]),
-
                                 Section::make('يجب أن يكون تقريب المبالغ من 0.1 فأكثر , في حالة عدم تفعيل أي نوع من أنواع التقريب يكون الناتج الطبيعي للعملية')
                                     ->schema([
-                                        Grid::make(5)->schema([
+                                        Grid::make(2)->schema([
                                             Toggle::make('round_money_active')->label('تفعيل تقريب المبالغ'),
                                             Toggle::make('round_money_up')->label('تقريب المبالغ لأعلى'),
-                                            // Toggle::make('round_money_s_play')->label('تبديل لعب'),
-                                            // Toggle::make('round_money_s_device')->label('تبديل أجهزة'),
-                                            // Toggle::make('round_money_active_time')->label('تفعيل وقت'),
                                         ]),
-                                        Grid::make(5)->schema([
-                                            TextInput::make('round_money_new')->label('وقت جديد')->numeric()->minValue(0.1),
-                                            TextInput::make('round_money_add')->label('إضافة وقت')->numeric()->minValue(0.1),
-                                            TextInput::make('round_money_s_play')->label('تبديل لعب')->numeric()->minValue(0),
-                                            TextInput::make('round_money_s_device')->label('تبديل أجهزة')->numeric()->minValue(0),
-                                            TextInput::make('round_money_close')->label('تقفيل الوقت')->numeric()->minValue(0.1),
+                                        Grid::make(3)->schema([
+                                            TextInput::make('round_money_new')->label('قيمة جديدة')->numeric()->minValue(0.1),
+                                            TextInput::make('round_money_add')->label('زيادة القيمة')->numeric()->minValue(0.1),
+                                            TextInput::make('round_money_close')->label('تقريب إجمالي الفاتورة')->numeric()->minValue(0.1),
                                         ]),
                                         Placeholder::make('note')->content('* ملحوظة : إذا كان التقريب إلي أعلى المبلغ أو الدقائق 2 و التقريب إلي 5 سوف يكون الناتج 5'),
                                     ]),
@@ -192,15 +170,6 @@ class SystemConfig extends Page
                             ->icon('heroicon-o-cpu-chip')
                             ->schema([
                                 Grid::make(3)->schema([
-                                    Toggle::make('sys_control_active')->label('تفعيل نظام التحكم'),
-                                    Select::make('sys_iot_connection_type')
-                                        ->label('نوع الاتصال بأجهزة IoT')
-                                        ->options([
-                                            'bridge' => 'Bridge محلي',
-                                            'mqtt' => 'اتصال مباشر MQTT',
-                                        ])
-                                        ->default('bridge')
-                                        ->required(),
                                     Toggle::make('sys_alarm_sound')->label('تفعيل إنذار الصوت'),
                                     Toggle::make('sys_qr_customer')->label('تفعيل QR للعميل'),
                                 ]),
@@ -213,12 +182,9 @@ class SystemConfig extends Page
                                 ]),
                                 Grid::make(3)->schema([
                                     Toggle::make('sys_tax_on_direct_sales')->label('تطبيق الضريبة على : فواتير البيع المباشر'),
-                                    Toggle::make('sys_tax_on_play_invoices')->label('تطبيق الضريبة على : فواتير اللعب'),
-                                    Toggle::make('sys_service_on_play_invoices')->label('تطبيق نسبة الخدمة على قيمة : فواتير اللعب'),
                                 ]),
                                 Grid::make(3)->schema([
                                     // TextInput::make('sys_font_size_inventory')->label('حجم الخط ( مجموعات الصنف , الأصناف ) :')->numeric(),
-                                    TextInput::make('sys_lock_device_time')->label('وقت سماح لتقفيل الجهاز :')->numeric(),
                                     TextInput::make('sys_cancel_order_time')->label('وقت سماح لإلغاء الأوردر :')->numeric(),
                                     Select::make('sys_locale_currency')->label('العملة المحلية :')->options([
                                         'EGP' => 'جنيه مصري',
@@ -263,8 +229,8 @@ class SystemConfig extends Page
                                         Select::make('sys_customer_points_type')
                                             ->label('نوع الفاتورة لاحتساب النقاط :')
                                             ->options([
-                                                'all' => 'الكل (اللعب والمبيعات)',
-                                                'play' => 'اللعب فقط',
+                                                'all' => 'كل الخدمات والمبيعات',
+                                                'play' => 'الأنشطة السابقة فقط',
                                                 'sales' => 'المبيعات فقط',
                                             ])
                                             ->default('all')
@@ -276,8 +242,7 @@ class SystemConfig extends Page
                                     ->schema([
                                         Grid::make(2)->schema([
                                             Section::make('الإيرادات')->schema([
-                                                Toggle::make('shift_inc_play')->label('إيراد اللعب'),
-                                                Toggle::make('shift_inc_drinks')->label('إيراد المشروبات'),
+                                                Toggle::make('shift_inc_drinks')->label('إيرادات المنتجات والخدمات'),
                                                 Toggle::make('shift_inc_customer_balance')->label('إضافة رصيد العملاء'),
                                                 Toggle::make('shift_inc_other')->label('إيرادات أخرى'),
                                                 Toggle::make('shift_inc_tax')->label('ضريبة'),
@@ -293,14 +258,6 @@ class SystemConfig extends Page
                                         ]),
                                     ]),
 
-                                Section::make('إعدادات غلق البلاي ستيشن')
-                                    ->schema([
-                                        Grid::make(3)->schema([
-                                            Toggle::make('sys_close_send_freq')->label('تفعيل معدل الإرسال'),
-                                            TextInput::make('sys_close_duration')->label('المدة :')->numeric(),
-                                            TextInput::make('sys_close_order_count')->label('عدد الطلبات :')->numeric(),
-                                        ]),
-                                    ]),
                             ]),
 
                         // 4. تاب إعدادات الإشعارات
@@ -319,7 +276,6 @@ class SystemConfig extends Page
                                 Section::make('تقارير سجلات الإرسال الفوري للبريد')
                                     ->schema([
                                         Grid::make(4)->schema([
-                                            Toggle::make('notify_rep_play')->label('تقرير سجل اللعب'),
                                             Toggle::make('notify_rep_sales')->label('تقرير سجل المبيعات'),
                                             Toggle::make('notify_rep_discounts')->label('تقرير سجل الخصومات'),
                                             Toggle::make('notify_rep_purchases')->label('تقرير سجل المشتريات'),
@@ -385,15 +341,15 @@ class SystemConfig extends Page
                                             Select::make('landing_theme')
                                                 ->label('نمط التصميم')
                                                 ->options([
-                                                    'neon' => 'Midnight Violet — بنفسجي وتركواز',
-                                                    'ember' => 'Graphite Amber — فحمي وعنبر',
-                                                    'electric' => 'Deep Cobalt — أزرق وسماوي',
-                                                    'royal' => 'Royal Plum — بنفسجي ووردي',
-                                                    'forest' => 'Evergreen — أخضر طبيعي',
-                                                    'gold' => 'Espresso Gold — بني وذهبي',
-                                                    'crimson' => 'Burgundy — نبيتي وبرتقالي',
+                                                    'neon' => 'موف هادئ',
+                                                    'ember' => 'درجات دافئة',
+                                                    'electric' => 'أزرق سماوي',
+                                                    'royal' => 'وردي وموف',
+                                                    'forest' => 'أخضر طبيعي',
+                                                    'gold' => 'عاجي وشامبين',
+                                                    'crimson' => 'وردي ترابي',
                                                 ])
-                                                ->default('neon')
+                                                ->default('gold')
                                                 ->required(),
                                             ColorPicker::make('landing_accent_color')
                                                 ->label('اللون الرئيسي المخصص')
@@ -424,7 +380,7 @@ class SystemConfig extends Page
                                                 ->default('split')
                                                 ->required(),
                                             FileUpload::make('landing_logo')
-                                                ->label('شعار الصالة')
+                                                ->label('شعار الصالون')
                                                 ->image()
                                                 ->disk('public')
                                                 ->directory('landing-branding')
@@ -450,25 +406,25 @@ class SystemConfig extends Page
                                         ->schema([
                                             TextInput::make('landing_title')
                                                 ->label('عنوان الصفحة الرئيسية :')
-                                                ->placeholder('ليفل أب بلايستيشن لاونج')
+                                                ->placeholder('صالون التجميل')
                                                 ->maxLength(80),
                                             Textarea::make('landing_description')
                                                 ->label('الوصف الفرعي للصفحة الرئيسية :')
                                                 ->rows(3)
                                                 ->maxLength(240),
                                             TextInput::make('landing_primary_cta')
-                                                ->label('نص زر العروض')
-                                                ->placeholder('شوف العروض')
+                                                ->label('نص زر التواصل والحجز')
+                                                ->placeholder('تواصل للحجز')
                                                 ->maxLength(40),
                                             TextInput::make('landing_secondary_cta')
-                                                ->label('نص زر المنيو')
-                                                ->placeholder('افتح المنيو')
+                                                ->label('نص زر المنتجات')
+                                                ->placeholder('استكشف المنتجات')
                                                 ->maxLength(40),
                                             Textarea::make('landing_about')
-                                                ->label('نبذة عن الصالة')
+                                                ->label('نبذة عن الصالون')
                                                 ->rows(4)
                                                 ->maxLength(600)
-                                                ->helperText('فقرة قصيرة تشرح تجربة اللعب وما يميز المكان.'),
+                                                ->helperText('فقرة قصيرة تعرّف بخدمات الصالون وما يميّز تجربة العملاء.'),
                                         ]),
 
                                     Section::make('معلومات التواصل')
@@ -514,21 +470,20 @@ class SystemConfig extends Page
                                             Select::make('landing_section_order')
                                                 ->label('ترتيب أقسام الصفحة')
                                                 ->options([
-                                                    'offers_experience_gallery' => 'العروض ثم التجربة ثم الصور',
-                                                    'experience_offers_gallery' => 'التجربة ثم العروض ثم الصور',
-                                                    'gallery_offers_experience' => 'الصور ثم العروض ثم التجربة',
+                                                    'services_experience_gallery' => 'الخدمات ثم مميزات الصالون ثم الصور',
+                                                    'experience_services_gallery' => 'مميزات الصالون ثم الخدمات ثم الصور',
+                                                    'gallery_services_experience' => 'الصور ثم الخدمات ثم مميزات الصالون',
                                                 ])
-                                                ->default('offers_experience_gallery')
+                                                ->default('services_experience_gallery')
                                                 ->required(),
-                                            Toggle::make('landing_show_offers')->label('إظهار العروض')->default(true),
-                                            Toggle::make('landing_show_services')->label('إظهار الخدمات والمرافق')->default(true),
-                                            Toggle::make('landing_show_experience')->label('إظهار مميزات تجربة اللعب')->default(true),
+                                            Toggle::make('landing_show_services')->label('إظهار الخدمات')->default(true),
+                                            Toggle::make('landing_show_experience')->label('إظهار مميزات الصالون')->default(true),
                                             Toggle::make('landing_show_gallery')->label('إظهار معرض الصور')->default(true),
                                             Toggle::make('landing_show_loyalty')->label('إظهار النقاط والمحفظة للعميل')->default(true),
-                                            Toggle::make('landing_show_about')->label('إظهار نبذة عن الصالة')->default(true),
+                                            Toggle::make('landing_show_about')->label('إظهار نبذة عن الصالون')->default(true),
                                             Toggle::make('landing_show_contact')->label('إظهار بيانات التواصل')->default(true),
                                             FileUpload::make('landing_gallery')
-                                                ->label('معرض صور الصالة')
+                                                ->label('معرض صور الصالون')
                                                 ->multiple()
                                                 ->image()
                                                 ->disk('public')
@@ -542,16 +497,16 @@ class SystemConfig extends Page
                                                 ->columnSpanFull(),
                                         ]),
 
-                                    Section::make('الخدمات والمرافق المتاحة')
-                                        ->description('أضف البلايستيشن أو الكافيه أو مساحات العمل أو أي خدمة أخرى بصورة حقيقية من المكان.')
+                                    Section::make('معرض صور الخدمات')
+                                        ->description('أضف صورًا حقيقية للخدمات والمكان. تُدار أسعار الخدمات ومددها من قسم الخدمات.')
                                         ->columnSpan(2)
                                         ->schema([
                                             Repeater::make('landing_services')
-                                                ->label('الخدمات')
+                                                ->label('عروض مرئية للخدمات')
                                                 ->schema([
                                                     TextInput::make('title')
                                                         ->label('اسم الخدمة')
-                                                        ->placeholder('مثال: بلايستيشن أو كافيه')
+                                                        ->placeholder('مثال: قص الشعر أو العناية بالبشرة')
                                                         ->required()
                                                         ->maxLength(60),
                                                     Textarea::make('description')

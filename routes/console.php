@@ -13,6 +13,11 @@ Schedule::command('tenants:run tenants:send-booking-alerts')
     ->runInBackground()
     ->withoutOverlapping(5);
 
+Schedule::command('tenants:run tenants:send-appointment-reminders')
+    ->everyMinute()
+    ->runInBackground()
+    ->withoutOverlapping(5);
+
 Schedule::command('tenants:run tenants:send-session-expiry-alerts')
     ->everyMinute()
     ->runInBackground()
